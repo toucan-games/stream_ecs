@@ -6,4 +6,5 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
+pub mod component;
 pub mod entity;
