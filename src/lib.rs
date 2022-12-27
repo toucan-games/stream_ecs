@@ -1,14 +1,9 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+//! Yet another ECS implementation.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// TODO proper crate documentation
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+#![warn(clippy::all)]
+#![warn(missing_docs)]
+#![forbid(unsafe_code)]
+
+pub mod entity;
