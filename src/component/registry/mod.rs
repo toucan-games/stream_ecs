@@ -26,13 +26,14 @@ pub trait Registry: Send + Sync {
     where
         C: Component;
 
-    /// Unregisters the component, removing it from the registry.
+    /// Unregisters the component and returns storage of the component.
+    /// Returns [`None`] if the component was not registered.
     ///
     /// Storage provided in [`register`][register] method will be removed
-    /// from the registry entirely.
+    /// from the registry and returned to the user.
     ///
     /// [register]: Registry::register()
-    fn unregister<C>(&mut self)
+    fn unregister<C>(&mut self) -> Option<C::Storage>
     where
         C: Component;
 

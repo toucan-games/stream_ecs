@@ -5,9 +5,9 @@ use self::storage::Storage;
 pub mod registry;
 pub mod storage;
 
-/// Trait for data that can be attached to the entity.
+/// Trait for data that can be attached to an entity.
 ///
-/// This trait must be implemented for the types which implement
+/// This trait can be implemented for types which implement
 /// [`Copy`], [`Send`], [`Sync`] traits and contain no non-static references.
 ///
 /// It implements [`Copy`] trait to ensure that type does not manage some resource
