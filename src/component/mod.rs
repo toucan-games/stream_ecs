@@ -2,6 +2,7 @@
 
 use self::storage::Storage;
 
+pub mod registry;
 pub mod storage;
 
 /// Trait for data that can be attached to the entity.

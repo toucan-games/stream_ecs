@@ -16,7 +16,10 @@ impl Entity {
     /// Creates new entity key with provided index and its generation.
     ///
     /// More detained information about index and generation can be found
-    /// in the documentation of [`Entity::index()`] and [`Entity::generation()`] methods.
+    /// in the documentation of [`index`][index] and [`generation`][generation] methods.
+    ///
+    /// [index]: Entity::index()
+    /// [generation]: Entity::generation()
     pub fn new(index: u32, generation: u32) -> Self {
         Self { index, generation }
     }
