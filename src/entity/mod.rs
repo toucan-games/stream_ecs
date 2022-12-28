@@ -2,6 +2,8 @@
 
 use core::fmt::Display;
 
+pub mod registry;
+
 /// Unique key of the entity in ECS.
 ///
 /// Similarly as in arenas, you can store it anywhere
