@@ -20,7 +20,7 @@ impl Entity {
     ///
     /// [index]: Entity::index()
     /// [generation]: Entity::generation()
-    pub fn new(index: u32, generation: u32) -> Self {
+    pub const fn new(index: u32, generation: u32) -> Self {
         Self { index, generation }
     }
 
@@ -28,7 +28,7 @@ impl Entity {
     ///
     /// A null key is always invalid, but an invalid key
     /// (that was removed from the world) is not a null key.
-    pub fn null() -> Self {
+    pub const fn null() -> Self {
         Self {
             index: u32::MAX,
             generation: 0,
@@ -39,7 +39,7 @@ impl Entity {
     ///
     /// Null keys are created through the [`Entity::null()`] method or
     /// by creating default entity key.
-    pub fn is_null(self) -> bool {
+    pub const fn is_null(self) -> bool {
         self.index == u32::MAX
     }
 
@@ -47,7 +47,7 @@ impl Entity {
     ///
     /// Index itself is not a key of the entity: the same index cannot be shared
     /// between two alive entities, but it can collide for both alive and dead entities.
-    pub fn index(self) -> u32 {
+    pub const fn index(self) -> u32 {
         self.index
     }
 
@@ -56,7 +56,7 @@ impl Entity {
     /// When the entity with a given index is removed, its generation is increased.
     /// This allows to solve ABA problem and uniquely identify an entity.
     /// With a generation we can tell how many times some entity has been reused.
-    pub fn generation(self) -> u32 {
+    pub const fn generation(self) -> u32 {
         self.generation
     }
 }
