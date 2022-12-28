@@ -16,7 +16,7 @@ pub trait Storage: Send + Sync + 'static {
     /// Attaches provided component to the entity, replacing previous component data, if any.
     fn attach(&mut self, entity: Entity, component: Self::Item);
 
-    /// Checks if any component attached to provided entity.
+    /// Checks if any component is attached to provided entity.
     fn attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.

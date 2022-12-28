@@ -1,4 +1,4 @@
-//! Provides entity key in the world.
+//! Provides utilities for entities in ECS.
 
 use core::fmt::Display;
 

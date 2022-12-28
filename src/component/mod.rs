@@ -2,6 +2,7 @@
 
 use self::storage::Storage;
 
+pub mod bundle;
 pub mod registry;
 pub mod storage;
 
