@@ -5,6 +5,7 @@
 #![warn(clippy::all)]
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![no_std]
 
 pub mod component;
 pub mod entity;

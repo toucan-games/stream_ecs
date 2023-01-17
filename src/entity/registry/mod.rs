@@ -4,7 +4,7 @@ use super::Entity;
 
 /// Entity registry of the world.
 ///
-/// This trait represents type of container for unique for the current world entities.
+/// This trait represents type of container for unique entities of the current world.
 /// Result of using entities which was created in another world is unspecified
 /// and can vary from false-positives to errors and even panics.
 pub trait Registry: Send + Sync {
