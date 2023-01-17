@@ -6,9 +6,9 @@ use super::{registry::Registry, storage::Storage, Component};
 
 /// Collection of components that can be attached to an entity one after another.
 ///
-/// This trait is implemented for all of components since they can be attached and removed easily.
-/// Also it is implemented for tuples with components of size 12 and less.
-pub trait Bundle: Copy + Send + Sync + 'static {
+/// This trait is implemented for all of components since they can be attached and removed trivially.
+/// Also it is implemented for tuples with components of size 12 and less (but not for an empty tuple).
+pub trait Bundle: Send + Sync + 'static {
     /// Attaches provided bundle to the entity, replacing previous components of the bundle, if any.
     fn attach<R>(components: &mut R, entity: Entity, bundle: Self)
     where
@@ -25,6 +25,7 @@ pub trait Bundle: Copy + Send + Sync + 'static {
         R: Registry;
 }
 
+/// Trivial implementation for components, which forwards implementation to the component storage.
 impl<T> Bundle for T
 where
     T: Component,
@@ -58,28 +59,7 @@ where
     }
 }
 
-impl Bundle for () {
-    fn attach<R>(_: &mut R, _: Entity, _: Self)
-    where
-        R: Registry,
-    {
-    }
-
-    fn remove<R>(_: &mut R, _: Entity)
-    where
-        R: Registry,
-    {
-    }
-
-    fn attached<R>(_: &R, _: Entity) -> bool
-    where
-        R: Registry,
-    {
-        false
-    }
-}
-
-macro_rules! bundle {
+macro_rules! impl_bundle_for_tuple {
     ($($types:ident),*) => {
         impl<$($types),*> Bundle for ($($types,)*)
         where
@@ -112,15 +92,15 @@ macro_rules! bundle {
 }
 
 // `Bundle` is implemented for tuples of size 12 and less
-bundle!(A, B, C, D, E, F, G, H, I, J, K, L);
-bundle!(A, B, C, D, E, F, G, H, I, J, K);
-bundle!(A, B, C, D, E, F, G, H, I, J);
-bundle!(A, B, C, D, E, F, G, H, I);
-bundle!(A, B, C, D, E, F, G, H);
-bundle!(A, B, C, D, E, F, G);
-bundle!(A, B, C, D, E, F);
-bundle!(A, B, C, D, E);
-bundle!(A, B, C, D);
-bundle!(A, B, C);
-bundle!(A, B);
-bundle!(A);
+impl_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+impl_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+impl_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+impl_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
+impl_bundle_for_tuple!(A, B, C, D, E, F, G, H);
+impl_bundle_for_tuple!(A, B, C, D, E, F, G);
+impl_bundle_for_tuple!(A, B, C, D, E, F);
+impl_bundle_for_tuple!(A, B, C, D, E);
+impl_bundle_for_tuple!(A, B, C, D);
+impl_bundle_for_tuple!(A, B, C);
+impl_bundle_for_tuple!(A, B);
+impl_bundle_for_tuple!(A);

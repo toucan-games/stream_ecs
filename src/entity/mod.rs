@@ -1,7 +1,8 @@
 //! Provides utilities for entities in ECS.
 
-use core::fmt::Display;
+use self::builder::EntityBuilder;
 
+pub mod builder;
 pub mod registry;
 
 /// Unique key of the entity in ECS.
@@ -37,6 +38,11 @@ impl Entity {
         }
     }
 
+    /// Creates an empty entity builder to build a new entity with.
+    pub const fn builder() -> EntityBuilder {
+        EntityBuilder::empty()
+    }
+
     /// Checks if the entity key is null.
     ///
     /// Null keys are created through the [`Entity::null()`] method or
@@ -70,7 +76,7 @@ impl Default for Entity {
     }
 }
 
-impl Display for Entity {
+impl core::fmt::Display for Entity {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}v{}", self.index, self.generation)
     }
