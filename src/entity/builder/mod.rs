@@ -2,9 +2,9 @@
 
 use hlist2::{ops::Append, Cons, Nil};
 
-use crate::component::{bundle::Bundle, registry::Registry as ComponentRegistry};
+use crate::component::{bundle::Bundle, registry::Registry as Components};
 
-use super::{registry::Registry as EntityRegistry, Entity};
+use super::{registry::Registry as Entities, Entity};
 
 /// Entity builder which creates new entity with provided components.
 ///
@@ -56,8 +56,8 @@ where
     /// in the order of their insertion.
     pub fn build<E, C>(self, entities: &mut E, components: &mut C) -> Entity
     where
-        E: EntityRegistry,
-        C: ComponentRegistry,
+        E: Entities,
+        C: Components,
     {
         let Self(bundles) = self;
         let entity = entities.create();
@@ -74,15 +74,15 @@ impl Default for EntityBuilder {
 
 #[doc(hidden)]
 pub trait Bundles: Append {
-    fn attach_all<R>(self, components: &mut R, entity: Entity)
+    fn attach_all<C>(self, components: &mut C, entity: Entity)
     where
-        R: ComponentRegistry;
+        C: Components;
 }
 
 impl Bundles for Nil {
-    fn attach_all<R>(self, _: &mut R, _: Entity)
+    fn attach_all<C>(self, _: &mut C, _: Entity)
     where
-        R: ComponentRegistry,
+        C: Components,
     {
     }
 }
@@ -92,9 +92,9 @@ where
     Head: Bundle,
     Tail: Bundles,
 {
-    fn attach_all<R>(self, components: &mut R, entity: Entity)
+    fn attach_all<C>(self, components: &mut C, entity: Entity)
     where
-        R: ComponentRegistry,
+        C: Components,
     {
         let Cons(head, tail) = self;
         Head::attach(components, entity, head);

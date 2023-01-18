@@ -1,5 +1,7 @@
 //! Component registry utilities of ECS.
 
+use crate::entity::Entity;
+
 use super::Component;
 
 /// Component registry of the world.
@@ -10,14 +12,15 @@ use super::Component;
 ///
 /// [component_storage]: super::Component::Storage
 pub trait Registry: Send + Sync {
-    /// Registers the component with component storage.
+    /// Registers the component in the registry with provided component storage.
+    /// Returns previous value of the storage, or [`None`] if the component was not registered.
     ///
     /// Provided storage will be stored in the registry and can be retrieved
     /// by [`storage`][storage] or [`storage_mut`][storage_mut] methods.
     ///
     /// [storage]: Registry::storage()
     /// [storage_mut]: Registry::storage_mut()
-    fn register<C>(&mut self, storage: C::Storage)
+    fn register<C>(&mut self, storage: C::Storage) -> Option<C::Storage>
     where
         C: Component;
 
@@ -26,7 +29,7 @@ pub trait Registry: Send + Sync {
     where
         C: Component;
 
-    /// Unregisters the component and returns storage of the component.
+    /// Unregisters the component from the registry and returns storage of the component.
     /// Returns [`None`] if the component was not registered.
     ///
     /// Storage provided in [`register`][register] method will be removed
@@ -40,6 +43,9 @@ pub trait Registry: Send + Sync {
     /// Clears the registry, removing all component storages in it.
     fn clear(&mut self);
 
+    /// Removes all attached components from the entity which makes the entity empty.
+    fn remove_all(&mut self, entity: Entity);
+
     /// Returns count of component storages which are stored in the registry.
     fn len(&self) -> usize;
 
@@ -47,6 +53,9 @@ pub trait Registry: Send + Sync {
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// Checks if the entity does not contain any component data attached to it.
+    fn is_entity_empty(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the storage of registered component.
     /// Returns [`None`] if provided component type was not registered.

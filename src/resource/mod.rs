@@ -2,7 +2,8 @@
 
 pub mod registry;
 
-/// Trait for data that can be stored as singleton in ECS.
+/// Trait for data that can be stored as singleton in ECS
+/// which does not belong to any specific entity.
 ///
 /// This trait can be implemented for types which implement [`Send`], [`Sync`] traits
 /// and doesn't contain any non-static references.

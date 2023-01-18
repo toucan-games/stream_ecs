@@ -9,13 +9,14 @@ use super::Resource;
 /// [resource]: super::Resource
 pub trait Registry: Send + Sync {
     /// Insert provided resource to the registry.
+    /// Returns previous value of the resource, or [`None`] if the resource was not in the registry.
     ///
     /// Provided resource will be stored in the registry and can be retrieved
     /// by [`resource`][resource] or [`resource_mut`][resource_mut] methods.
     ///
     /// [resource]: Registry::resource()
     /// [resource_mut]: Registry::resource_mut()
-    fn insert<R>(&mut self, resource: R)
+    fn insert<R>(&mut self, resource: R) -> Option<R>
     where
         R: Resource;
 
@@ -25,7 +26,7 @@ pub trait Registry: Send + Sync {
         R: Resource;
 
     /// Removes the resource from the registry and returns removed resource.
-    /// Returns [`None`] if the resource was not inserted.
+    /// Returns [`None`] if the resource was not in the registry.
     ///
     /// Resource provided in [`insert`][insert] method will be removed
     /// from the registry and returned to the user.
