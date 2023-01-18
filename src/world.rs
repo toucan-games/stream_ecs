@@ -2,7 +2,7 @@
 
 use crate::{
     component::{bundle::Bundle, registry::Registry as Components, storage::Storage, Component},
-    entity::{registry::Registry as Entities, Entity},
+    entity::{builder::StatefulEntityBuilder, registry::Registry as Entities, Entity},
     resource::{registry::Registry as Resources, Resource},
 };
 
@@ -104,6 +104,16 @@ where
         let entity = self.entities.create();
         B::attach(&mut self.components, entity, bundle);
         entity
+    }
+
+    /// Creates an empty entity builder to build a new entity with.
+    pub fn builder(&mut self) -> StatefulEntityBuilder<'_, E, C> {
+        let Self {
+            entities,
+            components,
+            resources: _,
+        } = self;
+        StatefulEntityBuilder::new(entities, components)
     }
 
     /// Checks if the world contains provided entity.
