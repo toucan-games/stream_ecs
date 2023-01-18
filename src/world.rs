@@ -6,9 +6,9 @@ use crate::{
     resource::{registry::Registry as Resources, Resource},
 };
 
-/// ECS world - storage of entities and all the data attached to them.
+/// ECS world — storage of entities and all the data attached to them.
 ///
-/// Additionally ECS world can store resources - aka singletons in ECS
+/// Additionally ECS world can store resources — aka singletons in ECS
 /// which does not belong to any specific entity.
 #[derive(Debug, Default, Clone)]
 pub struct World<E, C, R> {
