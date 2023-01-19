@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 hlist2 = "0.0.2"
+as-any = "0.3.0"

@@ -1,5 +1,7 @@
 //! Resource registry utilities of ECS.
 
+use core::any::Any;
+
 use super::Resource;
 
 /// Resource registry of the world.
@@ -58,4 +60,20 @@ pub trait Registry: Send + Sync {
     fn resource_mut<R>(&mut self) -> Option<&mut R>
     where
         R: Resource;
+
+    /// Iterator which returns references of all the resources contained in the registry.
+    type Iter<'a>: Iterator<Item = &'a dyn Any>
+    where
+        Self: 'a;
+
+    /// Returns an iterator of references of all the resources contained in the registry.
+    fn iter(&self) -> Self::Iter<'_>;
+
+    /// Iterator which returns mutable references of all the resources contained in the registry.
+    type IterMut<'a>: Iterator<Item = &'a mut dyn Any>
+    where
+        Self: 'a;
+
+    /// Returns an iterator of mutable references of all the resources contained in the registry.
+    fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }

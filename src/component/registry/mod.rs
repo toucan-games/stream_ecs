@@ -2,7 +2,7 @@
 
 use crate::entity::Entity;
 
-use super::Component;
+use super::{storage::ErasedStorage, Component};
 
 /// Component registry of the world.
 ///
@@ -68,4 +68,24 @@ pub trait Registry: Send + Sync {
     fn storage_mut<C>(&mut self) -> Option<&mut C::Storage>
     where
         C: Component;
+
+    /// Iterator which returns references of all the storages
+    /// for components registered in the registry.
+    type Iter<'a>: Iterator<Item = &'a dyn ErasedStorage>
+    where
+        Self: 'a;
+
+    /// Returns an iterator of references of all the storages
+    /// for components registered in the registry.
+    fn iter(&self) -> Self::Iter<'_>;
+
+    /// Iterator which returns mutable references of all the storages
+    /// for components registered in the registry.
+    type IterMut<'a>: Iterator<Item = &'a mut dyn ErasedStorage>
+    where
+        Self: 'a;
+
+    /// Returns an iterator of mutable references of all the storages
+    /// for components registered in the registry.
+    fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
