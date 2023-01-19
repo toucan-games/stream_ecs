@@ -1,7 +1,8 @@
 //! Provides an entry to the entity.
 
 use crate::component::{
-    bundle::Bundle, registry::Registry as Components, storage::Storage, Component,
+    bundle::{Bundle, GetBundle},
+    registry::Registry as Components,
 };
 
 use super::{registry::Registry as Entities, Entity};
@@ -92,19 +93,18 @@ where
         B::attached(components, entity)
     }
 
-    /// Retrieves a reference to the component attached to the underlying entity.
-    /// Returns [`None`] if the underlying entity does not have component of such type.
-    pub fn get<T>(&self) -> Option<&'state T>
+    /// Retrieves a reference to the bundle which components are attached to the underlying entity.
+    /// Returns [`None`] if the underlying entity does not have any of bundle components.
+    pub fn get<B>(&self) -> Option<B::Ref<'_>>
     where
-        T: Component,
+        B: GetBundle,
     {
         let &Self {
             entity,
             entities: _,
             components,
         } = self;
-        let storage = components.storage::<T>()?;
-        storage.get(entity)
+        B::get(components, entity)
     }
 }
 
@@ -246,27 +246,25 @@ where
         B::remove(components, entity);
     }
 
-    /// Retrieves a reference to the component attached to the underlying entity.
-    /// Returns [`None`] if the underlying entity does not have component of such type.
-    pub fn get<T>(&self) -> Option<&T>
+    /// Retrieves a reference to the bundle which components are attached to the underlying entity.
+    /// Returns [`None`] if the underlying entity does not have any of bundle components.
+    pub fn get<B>(&self) -> Option<B::Ref<'_>>
     where
-        T: Component,
+        B: GetBundle,
     {
         let entity = self.entity;
         let components = &*self.components;
-        let storage = components.storage::<T>()?;
-        storage.get(entity)
+        B::get(components, entity)
     }
 
-    /// Retrieves a mutable reference to the component attached to the underlying entity.
-    /// Returns [`None`] if the underlying entity does not have component of such type.
-    pub fn get_mut<T>(&mut self) -> Option<&mut T>
+    /// Retrieves a mutable reference to the bundle which components are attached to the underlying entity.
+    /// Returns [`None`] if the underlying entity does not have any of bundle components.
+    pub fn get_mut<B>(&mut self) -> Option<B::RefMut<'_>>
     where
-        T: Component,
+        B: GetBundle,
     {
         let entity = self.entity;
         let components = &mut *self.components;
-        let storage = components.storage_mut::<T>()?;
-        storage.get_mut(entity)
+        B::get_mut(components, entity)
     }
 }

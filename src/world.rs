@@ -1,7 +1,11 @@
 //! Provides utilities for ECS worlds.
 
 use crate::{
-    component::{bundle::Bundle, registry::Registry as Components, storage::Storage, Component},
+    component::{
+        bundle::{Bundle, GetBundle},
+        registry::Registry as Components,
+        Component,
+    },
     entity::{
         builder::StateEntityBuilder,
         entry::{EntityEntry, EntityEntryMut},
@@ -251,24 +255,22 @@ where
         self.components.remove_all(entity)
     }
 
-    /// Retrieves a reference to the component attached to provided entity.
-    /// Returns [`None`] if provided entity does not have component of such type.
-    pub fn get<T>(&self, entity: Entity) -> Option<&T>
+    /// Retrieves a reference to the bundle which components are attached to provided entity.
+    /// Returns [`None`] if provided entity does not have any of bundle components.
+    pub fn get<B>(&self, entity: Entity) -> Option<B::Ref<'_>>
     where
-        T: Component,
+        B: GetBundle,
     {
-        let storage = self.components.storage::<T>()?;
-        storage.get(entity)
+        B::get(&self.components, entity)
     }
 
-    /// Retrieves a mutable reference to the component attached to provided entity.
-    /// Returns [`None`] if provided entity does not have component of such type.
-    pub fn get_mut<T>(&mut self, entity: Entity) -> Option<&mut T>
+    /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
+    /// Returns [`None`] if provided entity does not have any of bundle components.
+    pub fn get_mut<B>(&mut self, entity: Entity) -> Option<B::RefMut<'_>>
     where
-        T: Component,
+        B: GetBundle,
     {
-        let storage = self.components.storage_mut::<T>()?;
-        storage.get_mut(entity)
+        B::get_mut(&mut self.components, entity)
     }
 
     /// Insert provided resource into the current world.
