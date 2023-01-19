@@ -30,12 +30,12 @@ impl EntityBuilder {
 
 impl<T> EntityBuilder<T> {
     /// Converts stateless entity builder into stateful.
-    pub fn into_stateful<'state, E, C>(
+    pub fn into_state_builder<'state, E, C>(
         self,
         entities: &'state mut E,
         components: &'state mut C,
-    ) -> StatefulEntityBuilder<'state, E, C, T> {
-        StatefulEntityBuilder {
+    ) -> StateEntityBuilder<'state, E, C, T> {
+        StateEntityBuilder {
             entities,
             components,
             builder: self,
@@ -97,13 +97,13 @@ impl Default for EntityBuilder {
 /// [builder]: self::EntityBuilder
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
 #[derive(Debug)]
-pub struct StatefulEntityBuilder<'state, E, C, T = Nil> {
+pub struct StateEntityBuilder<'state, E, C, T = Nil> {
     entities: &'state mut E,
     components: &'state mut C,
     builder: EntityBuilder<T>,
 }
 
-impl<'state, E, C> StatefulEntityBuilder<'state, E, C> {
+impl<'state, E, C> StateEntityBuilder<'state, E, C> {
     /// Creates an empty entity builder with provided entity and component registries.
     ///
     /// Returns new builder without any components attached to it.
@@ -117,7 +117,7 @@ impl<'state, E, C> StatefulEntityBuilder<'state, E, C> {
     }
 }
 
-impl<'state, E, C, T> StatefulEntityBuilder<'state, E, C, T>
+impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
 where
     T: Append,
 {
@@ -125,7 +125,7 @@ where
     ///
     /// Contents of inserted bundles will be attached to the entity
     /// in the order of their insertion.
-    pub fn with<B>(self, bundle: B) -> StatefulEntityBuilder<'state, E, C, T::Output<B>>
+    pub fn with<B>(self, bundle: B) -> StateEntityBuilder<'state, E, C, T::Output<B>>
     where
         B: Bundle,
     {
@@ -134,7 +134,7 @@ where
             components,
             builder,
         } = self;
-        StatefulEntityBuilder {
+        StateEntityBuilder {
             entities,
             components,
             builder: builder.with(bundle),
@@ -142,7 +142,7 @@ where
     }
 }
 
-impl<'state, E, C, T> StatefulEntityBuilder<'state, E, C, T>
+impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
 where
     T: Bundles,
     E: Entities,
@@ -163,9 +163,9 @@ where
 }
 
 /// Converts stateful entity builder into stateless.
-impl<'state, E, C, T> From<StatefulEntityBuilder<'state, E, C, T>> for EntityBuilder<T> {
-    fn from(builder: StatefulEntityBuilder<'state, E, C, T>) -> Self {
-        let StatefulEntityBuilder {
+impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilder<T> {
+    fn from(builder: StateEntityBuilder<'state, E, C, T>) -> Self {
+        let StateEntityBuilder {
             entities: _,
             components: _,
             builder,

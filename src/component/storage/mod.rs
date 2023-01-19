@@ -20,11 +20,11 @@ pub trait Storage: Send + Sync + 'static {
     fn attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
-    /// Returns [`None`] if provided entity doesn't have any component.
+    /// Returns [`None`] if provided entity does not have component of such type.
     fn get(&self, entity: Entity) -> Option<&Self::Item>;
 
     /// Retrieves a mutable reference to the component attached to provided entity.
-    /// Returns [`None`] if provided entity doesn't have any component.
+    /// Returns [`None`] if provided entity does not have component of such type.
     fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item>;
 
     /// Removes component from the entity, if any.

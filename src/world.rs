@@ -2,13 +2,18 @@
 
 use crate::{
     component::{bundle::Bundle, registry::Registry as Components, storage::Storage, Component},
-    entity::{builder::StatefulEntityBuilder, registry::Registry as Entities, Entity},
+    entity::{
+        builder::StateEntityBuilder,
+        entry::{EntityEntry, EntityEntryMut},
+        registry::Registry as Entities,
+        Entity,
+    },
     resource::{registry::Registry as Resources, Resource},
 };
 
-/// ECS world — storage of entities and all the data attached to them.
+/// ECS world — storage of [entities](Entity) and all the [data](Component) attached to them.
 ///
-/// Additionally ECS world can store resources — aka singletons in ECS
+/// Additionally ECS world can store [resources](Resource) — aka singletons in ECS
 /// which does not belong to any specific entity.
 #[derive(Debug, Default, Clone)]
 pub struct World<E, C, R> {
@@ -18,8 +23,7 @@ pub struct World<E, C, R> {
 }
 
 impl<E, C, R> World<E, C, R> {
-    /// Create new world with provided entities, components and resources
-    /// registry implementations.
+    /// Create new world with provided entity, component and resource registry implementations.
     pub const fn with(entities: E, components: C, resources: R) -> Self {
         Self {
             entities,
@@ -106,14 +110,50 @@ where
         entity
     }
 
-    /// Creates an empty entity builder to build a new entity with.
-    pub fn builder(&mut self) -> StatefulEntityBuilder<'_, E, C> {
+    /// Creates an empty [entity builder](StateEntityBuilder), which allows to create new entity *lazily*.
+    pub fn builder(&mut self) -> StateEntityBuilder<'_, E, C> {
         let Self {
             entities,
             components,
             resources: _,
         } = self;
-        StatefulEntityBuilder::new(entities, components)
+        StateEntityBuilder::new(entities, components)
+    }
+
+    /// Creates an [entry](EntityEntry) for the provided entity.
+    /// Returns [`None`] if provided entity was not in the current world.
+    pub fn entry(&self, entity: Entity) -> Option<EntityEntry<'_, E, C>> {
+        let Self {
+            entities,
+            components,
+            resources: _,
+        } = self;
+        EntityEntry::new(entity, entities, components)
+    }
+
+    /// Creates a mutable [entry](EntityEntryMut) for the provided entity.
+    /// Returns [`None`] if provided entity was not in the current world.
+    pub fn entry_mut(&mut self, entity: Entity) -> Option<EntityEntryMut<'_, E, C>> {
+        let Self {
+            entities,
+            components,
+            resources: _,
+        } = self;
+        EntityEntryMut::new(entity, entities, components)
+    }
+
+    /// Spawns a new entity and returns a corresponding [entry](EntityEntryMut).
+    ///
+    /// This is considered as the main API for creation of new entities in the world.
+    /// If you only need to create new entity, use [`create`][World::create()] method.
+    /// If you need to create entity *lazily*, use [`builder`][World::builder()] method.
+    pub fn spawn(&mut self) -> EntityEntryMut<'_, E, C> {
+        let Self {
+            entities,
+            components,
+            resources: _,
+        } = self;
+        EntityEntryMut::spawn(entities, components)
     }
 
     /// Checks if the world contains provided entity.
@@ -208,7 +248,7 @@ where
     }
 
     /// Retrieves a reference to the component attached to provided entity.
-    /// Returns [`None`] if provided entity doesn't have any component.
+    /// Returns [`None`] if provided entity does not have component of such type.
     pub fn get<T>(&self, entity: Entity) -> Option<&T>
     where
         T: Component,
@@ -218,7 +258,7 @@ where
     }
 
     /// Retrieves a mutable reference to the component attached to provided entity.
-    /// Returns [`None`] if provided entity doesn't have any component.
+    /// Returns [`None`] if provided entity does not have component of such type.
     pub fn get_mut<T>(&mut self, entity: Entity) -> Option<&mut T>
     where
         T: Component,
