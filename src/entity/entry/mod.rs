@@ -243,7 +243,7 @@ where
     {
         let entity = self.entity;
         let components = &mut *self.components;
-        B::remove(components, entity)
+        B::remove(components, entity);
     }
 
     /// Retrieves a reference to the component attached to the underlying entity.

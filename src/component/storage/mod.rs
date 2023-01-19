@@ -13,8 +13,9 @@ pub trait Storage: Send + Sync + 'static {
     /// Type of component which is stored in this storage.
     type Item: Component;
 
-    /// Attaches provided component to the entity, replacing previous component data, if any.
-    fn attach(&mut self, entity: Entity, component: Self::Item);
+    /// Attaches provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item>;
 
     /// Checks if any component is attached to provided entity.
     fn attached(&self, entity: Entity) -> bool;
@@ -27,8 +28,9 @@ pub trait Storage: Send + Sync + 'static {
     /// Returns [`None`] if provided entity does not have component of such type.
     fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item>;
 
-    /// Removes component from the entity, if any.
-    fn remove(&mut self, entity: Entity);
+    /// Removes component from the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    fn remove(&mut self, entity: Entity) -> Option<Self::Item>;
 
     /// Clears this storage, destroying all components in it.
     fn clear(&mut self);

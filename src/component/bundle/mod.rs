@@ -8,14 +8,16 @@ use super::{registry::Registry, storage::Storage, Component};
 ///
 /// This trait is implemented for all of components since they can be attached and removed trivially.
 /// Also it is implemented for tuples with components of size 12 and less (but not for an empty tuple).
-pub trait Bundle: Send + Sync + 'static {
-    /// Attaches provided bundle to the entity, replacing previous components of the bundle, if any.
-    fn attach<R>(components: &mut R, entity: Entity, bundle: Self)
+pub trait Bundle: Copy + Send + Sync + 'static {
+    /// Attaches provided bundle to the entity.
+    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
+    fn attach<R>(components: &mut R, entity: Entity, bundle: Self) -> Option<Self>
     where
         R: Registry;
 
-    /// Removes components of the bundle from the entity, if any.
-    fn remove<R>(components: &mut R, entity: Entity)
+    /// Removes components of the bundle from the entity.
+    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
+    fn remove<R>(components: &mut R, entity: Entity) -> Option<Self>
     where
         R: Registry;
 
@@ -30,22 +32,20 @@ impl<T> Bundle for T
 where
     T: Component,
 {
-    fn attach<R>(components: &mut R, entity: Entity, component: Self)
+    fn attach<R>(components: &mut R, entity: Entity, component: Self) -> Option<Self>
     where
         R: Registry,
     {
-        if let Some(storage) = components.storage_mut::<T>() {
-            storage.attach(entity, component)
-        }
+        let storage = components.storage_mut::<T>()?;
+        storage.attach(entity, component)
     }
 
-    fn remove<R>(components: &mut R, entity: Entity)
+    fn remove<R>(components: &mut R, entity: Entity) -> Option<Self>
     where
         R: Registry,
     {
-        if let Some(storage) = components.storage_mut::<T>() {
-            storage.remove(entity)
-        }
+        let storage = components.storage_mut::<T>()?;
+        storage.remove(entity)
     }
 
     fn attached<R>(components: &R, entity: Entity) -> bool
@@ -65,20 +65,23 @@ macro_rules! impl_bundle_for_tuple {
         where
             $($types: Component,)*
         {
-            fn attach<R>(components: &mut R, entity: Entity, bundle: Self)
+            #[allow(non_snake_case)]
+            fn attach<R>(components: &mut R, entity: Entity, bundle: Self) -> Option<Self>
             where
                 R: Registry,
             {
-                #[allow(non_snake_case)]
                 let ($($types,)*) = bundle;
-                $($types::attach(components, entity, $types);)*
+                $(let $types = $types::attach(components, entity, $types);)*
+                Some(($($types?,)*))
             }
 
-            fn remove<R>(components: &mut R, entity: Entity)
+            #[allow(non_snake_case)]
+            fn remove<R>(components: &mut R, entity: Entity) -> Option<Self>
             where
                 R: Registry,
             {
-                $($types::remove(components, entity);)*
+                $(let $types = $types::remove(components, entity);)*
+                Some(($($types?,)*))
             }
 
             fn attached<R>(components: &R, entity: Entity) -> bool

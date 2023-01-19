@@ -163,7 +163,7 @@ where
 
     /// Destroys entity which was previously created in the world.
     pub fn destroy(&mut self, entity: Entity) {
-        self.entities.destroy(entity);
+        self.entities.destroy(entity)
     }
 
     /// Checks if the world contains no entities, components or resources.
@@ -206,14 +206,16 @@ where
         self.components.unregister::<T>()
     }
 
-    /// Attaches provided component to the entity in the world, replacing previous component data, if any.
-    pub fn attach<B>(&mut self, entity: Entity, bundle: B)
+    /// Attaches provided bundle to the entity in the world.
+    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
+    pub fn attach<B>(&mut self, entity: Entity, bundle: B) -> Option<B>
     where
         B: Bundle,
     {
         if self.entities.contains(entity) {
-            B::attach(&mut self.components, entity, bundle);
+            return B::attach(&mut self.components, entity, bundle);
         }
+        None
     }
 
     /// Checks if any component is attached to provided entity in the world.
@@ -232,14 +234,16 @@ where
         self.components.is_entity_empty(entity)
     }
 
-    /// Removes component from the entity in the world, if any.
-    pub fn remove<B>(&mut self, entity: Entity)
+    /// Removes components of the bundle from the entity in the world.
+    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
+    pub fn remove<B>(&mut self, entity: Entity) -> Option<B>
     where
         B: Bundle,
     {
         if self.entities.contains(entity) {
-            B::remove(&mut self.components, entity);
+            return B::remove(&mut self.components, entity);
         }
+        None
     }
 
     /// Removes all attached components from the entity which makes the entity empty.
