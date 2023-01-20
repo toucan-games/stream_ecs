@@ -194,11 +194,11 @@ where
     }
 
     /// Checks if the component was previously registered in the current world.
-    pub fn registered<T>(&self) -> bool
+    pub fn is_registered<T>(&self) -> bool
     where
         T: Component,
     {
-        self.components.registered::<T>()
+        self.components.is_registered::<T>()
     }
 
     /// Unregisters the component from the current world and returns storage of the component.

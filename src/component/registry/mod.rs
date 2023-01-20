@@ -25,7 +25,7 @@ pub trait Registry: Send + Sync {
         C: Component;
 
     /// Checks if the component was previously registered in the registry.
-    fn registered<C>(&self) -> bool
+    fn is_registered<C>(&self) -> bool
     where
         C: Component;
 
