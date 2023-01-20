@@ -183,16 +183,16 @@ macro_rules! bundle_for_tuple {
                 let mut storages: arrayvec::ArrayVec<_, {tuple_length!($($types)*)}> = components
                     .iter_mut()
                     .filter(|storage| {
-                        let type_id = (**storage).type_id();
+                        let type_id = storage.type_id();
                         $(type_id == TypeId::of::<$types>())||*
                     })
                     .collect();
-                storages.as_mut_slice().sort_unstable_by_key(|storage| (**storage).type_id());
+                storages.as_mut_slice().sort_unstable_by_key(|storage| storage.type_id());
 
                 $(
                 let idx = storages
                     .as_slice()
-                    .binary_search_by_key(&TypeId::of::<$types>(), |storage| (**storage).type_id())
+                    .binary_search_by_key(&TypeId::of::<$types>(), |storage| storage.type_id())
                     .ok()?;
                 let storage = storages.remove(idx).as_any_mut().downcast_mut::<$types::Storage>()?;
                 let $types = storage.get_mut(entity)?;
