@@ -51,13 +51,13 @@ pub trait Registry: Send + Sync {
 
     /// Retrieves a reference to the inserted resource.
     /// Returns [`None`] if the resource was not inserted in the registry.
-    fn resource<R>(&self) -> Option<&R>
+    fn get<R>(&self) -> Option<&R>
     where
         R: Resource;
 
     /// Retrieves a mutable reference to the inserted resource.
     /// Returns [`None`] if the resource was not inserted in the registry.
-    fn resource_mut<R>(&mut self) -> Option<&mut R>
+    fn get_mut<R>(&mut self) -> Option<&mut R>
     where
         R: Resource;
 

@@ -305,7 +305,7 @@ where
     where
         T: Resource,
     {
-        self.resources.resource()
+        self.resources.get()
     }
 
     /// Retrieves a mutable reference to the inserted resource.
@@ -314,6 +314,6 @@ where
     where
         T: Resource,
     {
-        self.resources.resource_mut()
+        self.resources.get_mut()
     }
 }
