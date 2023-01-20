@@ -1,8 +1,10 @@
 //! Provides utilities for bundles - collection of components.
 
+use core::any::TypeId;
+
 use crate::entity::Entity;
 
-use super::{registry::Registry, storage::Storage, Component};
+use super::{registry::Registry as Components, storage::Storage, Component};
 
 /// Collection of components that can be attached to an entity one after another.
 ///
@@ -11,20 +13,20 @@ use super::{registry::Registry, storage::Storage, Component};
 pub trait Bundle: Copy + Send + Sync + 'static {
     /// Attaches provided bundle to the entity.
     /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
-    fn attach<R>(components: &mut R, entity: Entity, bundle: Self) -> Option<Self>
+    fn attach<C>(components: &mut C, entity: Entity, bundle: Self) -> Option<Self>
     where
-        R: Registry;
+        C: Components;
 
     /// Removes components of the bundle from the entity.
     /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
-    fn remove<R>(components: &mut R, entity: Entity) -> Option<Self>
+    fn remove<C>(components: &mut C, entity: Entity) -> Option<Self>
     where
-        R: Registry;
+        C: Components;
 
     /// Checks if all components of the bundle are attached to provided entity.
-    fn attached<R>(components: &R, entity: Entity) -> bool
+    fn attached<C>(components: &C, entity: Entity) -> bool
     where
-        R: Registry;
+        C: Components;
 }
 
 /// Trivial implementation for components, which forwards implementation to the component storage.
@@ -32,25 +34,25 @@ impl<T> Bundle for T
 where
     T: Component,
 {
-    fn attach<R>(components: &mut R, entity: Entity, component: Self) -> Option<Self>
+    fn attach<C>(components: &mut C, entity: Entity, component: Self) -> Option<Self>
     where
-        R: Registry,
+        C: Components,
     {
         let storage = components.storage_mut::<T>()?;
         storage.attach(entity, component)
     }
 
-    fn remove<R>(components: &mut R, entity: Entity) -> Option<Self>
+    fn remove<C>(components: &mut C, entity: Entity) -> Option<Self>
     where
-        R: Registry,
+        C: Components,
     {
         let storage = components.storage_mut::<T>()?;
         storage.remove(entity)
     }
 
-    fn attached<R>(components: &R, entity: Entity) -> bool
+    fn attached<C>(components: &C, entity: Entity) -> bool
     where
-        R: Registry,
+        C: Components,
     {
         let Some(storage) = components.storage::<T>() else {
             return false;
@@ -68,9 +70,9 @@ pub trait GetBundle: Bundle {
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have any of bundle components.
-    fn get<R>(components: &R, entity: Entity) -> Option<Self::Ref<'_>>
+    fn get<C>(components: &C, entity: Entity) -> Option<Self::Ref<'_>>
     where
-        R: Registry;
+        C: Components;
 
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
     type RefMut<'a>
@@ -79,9 +81,9 @@ pub trait GetBundle: Bundle {
 
     /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have any of bundle components.
-    fn get_mut<R>(components: &mut R, entity: Entity) -> Option<Self::RefMut<'_>>
+    fn get_mut<C>(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>
     where
-        R: Registry;
+        C: Components;
 }
 
 /// Trivial implementation for components, which forwards implementation to the component storage.
@@ -93,9 +95,9 @@ where
     where
         Self: 'a;
 
-    fn get<R>(components: &R, entity: Entity) -> Option<Self::Ref<'_>>
+    fn get<C>(components: &C, entity: Entity) -> Option<Self::Ref<'_>>
     where
-        R: Registry,
+        C: Components,
     {
         let storage = components.storage::<T>()?;
         storage.get(entity)
@@ -105,13 +107,18 @@ where
     where
         Self: 'a;
 
-    fn get_mut<R>(components: &mut R, entity: Entity) -> Option<Self::RefMut<'_>>
+    fn get_mut<C>(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>
     where
-        R: Registry,
+        C: Components,
     {
         let storage = components.storage_mut::<T>()?;
         storage.get_mut(entity)
     }
+}
+
+macro_rules! tuple_length {
+    () => {0usize};
+    ($head:tt $($tail:tt)*) => {1usize + tuple_length!($($tail)*)};
 }
 
 macro_rules! bundle_for_tuple {
@@ -121,9 +128,9 @@ macro_rules! bundle_for_tuple {
             $($types: Component,)*
         {
             #[allow(non_snake_case)]
-            fn attach<R>(components: &mut R, entity: Entity, bundle: Self) -> Option<Self>
+            fn attach<_C>(components: &mut _C, entity: Entity, bundle: Self) -> Option<Self>
             where
-                R: Registry,
+                _C: Components,
             {
                 let ($($types,)*) = bundle;
                 $(let $types = $types::attach(components, entity, $types);)*
@@ -131,17 +138,17 @@ macro_rules! bundle_for_tuple {
             }
 
             #[allow(non_snake_case)]
-            fn remove<R>(components: &mut R, entity: Entity) -> Option<Self>
+            fn remove<_C>(components: &mut _C, entity: Entity) -> Option<Self>
             where
-                R: Registry,
+                _C: Components,
             {
                 $(let $types = $types::remove(components, entity);)*
                 Some(($($types?,)*))
             }
 
-            fn attached<R>(components: &R, entity: Entity) -> bool
+            fn attached<_C>(components: &_C, entity: Entity) -> bool
             where
-                R: Registry,
+                _C: Components,
             {
                 $($types::attached(components, entity))&&*
             }
@@ -156,9 +163,9 @@ macro_rules! bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get<R>(components: &R, entity: Entity) -> Option<Self::Ref<'_>>
+            fn get<_C>(components: &_C, entity: Entity) -> Option<Self::Ref<'_>>
             where
-                R: Registry,
+                _C: Components,
             {
                 $(let $types = $types::get(components, entity)?;)*
                 Some(($($types,)*))
@@ -169,14 +176,29 @@ macro_rules! bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get_mut<R>(_components: &mut R, _entity: Entity) -> Option<Self::RefMut<'_>>
+            fn get_mut<_C>(components: &mut _C, entity: Entity) -> Option<Self::RefMut<'_>>
             where
-                R: Registry,
+                _C: Components,
             {
-                // TODO: find a way to get multiple mutable references from the registry
-                // $(let $types = $types::get_mut(components, entity)?;)*
-                // Some(($($types,)*))
-                todo!("get mutable references from the registry")
+                let mut storages: arrayvec::ArrayVec<_, {tuple_length!($($types)*)}> = components
+                    .iter_mut()
+                    .filter(|storage| {
+                        let type_id = (**storage).type_id();
+                        $(type_id == TypeId::of::<$types>())||*
+                    })
+                    .collect();
+                storages.as_mut_slice().sort_unstable_by_key(|storage| (**storage).type_id());
+
+                $(
+                let idx = storages
+                    .as_slice()
+                    .binary_search_by_key(&TypeId::of::<$types>(), |storage| (**storage).type_id())
+                    .ok()?;
+                let storage = storages.remove(idx).as_any_mut().downcast_mut::<$types::Storage>()?;
+                let $types = storage.get_mut(entity)?;
+                )*
+
+                Some(($($types,)*))
             }
         }
     }
