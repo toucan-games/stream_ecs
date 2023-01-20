@@ -24,7 +24,7 @@ pub trait Bundle: Copy + Send + Sync + 'static {
         C: Components;
 
     /// Checks if all components of the bundle are attached to provided entity.
-    fn attached<C>(components: &C, entity: Entity) -> bool
+    fn is_attached<C>(components: &C, entity: Entity) -> bool
     where
         C: Components;
 }
@@ -50,14 +50,14 @@ where
         storage.remove(entity)
     }
 
-    fn attached<C>(components: &C, entity: Entity) -> bool
+    fn is_attached<C>(components: &C, entity: Entity) -> bool
     where
         C: Components,
     {
         let Some(storage) = components.storage::<T>() else {
             return false;
         };
-        storage.attached(entity)
+        storage.is_attached(entity)
     }
 }
 
@@ -146,11 +146,11 @@ macro_rules! bundle_for_tuple {
                 Some(($($types?,)*))
             }
 
-            fn attached<_C>(components: &_C, entity: Entity) -> bool
+            fn is_attached<_C>(components: &_C, entity: Entity) -> bool
             where
                 _C: Components,
             {
-                $($types::attached(components, entity))&&*
+                $($types::is_attached(components, entity))&&*
             }
         }
 

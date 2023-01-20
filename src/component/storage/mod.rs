@@ -22,7 +22,7 @@ pub trait Storage: Send + Sync + 'static {
     fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item>;
 
     /// Checks if any component is attached to provided entity.
-    fn attached(&self, entity: Entity) -> bool;
+    fn is_attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
@@ -82,7 +82,7 @@ pub trait ErasedStorage: Send + Sync + AsAny {
     fn attach(&mut self, entity: Entity, component: &dyn Any) -> Option<NonNull<dyn Any>>;
 
     /// Checks if any component is attached to provided entity.
-    fn attached(&self, entity: Entity) -> bool;
+    fn is_attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
@@ -120,8 +120,8 @@ where
         Some(NonNull::from(&component))
     }
 
-    fn attached(&self, entity: Entity) -> bool {
-        Storage::attached(self, entity)
+    fn is_attached(&self, entity: Entity) -> bool {
+        Storage::is_attached(self, entity)
     }
 
     fn get(&self, entity: Entity) -> Option<&dyn Any> {

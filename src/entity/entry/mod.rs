@@ -81,7 +81,7 @@ where
     C: Components,
 {
     /// Checks if all components of the bundle are attached to the underlying entity.
-    pub fn attached<B>(&self) -> bool
+    pub fn is_attached<B>(&self) -> bool
     where
         B: Bundle,
     {
@@ -90,7 +90,7 @@ where
             entities: _,
             components,
         } = self;
-        B::attached(components, entity)
+        B::is_attached(components, entity)
     }
 
     /// Retrieves a reference to the bundle which components are attached to the underlying entity.
@@ -227,13 +227,13 @@ where
     }
 
     /// Checks if all components of the bundle are attached to the underlying entity.
-    pub fn attached<B>(&self) -> bool
+    pub fn is_attached<B>(&self) -> bool
     where
         B: Bundle,
     {
         let entity = self.entity;
         let components = &*self.components;
-        B::attached(components, entity)
+        B::is_attached(components, entity)
     }
 
     /// Removes components of the bundle from the underlying entity, if any.

@@ -223,12 +223,12 @@ where
     }
 
     /// Checks if any component is attached to provided entity in the world.
-    pub fn attached<B>(&self, entity: Entity) -> bool
+    pub fn is_attached<B>(&self, entity: Entity) -> bool
     where
         B: Bundle,
     {
         if self.entities.contains(entity) {
-            return B::attached(&self.components, entity);
+            return B::is_attached(&self.components, entity);
         }
         false
     }
