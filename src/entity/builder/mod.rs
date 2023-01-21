@@ -2,7 +2,9 @@
 
 use hlist2::{ops::Append, Cons, Nil};
 
-use crate::component::{bundle::Bundle, registry::Registry as Components};
+use crate::component::{
+    bundle::Bundle, error::NotRegisteredResult, registry::Registry as Components,
+};
 
 use super::{registry::Registry as Entities, Entity};
 
@@ -69,17 +71,29 @@ where
     /// New entity will be created by provided entity registry, while components
     /// will be attached to the newly created entity with provided component registry.
     ///
-    /// Contents of inserted bundles are attached to the newly created entity
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
     /// in the order of their insertion.
-    pub fn build<E, C>(self, entities: &mut E, components: &mut C) -> Entity
+    pub fn build<E, C>(self, entities: &mut E, components: &mut C) -> NotRegisteredResult<Entity>
     where
         E: Entities,
         C: Components,
     {
         let Self(bundles) = self;
         let entity = entities.create();
-        bundles.attach_all(components, entity);
-        entity
+        // TODO check existence of all the components before attaching
+        bundles.attach_all(components, entity)?;
+        Ok(entity)
     }
 }
 
@@ -150,9 +164,20 @@ where
 {
     /// Builds new entity from the builder.
     ///
-    /// Contents of inserted bundles are attached to the newly created entity
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
     /// in the order of their insertion.
-    pub fn build(self) -> Entity {
+    pub fn build(self) -> NotRegisteredResult<Entity> {
         let Self {
             entities,
             components,
@@ -176,16 +201,17 @@ impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilde
 
 #[doc(hidden)]
 pub trait Bundles: Append {
-    fn attach_all<C>(self, components: &mut C, entity: Entity)
+    fn attach_all<C>(self, components: &mut C, entity: Entity) -> NotRegisteredResult<()>
     where
         C: Components;
 }
 
 impl Bundles for Nil {
-    fn attach_all<C>(self, _: &mut C, _: Entity)
+    fn attach_all<C>(self, _: &mut C, _: Entity) -> NotRegisteredResult<()>
     where
         C: Components,
     {
+        Ok(())
     }
 }
 
@@ -194,12 +220,12 @@ where
     Head: Bundle,
     Tail: Bundles,
 {
-    fn attach_all<C>(self, components: &mut C, entity: Entity)
+    fn attach_all<C>(self, components: &mut C, entity: Entity) -> NotRegisteredResult<()>
     where
         C: Components,
     {
         let Cons(head, tail) = self;
-        Head::attach(components, entity, head);
-        tail.attach_all(components, entity);
+        Head::attach(components, entity, head)?;
+        tail.attach_all(components, entity)
     }
 }

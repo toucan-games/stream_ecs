@@ -4,7 +4,12 @@ use core::any::TypeId;
 
 use crate::entity::Entity;
 
-use super::{registry::Registry as Components, storage::Storage, Component};
+use super::{
+    error::{NotRegisteredError, NotRegisteredResult},
+    registry::Registry as Components,
+    storage::Storage,
+    Component,
+};
 
 /// Collection of components that can be attached to an entity one after another.
 ///
@@ -12,19 +17,60 @@ use super::{registry::Registry as Components, storage::Storage, Component};
 /// Also it is implemented for tuples with components of size 12 and less (but not for an empty tuple).
 pub trait Bundle: Copy + Send + Sync + 'static {
     /// Attaches provided bundle to the entity.
-    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
-    fn attach<C>(components: &mut C, entity: Entity, bundle: Self) -> Option<Self>
+    ///
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn attach<C>(
+        components: &mut C,
+        entity: Entity,
+        bundle: Self,
+    ) -> NotRegisteredResult<Option<Self>>
     where
         C: Components;
 
     /// Removes components of the bundle from the entity.
-    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
-    fn remove<C>(components: &mut C, entity: Entity) -> Option<Self>
+    ///
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn remove<C>(components: &mut C, entity: Entity) -> NotRegisteredResult<Option<Self>>
     where
         C: Components;
 
     /// Checks if all components of the bundle are attached to provided entity.
-    fn is_attached<C>(components: &C, entity: Entity) -> bool
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn is_attached<C>(components: &C, entity: Entity) -> NotRegisteredResult<bool>
     where
         C: Components;
 }
@@ -34,30 +80,41 @@ impl<T> Bundle for T
 where
     T: Component,
 {
-    fn attach<C>(components: &mut C, entity: Entity, component: Self) -> Option<Self>
+    fn attach<C>(
+        components: &mut C,
+        entity: Entity,
+        component: Self,
+    ) -> NotRegisteredResult<Option<Self>>
     where
         C: Components,
     {
-        let storage = components.storage_mut::<T>()?;
-        storage.attach(entity, component)
+        let Some(storage) = components.storage_mut::<T>() else {
+            return Err(NotRegisteredError::new::<Self>());
+        };
+        let component = storage.attach(entity, component);
+        Ok(component)
     }
 
-    fn remove<C>(components: &mut C, entity: Entity) -> Option<Self>
+    fn remove<C>(components: &mut C, entity: Entity) -> NotRegisteredResult<Option<Self>>
     where
         C: Components,
     {
-        let storage = components.storage_mut::<T>()?;
-        storage.remove(entity)
+        let Some(storage) = components.storage_mut::<T>() else {
+            return Err(NotRegisteredError::new::<Self>());
+        };
+        let component = storage.remove(entity);
+        Ok(component)
     }
 
-    fn is_attached<C>(components: &C, entity: Entity) -> bool
+    fn is_attached<C>(components: &C, entity: Entity) -> NotRegisteredResult<bool>
     where
         C: Components,
     {
         let Some(storage) = components.storage::<T>() else {
-            return false;
+            return Err(NotRegisteredError::new::<Self>());
         };
-        storage.is_attached(entity)
+        let is_attached = storage.is_attached(entity);
+        Ok(is_attached)
     }
 }
 
@@ -69,8 +126,19 @@ pub trait GetBundle: Bundle {
         Self: 'a;
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
-    /// Returns [`None`] if provided entity does not have any of bundle components.
-    fn get<C>(components: &C, entity: Entity) -> Option<Self::Ref<'_>>
+    /// Returns [`None`] if provided entity does not have some bundle component.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn get<C>(components: &C, entity: Entity) -> NotRegisteredResult<Option<Self::Ref<'_>>>
     where
         C: Components;
 
@@ -80,8 +148,22 @@ pub trait GetBundle: Bundle {
         Self: 'a;
 
     /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
-    /// Returns [`None`] if provided entity does not have any of bundle components.
-    fn get_mut<C>(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>
+    /// Returns [`None`] if provided entity does not have some bundle component.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn get_mut<C>(
+        components: &mut C,
+        entity: Entity,
+    ) -> NotRegisteredResult<Option<Self::RefMut<'_>>>
     where
         C: Components;
 }
@@ -95,24 +177,33 @@ where
     where
         Self: 'a;
 
-    fn get<C>(components: &C, entity: Entity) -> Option<Self::Ref<'_>>
+    fn get<C>(components: &C, entity: Entity) -> NotRegisteredResult<Option<Self::Ref<'_>>>
     where
         C: Components,
     {
-        let storage = components.storage::<T>()?;
-        storage.get(entity)
+        let Some(storage) = components.storage::<T>() else {
+            return Err(NotRegisteredError::new::<Self>());
+        };
+        let component = storage.get(entity);
+        Ok(component)
     }
 
     type RefMut<'a> = &'a mut Self
     where
         Self: 'a;
 
-    fn get_mut<C>(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>
+    fn get_mut<C>(
+        components: &mut C,
+        entity: Entity,
+    ) -> NotRegisteredResult<Option<Self::RefMut<'_>>>
     where
         C: Components,
     {
-        let storage = components.storage_mut::<T>()?;
-        storage.get_mut(entity)
+        let Some(storage) = components.storage_mut::<T>() else {
+            return Err(NotRegisteredError::new::<Self>());
+        };
+        let component = storage.get_mut(entity);
+        Ok(component)
     }
 }
 
@@ -128,29 +219,36 @@ macro_rules! bundle_for_tuple {
             $($types: Component,)*
         {
             #[allow(non_snake_case)]
-            fn attach<_C>(components: &mut _C, entity: Entity, bundle: Self) -> Option<Self>
+            fn attach<_C>(components: &mut _C, entity: Entity, bundle: Self) -> NotRegisteredResult<Option<Self>>
             where
                 _C: Components,
             {
+                let _ = Self::is_attached(components, entity)?;
                 let ($($types,)*) = bundle;
-                $(let $types = $types::attach(components, entity, $types);)*
-                Some(($($types?,)*))
+                $(let $types = $types::attach(components, entity, $types)?;)*
+                $(let Some($types) = $types else { return Ok(None); };)*
+                let components = Some(($($types,)*));
+                Ok(components)
             }
 
             #[allow(non_snake_case)]
-            fn remove<_C>(components: &mut _C, entity: Entity) -> Option<Self>
+            fn remove<_C>(components: &mut _C, entity: Entity) -> NotRegisteredResult<Option<Self>>
             where
                 _C: Components,
             {
-                $(let $types = $types::remove(components, entity);)*
-                Some(($($types?,)*))
+                let _ = Self::is_attached(components, entity)?;
+                $(let $types = $types::remove(components, entity)?;)*
+                $(let Some($types) = $types else { return Ok(None); };)*
+                let components = Some(($($types,)*));
+                Ok(components)
             }
 
-            fn is_attached<_C>(components: &_C, entity: Entity) -> bool
+            fn is_attached<_C>(components: &_C, entity: Entity) -> NotRegisteredResult<bool>
             where
                 _C: Components,
             {
-                $($types::is_attached(components, entity))&&*
+                let is_attached = $($types::is_attached(components, entity)?)&&*;
+                Ok(is_attached)
             }
         }
 
@@ -163,12 +261,14 @@ macro_rules! bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get<_C>(components: &_C, entity: Entity) -> Option<Self::Ref<'_>>
+            fn get<_C>(components: &_C, entity: Entity) -> NotRegisteredResult<Option<Self::Ref<'_>>>
             where
                 _C: Components,
             {
                 $(let $types = $types::get(components, entity)?;)*
-                Some(($($types,)*))
+                $(let Some($types) = $types else { return Ok(None); };)*
+                let components = Some(($($types,)*));
+                Ok(components)
             }
 
             type RefMut<'a> = ($(&'a mut $types,)*)
@@ -176,7 +276,10 @@ macro_rules! bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get_mut<_C>(components: &mut _C, entity: Entity) -> Option<Self::RefMut<'_>>
+            fn get_mut<_C>(
+                components: &mut _C,
+                entity: Entity,
+            ) -> NotRegisteredResult<Option<Self::RefMut<'_>>>
             where
                 _C: Components,
             {
@@ -193,12 +296,21 @@ macro_rules! bundle_for_tuple {
                 let idx = storages
                     .as_slice()
                     .binary_search_by_key(&TypeId::of::<$types>(), |storage| storage.type_id())
-                    .ok()?;
-                let storage = storages.remove(idx).as_any_mut().downcast_mut::<$types::Storage>()?;
-                let $types = storage.get_mut(entity)?;
+                    .ok();
+                let Some(idx) = idx else {
+                    return Err(NotRegisteredError::new::<$types>());
+                };
+                let storage = storages
+                    .remove(idx)
+                    .as_any_mut()
+                    .downcast_mut::<$types::Storage>()
+                    .expect("storage type casting should succeed because storage was found by TypeId");
+                let $types = storage.get_mut(entity);
                 )*
+                $(let Some($types) = $types else { return Ok(None); };)*
 
-                Some(($($types,)*))
+                let components = Some(($($types,)*));
+                Ok(components)
             }
         }
     }

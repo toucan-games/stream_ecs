@@ -14,10 +14,7 @@ pub trait Registry: Send + Sync {
     /// Returns previous value of the resource, or [`None`] if the resource was not in the registry.
     ///
     /// Provided resource will be stored in the registry and can be retrieved
-    /// by [`resource`][resource] or [`resource_mut`][resource_mut] methods.
-    ///
-    /// [resource]: Registry::resource()
-    /// [resource_mut]: Registry::resource_mut()
+    /// by [`get`][Registry::get()] or [`get_mut`][Registry::get_mut()] methods.
     fn insert<R>(&mut self, resource: R) -> Option<R>
     where
         R: Resource;

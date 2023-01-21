@@ -1,6 +1,6 @@
 //! Utilities for entity management.
 
-use super::Entity;
+use super::{error::NotPresentResult, Entity};
 
 /// Entity registry of the world.
 ///
@@ -19,9 +19,19 @@ pub trait Registry: Send + Sync {
 
     /// Destroys previously created entity.
     ///
-    /// Provided entity will be removed from the registry.
-    /// If there is no entity to destroy, this method does nothing.
-    fn destroy(&mut self, entity: Entity);
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity
+    /// was destroyed earlier or was not created in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that provided entity will be removed from the registry.
+    fn destroy(&mut self, entity: Entity) -> NotPresentResult<()>;
 
     /// Returns count of currently alive entities.
     fn len(&self) -> usize;

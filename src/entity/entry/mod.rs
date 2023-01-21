@@ -2,6 +2,7 @@
 
 use crate::component::{
     bundle::{Bundle, GetBundle},
+    error::NotRegisteredResult,
     registry::Registry as Components,
 };
 
@@ -81,7 +82,18 @@ where
     C: Components,
 {
     /// Checks if all components of the bundle are attached to the underlying entity.
-    pub fn is_attached<B>(&self) -> bool
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_attached<B>(&self) -> NotRegisteredResult<bool>
     where
         B: Bundle,
     {
@@ -94,8 +106,19 @@ where
     }
 
     /// Retrieves a reference to the bundle which components are attached to the underlying entity.
-    /// Returns [`None`] if the underlying entity does not have any of bundle components.
-    pub fn get<B>(&self) -> Option<B::Ref<'_>>
+    /// Returns [`None`] if the underlying entity does not have some bundle component.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get<B>(&self) -> NotRegisteredResult<Option<B::Ref<'_>>>
     where
         B: GetBundle,
     {
@@ -156,7 +179,9 @@ where
             entities,
             components: _,
         } = self;
-        entities.destroy(entity);
+        entities
+            .destroy(entity)
+            .expect("entity should present in the registry");
         entity
     }
 }
@@ -212,22 +237,43 @@ impl<'state, E, C> EntityEntryMut<'state, E, C>
 where
     C: Components,
 {
-    /// Attaches provided bundle to the underlying entity,
-    /// replacing previous components of the bundle, if any.
+    /// Attaches provided bundle to the underlying entity.
     ///
-    /// Returns self mutable reference to allow method chaining.
-    pub fn attach<B>(&mut self, bundle: B) -> &mut Self
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn attach<B>(&mut self, bundle: B) -> NotRegisteredResult<Option<B>>
     where
         B: Bundle,
     {
         let entity = self.entity;
         let components = &mut *self.components;
-        B::attach(components, entity, bundle);
-        self
+        B::attach(components, entity, bundle)
     }
 
     /// Checks if all components of the bundle are attached to the underlying entity.
-    pub fn is_attached<B>(&self) -> bool
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_attached<B>(&self) -> NotRegisteredResult<bool>
     where
         B: Bundle,
     {
@@ -236,19 +282,44 @@ where
         B::is_attached(components, entity)
     }
 
-    /// Removes components of the bundle from the underlying entity, if any.
-    pub fn remove<B>(&mut self)
+    /// Removes components of the bundle from the underlying entity.
+    ///
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn remove<B>(&mut self) -> NotRegisteredResult<Option<B>>
     where
         B: Bundle,
     {
         let entity = self.entity;
         let components = &mut *self.components;
-        B::remove(components, entity);
+        B::remove(components, entity)
     }
 
     /// Retrieves a reference to the bundle which components are attached to the underlying entity.
-    /// Returns [`None`] if the underlying entity does not have any of bundle components.
-    pub fn get<B>(&self) -> Option<B::Ref<'_>>
+    /// Returns [`None`] if the underlying entity does not have some bundle component.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get<B>(&self) -> NotRegisteredResult<Option<B::Ref<'_>>>
     where
         B: GetBundle,
     {
@@ -258,8 +329,19 @@ where
     }
 
     /// Retrieves a mutable reference to the bundle which components are attached to the underlying entity.
-    /// Returns [`None`] if the underlying entity does not have any of bundle components.
-    pub fn get_mut<B>(&mut self) -> Option<B::RefMut<'_>>
+    /// Returns [`None`] if the underlying entity does not have some bundle component.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components
+    /// was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get_mut<B>(&mut self) -> NotRegisteredResult<Option<B::RefMut<'_>>>
     where
         B: GetBundle,
     {

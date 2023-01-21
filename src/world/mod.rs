@@ -9,11 +9,16 @@ use crate::{
     entity::{
         builder::StateEntityBuilder,
         entry::{EntityEntry, EntityEntryMut},
+        error::{NotPresentError, NotPresentResult},
         registry::Registry as Entities,
         Entity,
     },
     resource::{registry::Registry as Resources, Resource},
 };
+
+use self::error::EntityResult;
+
+pub mod error;
 
 /// ECS world — storage of [entities](Entity) and all the [data](Component) attached to them.
 ///
@@ -102,18 +107,6 @@ where
         self.entities.create()
     }
 
-    /// Creates new entity in the current world with provided components.
-    ///
-    /// Newly created entity will have all the components from the provided bundle.
-    pub fn create_with<B>(&mut self, bundle: B) -> Entity
-    where
-        B: Bundle,
-    {
-        let entity = self.entities.create();
-        B::attach(&mut self.components, entity, bundle);
-        entity
-    }
-
     /// Creates an empty [entity builder](StateEntityBuilder), which allows to create new entity *lazily*.
     pub fn builder(&mut self) -> StateEntityBuilder<'_, E, C> {
         let Self {
@@ -166,7 +159,18 @@ where
     }
 
     /// Destroys entity which was previously created in the world.
-    pub fn destroy(&mut self, entity: Entity) {
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity
+    /// was destroyed earlier or was not created in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn destroy(&mut self, entity: Entity) -> NotPresentResult<()> {
         self.entities.destroy(entity)
     }
 
@@ -211,66 +215,171 @@ where
     }
 
     /// Attaches provided bundle to the entity in the world.
-    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
-    pub fn attach<B>(&mut self, entity: Entity, bundle: B) -> Option<B>
+    ///
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world
+    /// or one of bundle components was not registered in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn attach<B>(&mut self, entity: Entity, bundle: B) -> EntityResult<Option<B>>
     where
         B: Bundle,
     {
-        if self.entities.contains(entity) {
-            return B::attach(&mut self.components, entity, bundle);
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error.into());
         }
-        None
+        let bundle = B::attach(&mut self.components, entity, bundle)?;
+        Ok(bundle)
     }
 
-    /// Checks if any component is attached to provided entity in the world.
-    pub fn is_attached<B>(&self, entity: Entity) -> bool
+    /// Checks if all components of the bundle are attached to provided entity in the world.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world
+    /// or one of bundle components was not registered in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_attached<B>(&self, entity: Entity) -> EntityResult<bool>
     where
         B: Bundle,
     {
-        if self.entities.contains(entity) {
-            return B::is_attached(&self.components, entity);
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error.into());
         }
-        false
+        let is_attached = B::is_attached(&self.components, entity)?;
+        Ok(is_attached)
     }
 
     /// Checks if the entity does not contain any component data attached to it.
-    pub fn is_entity_empty(&self, entity: Entity) -> bool {
-        self.components.is_entity_empty(entity)
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity
+    /// was destroyed earlier or was not created in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_entity_empty(&self, entity: Entity) -> NotPresentResult<bool> {
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error);
+        }
+        let is_empty = self.components.is_entity_empty(entity);
+        Ok(is_empty)
     }
 
-    /// Removes components of the bundle from the entity in the world.
-    /// Returns previous bundle data, or [`None`] if there was no bundle attached to the entity.
-    pub fn remove<B>(&mut self, entity: Entity) -> Option<B>
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world
+    /// or one of bundle components was not registered in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn remove<B>(&mut self, entity: Entity) -> EntityResult<Option<B>>
     where
         B: Bundle,
     {
-        if self.entities.contains(entity) {
-            return B::remove(&mut self.components, entity);
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error.into());
         }
-        None
+        let bundle = B::remove(&mut self.components, entity)?;
+        Ok(bundle)
     }
 
     /// Removes all attached components from the entity which makes the entity empty.
-    pub fn remove_all(&mut self, entity: Entity) {
-        self.components.remove_all(entity)
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity
+    /// was destroyed earlier or was not created in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn remove_all(&mut self, entity: Entity) -> NotPresentResult<()> {
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error);
+        }
+        let unit = self.components.remove_all(entity);
+        Ok(unit)
     }
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have any of bundle components.
-    pub fn get<B>(&self, entity: Entity) -> Option<B::Ref<'_>>
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world
+    /// or one of bundle components was not registered in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get<B>(&self, entity: Entity) -> EntityResult<Option<B::Ref<'_>>>
     where
         B: GetBundle,
     {
-        B::get(&self.components, entity)
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error.into());
+        }
+        let bundle = B::get(&self.components, entity)?;
+        Ok(bundle)
     }
 
     /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have any of bundle components.
-    pub fn get_mut<B>(&mut self, entity: Entity) -> Option<B::RefMut<'_>>
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world
+    /// or one of bundle components was not registered in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get_mut<B>(&mut self, entity: Entity) -> EntityResult<Option<B::RefMut<'_>>>
     where
         B: GetBundle,
     {
-        B::get_mut(&mut self.components, entity)
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error.into());
+        }
+        let bundle = B::get_mut(&mut self.components, entity)?;
+        Ok(bundle)
     }
 
     /// Insert provided resource into the current world.
