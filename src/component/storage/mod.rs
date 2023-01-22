@@ -1,6 +1,6 @@
 //! Utilities for [storages](Storage) of components in ECS.
 
-use core::{any::Any, mem::ManuallyDrop, ptr::NonNull};
+use core::any::Any;
 
 use as_any::AsAny;
 
@@ -77,9 +77,10 @@ pub trait Storage: Send + Sync + 'static {
 /// Compared to [`Storage`] trait, this trait is object safe, so it can be used as trait object.
 /// This trait is implemented for all the storages, so it can be used as trait object for any storage.
 pub trait ErasedStorage: Send + Sync + AsAny {
-    /// Attaches provided component to the entity if type of provided component matches the type of item in the storage.
-    /// Returns previous component data as erased pointer, or [`None`] if there was no component attached to the entity.
-    fn attach(&mut self, entity: Entity, component: &dyn Any) -> Option<NonNull<dyn Any>>;
+    /// Attaches provided component to the entity
+    /// only if type of provided component matches the type of component stored in the storage.
+    // FIXME: replace return type with `Option<impl Component>` when stabilized
+    fn attach(&mut self, entity: Entity, component: &dyn Any);
 
     /// Checks if any component is attached to provided entity.
     fn is_attached(&self, entity: Entity) -> bool;
@@ -93,8 +94,8 @@ pub trait ErasedStorage: Send + Sync + AsAny {
     fn get_mut(&mut self, entity: Entity) -> Option<&mut dyn Any>;
 
     /// Removes component from the entity.
-    /// Returns previous component data as erased pointer, or [`None`] if there was no component attached to the entity.
-    fn remove(&mut self, entity: Entity) -> Option<NonNull<dyn Any>>;
+    // FIXME: replace return type with `Option<impl Component>` when stabilized
+    fn remove(&mut self, entity: Entity);
 
     /// Clears this storage, destroying all components in it.
     fn clear(&mut self);
@@ -113,11 +114,11 @@ where
     T: Storage,
     T::Item: AsAny,
 {
-    fn attach(&mut self, entity: Entity, component: &dyn Any) -> Option<NonNull<dyn Any>> {
-        let component = component.downcast_ref().copied()?;
-        let component = Storage::attach(self, entity, component)?;
-        let component = ManuallyDrop::new(component);
-        Some(NonNull::from(&component))
+    fn attach(&mut self, entity: Entity, component: &dyn Any) {
+        let Some(component) = component.downcast_ref().copied() else {
+            return;
+        };
+        let _component = Storage::attach(self, entity, component);
     }
 
     fn is_attached(&self, entity: Entity) -> bool {
@@ -132,10 +133,8 @@ where
         Storage::get_mut(self, entity).map(AsAny::as_any_mut)
     }
 
-    fn remove(&mut self, entity: Entity) -> Option<NonNull<dyn Any>> {
-        let component = Storage::remove(self, entity)?;
-        let component = ManuallyDrop::new(component);
-        Some(NonNull::from(&component))
+    fn remove(&mut self, entity: Entity) {
+        let _component = Storage::remove(self, entity);
     }
 
     fn clear(&mut self) {
