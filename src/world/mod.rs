@@ -10,7 +10,7 @@ use crate::{
         builder::StateEntityBuilder,
         entry::{EntityEntry, EntityEntryMut},
         error::{NotPresentError, NotPresentResult},
-        registry::Registry as Entities,
+        registry::{Registry as Entities, TryRegistry as TryEntities},
         Entity,
     },
     resource::{
@@ -168,6 +168,54 @@ where
 
 impl<E, C, R> World<E, C, R>
 where
+    E: TryEntities,
+{
+    /// Tries to create new empty entity in the current world.
+    ///
+    /// Newly created entity is empty, so it has no components attached to it.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the world will fail to create new entity.
+    /// Conditions of failure are provided by implementation of the entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`create`][World::create()] method.
+    pub fn try_create(&mut self) -> Result<Entity, E::Err> {
+        self.entities.try_create()
+    }
+
+    /// Tries to spawn a new entity and return a corresponding [entry](EntityEntryMut).
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the world will fail to create new entity.
+    /// Conditions of failure are provided by implementation of the entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`spawn`][World::spawn()] method.
+    pub fn try_spawn(&mut self) -> Result<EntityEntryMut<'_, E, C>, E::Err> {
+        let Self {
+            entities,
+            components,
+            resources: _,
+        } = self;
+        EntityEntryMut::try_spawn(entities, components)
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
     C: Components,
 {
     /// Registers the component in the current world with provided component storage.
@@ -255,7 +303,7 @@ where
     ///
     /// # Errors
     ///
-    /// This function will return an error if the world failed to insert provided resource.
+    /// This function will return an error if the world will fail to insert provided resource.
     /// Conditions of failure are provided by implementation of the resource registry.
     ///
     /// # Examples

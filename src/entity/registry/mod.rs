@@ -50,3 +50,28 @@ pub trait Registry: Send + Sync {
     /// Returns an iterator of alive entities created by the registry.
     fn iter(&self) -> Self::Iter;
 }
+
+/// Extension of entity [registry](Registry) which allows to implement fallible operations for the registry.
+pub trait TryRegistry: Registry {
+    /// The type of error which can be returned on failure.
+    type Err;
+
+    /// Tries to create new entity which is registered in the registry.
+    ///
+    /// This method can reuse indices from destroyed entities,
+    /// but resulting key should be unique.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the registry will fail to create new entity.
+    /// Conditions of failure are provided by implementation of the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`create`][Registry::create()] method.
+    fn try_create(&mut self) -> Result<Entity, Self::Err>;
+}

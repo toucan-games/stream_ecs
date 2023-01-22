@@ -77,7 +77,7 @@ pub trait Registry: Send + Sync {
 
 /// Extension of resource [registry](Registry) which allows to implement fallible operations for the registry.
 pub trait TryRegistry: Registry {
-    /// The tpe of error which can be returned on failure.
+    /// The type of error which can be returned on failure.
     type Err;
 
     /// Tries to insert provided resource to the registry.
@@ -85,7 +85,7 @@ pub trait TryRegistry: Registry {
     ///
     /// # Errors
     ///
-    /// This function will return an error if the registry failed to insert provided resource.
+    /// This function will return an error if the registry will fail to insert provided resource.
     /// Conditions of failure are provided by implementation of the registry.
     ///
     /// # Examples

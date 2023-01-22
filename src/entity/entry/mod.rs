@@ -6,7 +6,10 @@ use crate::component::{
     registry::Registry as Components,
 };
 
-use super::{registry::Registry as Entities, Entity};
+use super::{
+    registry::{Registry as Entities, TryRegistry as TryEntities},
+    Entity,
+};
 
 /// Entry of the specific [entity](Entity).
 ///
@@ -37,7 +40,7 @@ where
         None
     }
 
-    /// Creates new entry of newly created entity.
+    /// Creates new entity and an entry for it.
     ///
     /// New entity will be created by provided entity registry.
     pub fn spawn(entities: &'state mut E, components: &'state C) -> Self {
@@ -47,6 +50,37 @@ where
             entities,
             components,
         }
+    }
+}
+
+impl<'state, E, C> EntityEntry<'state, E, C>
+where
+    E: TryEntities,
+{
+    /// Tries to create new entity and an entry for it.
+    ///
+    /// New entity will be created by provided entity registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity registry will fail to create new entity.
+    /// Conditions of failure are provided by implementation of provided entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`spawn`][EntityEntry::spawn()] method.
+    pub fn try_spawn(entities: &'state mut E, components: &'state C) -> Result<Self, E::Err> {
+        let entity = entities.try_create()?;
+        let entry = Self {
+            entity,
+            entities,
+            components,
+        };
+        Ok(entry)
     }
 }
 
@@ -160,7 +194,7 @@ where
         None
     }
 
-    /// Creates new mutable entry of newly created entity.
+    /// Creates new entity and a mutable entry for it.
     ///
     /// New entity will be created by provided entity registry.
     pub fn spawn(entities: &'state mut E, components: &'state mut C) -> Self {
@@ -183,6 +217,37 @@ where
             .destroy(entity)
             .expect("entity should present in the registry");
         entity
+    }
+}
+
+impl<'state, E, C> EntityEntryMut<'state, E, C>
+where
+    E: TryEntities,
+{
+    /// Tries to create new entity and a mutable entry for it.
+    ///
+    /// New entity will be created by provided entity registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity registry will fail to create new entity.
+    /// Conditions of failure are provided by implementation of provided entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`spawn`][EntityEntryMut::spawn()] method.
+    pub fn try_spawn(entities: &'state mut E, components: &'state mut C) -> Result<Self, E::Err> {
+        let entity = entities.try_create()?;
+        let entry = Self {
+            entity,
+            entities,
+            components,
+        };
+        Ok(entry)
     }
 }
 
