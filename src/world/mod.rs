@@ -97,24 +97,12 @@ impl<E, C, R> World<E, C, R> {
 impl<E, C, R> World<E, C, R>
 where
     E: Entities,
-    C: Components,
-    R: Resources,
 {
     /// Creates new empty entity in the current world.
     ///
     /// Newly created entity is empty, so it has no components attached to it.
     pub fn create(&mut self) -> Entity {
         self.entities.create()
-    }
-
-    /// Creates an empty [entity builder](StateEntityBuilder), which allows to create new entity *lazily*.
-    pub fn builder(&mut self) -> StateEntityBuilder<'_, E, C> {
-        let Self {
-            entities,
-            components,
-            resources: _,
-        } = self;
-        StateEntityBuilder::new(entities, components)
     }
 
     /// Creates an [entry](EntityEntry) for the provided entity.
@@ -173,21 +161,12 @@ where
     pub fn destroy(&mut self, entity: Entity) -> NotPresentResult<()> {
         self.entities.destroy(entity)
     }
+}
 
-    /// Checks if the world contains no entities, components or resources.
-    pub fn is_empty(&self) -> bool {
-        // skip any checks for components:
-        // if there is no entities, component registry can be filled with some data from the removed entities
-        self.entities.is_empty() && self.resources.is_empty()
-    }
-
-    /// Clears the current world, destroying all entities, their components and all resources of the world.
-    pub fn clear(&mut self) {
-        self.entities.clear();
-        self.components.clear();
-        self.resources.clear();
-    }
-
+impl<E, C, R> World<E, C, R>
+where
+    C: Components,
+{
     /// Registers the component in the current world with provided component storage.
     /// Returns previous value of the storage, or [`None`] if the component was not registered.
     pub fn register<T>(&mut self, storage: T::Storage) -> Option<T::Storage>
@@ -212,6 +191,71 @@ where
         T: Component,
     {
         self.components.unregister::<T>()
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    R: Resources,
+{
+    /// Insert provided resource into the current world.
+    /// Returns previous value of the resource, or [`None`] if the resource was not in the world.
+    pub fn insert_resource<T>(&mut self, resource: T) -> Option<T>
+    where
+        T: Resource,
+    {
+        self.resources.insert(resource)
+    }
+
+    /// Checks if the resource was previously inserted in the current world.
+    pub fn contains_resource<T>(&self) -> bool
+    where
+        T: Resource,
+    {
+        self.resources.contains::<T>()
+    }
+
+    /// Removes the resource from the current world and returns removed resource.
+    /// Returns [`None`] if the resource was not in the world.
+    pub fn remove_resource<T>(&mut self) -> Option<T>
+    where
+        T: Resource,
+    {
+        self.resources.remove()
+    }
+
+    /// Retrieves a reference to the inserted resource.
+    /// Returns [`None`] if the resource was not inserted in the world.
+    pub fn get_resource<T>(&self) -> Option<&T>
+    where
+        T: Resource,
+    {
+        self.resources.get()
+    }
+
+    /// Retrieves a mutable reference to the inserted resource.
+    /// Returns [`None`] if the resource was not inserted in the world.
+    pub fn get_resource_mut<T>(&mut self) -> Option<&mut T>
+    where
+        T: Resource,
+    {
+        self.resources.get_mut()
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    E: Entities,
+    C: Components,
+{
+    /// Creates an empty [entity builder](StateEntityBuilder), which allows to create new entity *lazily*.
+    pub fn builder(&mut self) -> StateEntityBuilder<'_, E, C> {
+        let Self {
+            entities,
+            components,
+            resources: _,
+        } = self;
+        StateEntityBuilder::new(entities, components)
     }
 
     /// Attaches provided bundle to the entity in the world.
@@ -381,48 +425,23 @@ where
         let bundle = B::get_mut(&mut self.components, entity)?;
         Ok(bundle)
     }
+}
 
-    /// Insert provided resource into the current world.
-    /// Returns previous value of the resource, or [`None`] if the resource was not in the world.
-    pub fn insert_resource<T>(&mut self, resource: T) -> Option<T>
-    where
-        T: Resource,
-    {
-        self.resources.insert(resource)
+impl<E, C, R> World<E, C, R>
+where
+    E: Entities,
+    C: Components,
+    R: Resources,
+{
+    /// Checks if the world contains no entities, components or resources.
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty() && self.components.is_empty() && self.resources.is_empty()
     }
 
-    /// Checks if the resource was previously inserted in the current world.
-    pub fn contains_resource<T>(&self) -> bool
-    where
-        T: Resource,
-    {
-        self.resources.contains::<T>()
-    }
-
-    /// Removes the resource from the current world and returns removed resource.
-    /// Returns [`None`] if the resource was not in the world.
-    pub fn remove_resource<T>(&mut self) -> Option<T>
-    where
-        T: Resource,
-    {
-        self.resources.remove()
-    }
-
-    /// Retrieves a reference to the inserted resource.
-    /// Returns [`None`] if the resource was not inserted in the world.
-    pub fn get_resource<T>(&self) -> Option<&T>
-    where
-        T: Resource,
-    {
-        self.resources.get()
-    }
-
-    /// Retrieves a mutable reference to the inserted resource.
-    /// Returns [`None`] if the resource was not inserted in the world.
-    pub fn get_resource_mut<T>(&mut self) -> Option<&mut T>
-    where
-        T: Resource,
-    {
-        self.resources.get_mut()
+    /// Clears the current world, destroying all entities, their components and all resources of the world.
+    pub fn clear(&mut self) {
+        self.entities.clear();
+        self.components.clear();
+        self.resources.clear();
     }
 }
