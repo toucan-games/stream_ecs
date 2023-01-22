@@ -88,7 +88,7 @@ where
     where
         C: Components,
     {
-        let Some(storage) = components.storage_mut::<T>() else {
+        let Some(storage) = components.get_mut::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
         let component = storage.attach(entity, component);
@@ -99,7 +99,7 @@ where
     where
         C: Components,
     {
-        let Some(storage) = components.storage_mut::<T>() else {
+        let Some(storage) = components.get_mut::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
         let component = storage.remove(entity);
@@ -110,7 +110,7 @@ where
     where
         C: Components,
     {
-        let Some(storage) = components.storage::<T>() else {
+        let Some(storage) = components.get::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
         let is_attached = storage.is_attached(entity);
@@ -181,7 +181,7 @@ where
     where
         C: Components,
     {
-        let Some(storage) = components.storage::<T>() else {
+        let Some(storage) = components.get::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
         let component = storage.get(entity);
@@ -199,7 +199,7 @@ where
     where
         C: Components,
     {
-        let Some(storage) = components.storage_mut::<T>() else {
+        let Some(storage) = components.get_mut::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
         let component = storage.get_mut(entity);

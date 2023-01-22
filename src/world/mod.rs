@@ -3,7 +3,7 @@
 use crate::{
     component::{
         bundle::{Bundle, GetBundle},
-        registry::Registry as Components,
+        registry::{Registry as Components, TryRegistry as TryComponents},
         Component,
     },
     entity::{
@@ -242,6 +242,33 @@ where
         T: Component,
     {
         self.components.unregister::<T>()
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    C: TryComponents,
+{
+    /// tries to register the component in the current world with provided component storage.
+    /// Returns previous value of the storage, or [`None`] if the component was not registered.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the world will fail to register provided component.
+    /// Conditions of failure are provided by implementation of the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`register`][World::register()] method.
+    pub fn try_register<T>(&mut self, storage: T::Storage) -> Result<Option<T::Storage>, C::Err>
+    where
+        T: Component,
+    {
+        self.components.try_register::<T>(storage)
     }
 }
 
