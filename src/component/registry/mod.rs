@@ -38,11 +38,7 @@ pub trait Registry: Send + Sync {
         C: Component;
 
     /// Clears the registry, removing all component storages in it.
-    fn clear(&mut self) {
-        for storage in self.iter_mut() {
-            storage.clear()
-        }
-    }
+    fn clear(&mut self);
 
     /// Removes all attached components from the entity which makes the entity empty.
     fn remove_all(&mut self, entity: Entity) {
