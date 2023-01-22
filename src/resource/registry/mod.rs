@@ -74,3 +74,28 @@ pub trait Registry: Send + Sync {
     /// Returns an iterator of mutable references of all the resources contained in the registry.
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
+
+/// Extension of resource [registry](Registry) which allows to implement fallible operations for the registry.
+pub trait TryRegistry: Registry {
+    /// The tpe of error which can be returned on failure.
+    type Err;
+
+    /// Tries to insert provided resource to the registry.
+    /// Returns previous value of the resource, or [`None`] if the resource was not in the registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the registry failed to insert provided resource.
+    /// Conditions of failure are provided by implementation of the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`insert`][Registry::insert()] method.
+    fn try_insert<R>(&mut self, resource: R) -> Result<Option<R>, Self::Err>
+    where
+        R: Resource;
+}

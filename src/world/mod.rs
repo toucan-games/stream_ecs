@@ -13,7 +13,10 @@ use crate::{
         registry::Registry as Entities,
         Entity,
     },
-    resource::{registry::Registry as Resources, Resource},
+    resource::{
+        registry::{Registry as Resources, TryRegistry as TryResources},
+        Resource,
+    },
 };
 
 use self::error::EntityResult;
@@ -240,6 +243,33 @@ where
         T: Resource,
     {
         self.resources.get_mut()
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    R: TryResources,
+{
+    /// Tries to insert provided resource into the current world.
+    /// Returns previous value of the resource, or [`None`] if the resource was not in the world.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the world failed to insert provided resource.
+    /// Conditions of failure are provided by implementation of the resource registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`insert_resource`][World::insert_resource()] method.
+    pub fn try_insert_resource<T>(&mut self, resource: T) -> Result<Option<T>, R::Err>
+    where
+        T: Resource,
+    {
+        self.resources.try_insert(resource)
     }
 }
 
