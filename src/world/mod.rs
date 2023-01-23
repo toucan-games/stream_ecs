@@ -477,8 +477,8 @@ where
             let error = NotPresentError::new(entity);
             return Err(error);
         }
-        let unit = self.components.remove_all(entity);
-        Ok(unit)
+        self.components.remove_all(entity);
+        Ok(())
     }
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
