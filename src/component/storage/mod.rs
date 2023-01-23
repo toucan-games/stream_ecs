@@ -6,7 +6,10 @@ use as_any::AsAny;
 
 use crate::entity::Entity;
 
-use super::Component;
+use super::{
+    error::{TypeMismatchError, TypeMismatchResult},
+    Component,
+};
 
 /// Storage of some component type in ECS.
 ///
@@ -79,8 +82,19 @@ pub trait Storage: Send + Sync + 'static {
 pub trait ErasedStorage: Send + Sync + AsAny {
     /// Attaches provided component to the entity
     /// only if type of provided component matches the type of component stored in the storage.
-    // FIXME: replace return type with `Option<impl Component>` when stabilized
-    fn attach(&mut self, entity: Entity, component: &dyn Any);
+    ///
+    /// # Errors
+    ///
+    /// This method will return an error if type of provided component
+    /// does not match the type of component stored in the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    // FIXME: replace result `Ok` type with `Option<impl Component>` when stabilized
+    fn attach(&mut self, entity: Entity, component: &dyn Any) -> TypeMismatchResult<()>;
 
     /// Checks if any component is attached to provided entity.
     fn is_attached(&self, entity: Entity) -> bool;
@@ -112,13 +126,13 @@ pub trait ErasedStorage: Send + Sync + AsAny {
 impl<T> ErasedStorage for T
 where
     T: Storage,
-    T::Item: AsAny,
 {
-    fn attach(&mut self, entity: Entity, component: &dyn Any) {
+    fn attach(&mut self, entity: Entity, component: &dyn Any) -> TypeMismatchResult<()> {
         let Some(component) = component.downcast_ref().copied() else {
-            return;
+            return Err(TypeMismatchError::new::<T::Item>(component));
         };
         let _component = Storage::attach(self, entity, component);
+        Ok(())
     }
 
     fn is_attached(&self, entity: Entity) -> bool {
