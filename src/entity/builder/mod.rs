@@ -90,8 +90,9 @@ where
         C: Components,
     {
         let Self(bundles) = self;
+        T::check_all(components)?;
+
         let entity = entities.create();
-        // TODO check existence of all the components before attaching
         bundles.attach_all(components, entity)?;
         Ok(entity)
     }
@@ -201,12 +202,23 @@ impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilde
 
 #[doc(hidden)]
 pub trait Bundles: Append {
+    fn check_all<C>(components: &mut C) -> NotRegisteredResult<()>
+    where
+        C: Components;
+
     fn attach_all<C>(self, components: &mut C, entity: Entity) -> NotRegisteredResult<()>
     where
         C: Components;
 }
 
 impl Bundles for Nil {
+    fn check_all<C>(_: &mut C) -> NotRegisteredResult<()>
+    where
+        C: Components,
+    {
+        Ok(())
+    }
+
     fn attach_all<C>(self, _: &mut C, _: Entity) -> NotRegisteredResult<()>
     where
         C: Components,
@@ -220,6 +232,14 @@ where
     Head: Bundle,
     Tail: Bundles,
 {
+    fn check_all<C>(components: &mut C) -> NotRegisteredResult<()>
+    where
+        C: Components,
+    {
+        Head::is_attached(components, Entity::null())?;
+        Tail::check_all(components)
+    }
+
     fn attach_all<C>(self, components: &mut C, entity: Entity) -> NotRegisteredResult<()>
     where
         C: Components,
