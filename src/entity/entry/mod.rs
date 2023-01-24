@@ -1,8 +1,8 @@
 //! Provides an entry to the entity.
 
 use crate::component::{
-    bundle::{Bundle, GetBundle},
-    error::NotRegisteredResult,
+    bundle::{Bundle, GetBundle, TryBundle},
+    error::{NotRegisteredResult, TryBundleResult},
     registry::Registry as Components,
 };
 
@@ -324,6 +324,33 @@ where
         let entity = self.entity;
         let components = &mut *self.components;
         B::attach(components, entity, bundle)
+    }
+
+    /// Tries to attach provided bundle to the underlying entity.
+    ///
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of bundle components was not registered in the component registry
+    /// or storage of some component will fail to attach it to the entity.
+    /// Conditions of failure are provided by implementation of the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`attach`][EntityEntryMut::attach()] method.
+    pub fn try_attach<B>(&mut self, bundle: B) -> TryBundleResult<Option<B>, B::Err>
+    where
+        B: TryBundle,
+    {
+        let entity = self.entity;
+        let components = &mut *self.components;
+        B::try_attach(components, entity, bundle)
     }
 
     /// Checks if all components of the bundle are attached to the underlying entity.

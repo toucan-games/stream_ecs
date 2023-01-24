@@ -2,7 +2,7 @@
 
 use crate::{
     component::{
-        bundle::{Bundle, GetBundle},
+        bundle::{Bundle, GetBundle, TryBundle},
         registry::{Registry as Components, TryRegistry as TryComponents},
         Component,
     },
@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-use self::error::EntityResult;
+use self::error::{EntityResult, TryAttachResult};
 
 pub mod error;
 
@@ -387,6 +387,37 @@ where
             return Err(error.into());
         }
         let bundle = B::attach(&mut self.components, entity, bundle)?;
+        Ok(bundle)
+    }
+
+    /// Tries to attach provided bundle to the entity in the world.
+    ///
+    /// Returns previous bundle data attached to the entity earlier.
+    /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if if provided entity does not present in the world,
+    /// one of bundle components was not registered in the world
+    /// or storage of some component of bundle will fail to attach it to the entity.
+    /// Conditions of failure are provided by implementation of the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`attach`][World::attach()] method.
+    pub fn try_attach<B>(&mut self, entity: Entity, bundle: B) -> TryAttachResult<Option<B>, B::Err>
+    where
+        B: TryBundle,
+    {
+        if !self.entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error.into());
+        }
+        let bundle = B::try_attach(&mut self.components, entity, bundle)?;
         Ok(bundle)
     }
 

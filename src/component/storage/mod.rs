@@ -71,6 +71,34 @@ pub trait Storage: Send + Sync + 'static {
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
+/// Extension of [storage](Storage) which allows to implement fallible operations for the storage.
+pub trait TryStorage: Storage {
+    /// The type of error which can be returned on failure.
+    type Err;
+
+    // TODO: define methods using this method in another parts of the crate
+    /// Tries to attach provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the storage will fail to attach provided component to the entity.
+    /// Conditions of failure are provided by implementation of the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`attach`][Storage::attach()] method.
+    fn try_attach(
+        &mut self,
+        entity: Entity,
+        component: Self::Item,
+    ) -> Result<Option<Self::Item>, Self::Err>;
+}
+
 /// Erased variant of [storage](self::Storage) of some component type in ECS.
 ///
 /// This trait represents container of components attached to some entities.

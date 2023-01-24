@@ -39,6 +39,36 @@ impl core::fmt::Display for NotRegisteredError {
     }
 }
 
+/// The result type which is returned when trying to attach a bundle to the entity.
+pub type TryBundleResult<T, Err> = Result<T, TryBundleError<Err>>;
+
+/// The error type which is returned when trying to attach a bundle to the entity.
+#[derive(Debug, Clone, Copy)]
+pub enum TryBundleError<Err> {
+    /// Component was not registered in the world.
+    NotRegistered(NotRegisteredError),
+    /// Component storage failed to attach a bundle to the entity.
+    Storage(Err),
+}
+
+impl<Err> From<NotRegisteredError> for TryBundleError<Err> {
+    fn from(error: NotRegisteredError) -> Self {
+        Self::NotRegistered(error)
+    }
+}
+
+impl<Err> core::fmt::Display for TryBundleError<Err>
+where
+    Err: core::fmt::Display,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            TryBundleError::NotRegistered(error) => error.fmt(f),
+            TryBundleError::Storage(error) => write!(f, "Storage failure: {error}"),
+        }
+    }
+}
+
 /// The result type which is returned when type of component could be mismatched
 /// when trying to attach it to the entity with [erased storage](super::storage::ErasedStorage).
 pub type TypeMismatchResult<T> = Result<T, TypeMismatchError>;
