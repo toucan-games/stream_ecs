@@ -63,8 +63,10 @@ where
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            TryBundleError::NotRegistered(error) => error.fmt(f),
-            TryBundleError::Storage(error) => write!(f, "Storage failure: {error}"),
+            Self::NotRegistered(error) => error.fmt(f),
+            Self::Storage(error) => {
+                write!(f, "Storage failed to attach a component: {error}")
+            }
         }
     }
 }

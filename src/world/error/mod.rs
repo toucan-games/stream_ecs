@@ -32,8 +32,8 @@ impl From<NotPresentError> for EntityError {
 impl core::fmt::Display for EntityError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            EntityError::NotRegistered(error) => error.fmt(f),
-            EntityError::NotPresent(error) => error.fmt(f),
+            Self::NotRegistered(error) => error.fmt(f),
+            Self::NotPresent(error) => error.fmt(f),
         }
     }
 }
@@ -79,9 +79,9 @@ where
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            TryAttachError::NotRegistered(error) => error.fmt(f),
-            TryAttachError::Storage(error) => error.fmt(f),
-            TryAttachError::NotPresent(error) => error.fmt(f),
+            Self::NotRegistered(error) => error.fmt(f),
+            Self::Storage(error) => write!(f, "Storage failed to attach a component: {error}"),
+            Self::NotPresent(error) => error.fmt(f),
         }
     }
 }

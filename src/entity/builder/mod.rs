@@ -1,12 +1,22 @@
 //! Provides a builder pattern implementation for entities.
 
+use either::Either;
 use hlist2::{ops::Append, Cons, Nil};
 
 use crate::component::{
-    bundle::Bundle, error::NotRegisteredResult, registry::Registry as Components,
+    bundle::{Bundle, TryBundle},
+    error::{NotRegisteredResult, TryBundleError, TryBundleResult},
+    registry::Registry as Components,
 };
 
-use super::{registry::Registry as Entities, Entity};
+use self::error::{TryBuildError, TryBuildResult, TryEntityBuildError, TryEntityBuildResult};
+
+use super::{
+    registry::{Registry as Entities, TryRegistry as TryEntities},
+    Entity,
+};
+
+pub mod error;
 
 /// Entity builder which creates new entity with provided components.
 ///
@@ -68,6 +78,7 @@ where
     T: Bundles,
 {
     /// Builds new entity from the builder.
+    ///
     /// New entity will be created by provided entity registry, while components
     /// will be attached to the newly created entity with provided component registry.
     ///
@@ -94,6 +105,131 @@ where
 
         let entity = entities.create();
         bundles.attach_all(components, entity)?;
+        Ok(entity)
+    }
+
+    /// Tries to build new entity from the builder.
+    ///
+    /// New entity will be created by provided entity registry, while components
+    /// will be attached to the newly created entity with provided component registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry or provided entity registry will fail to create new entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
+    /// in the order of their insertion.
+    ///
+    /// This is the fallible version of [`build`][EntityBuilder::build()] method.
+    pub fn try_entity_build<E, C>(
+        self,
+        entities: &mut E,
+        components: &mut C,
+    ) -> TryEntityBuildResult<Entity, E::Err>
+    where
+        E: TryEntities,
+        C: Components,
+    {
+        let Self(bundles) = self;
+        T::check_all(components)?;
+
+        let entity = match entities.try_create() {
+            Ok(entity) => entity,
+            Err(err) => return Err(TryEntityBuildError::Entities(err)),
+        };
+        bundles.attach_all(components, entity)?;
+        Ok(entity)
+    }
+}
+
+impl<T> EntityBuilder<T>
+where
+    T: TryBundles,
+{
+    /// Tries to build new entity from the builder.
+    ///
+    /// New entity will be created by provided entity registry, while components
+    /// will be attached to the newly created entity with provided component registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry
+    /// or storage of some component will fail to attach it to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
+    /// in the order of their insertion.
+    ///
+    /// This is the fallible version of [`build`][EntityBuilder::build()] method.
+    pub fn try_bundle_build<E, C>(
+        self,
+        entities: &mut E,
+        components: &mut C,
+    ) -> TryBundleResult<Entity, T::Err>
+    where
+        E: Entities,
+        C: Components,
+    {
+        let Self(bundles) = self;
+        T::check_all(components)?;
+
+        let entity = entities.create();
+        bundles.try_attach_all(components, entity)?;
+        Ok(entity)
+    }
+
+    /// Tries to build new entity from the builder.
+    ///
+    /// New entity will be created by provided entity registry, while components
+    /// will be attached to the newly created entity with provided component registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry,
+    /// provided entity registry will fail to create new entity
+    /// or storage of some component will fail to attach it to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
+    /// in the order of their insertion.
+    ///
+    /// This is the fallible version of [`build`][EntityBuilder::build()] method.
+    pub fn try_build<E, C>(
+        self,
+        entities: &mut E,
+        components: &mut C,
+    ) -> TryBuildResult<Entity, E::Err, T::Err>
+    where
+        E: TryEntities,
+        C: Components,
+    {
+        let Self(bundles) = self;
+        T::check_all(components)?;
+
+        let entity = match entities.try_create() {
+            Ok(entity) => entity,
+            Err(err) => return Err(TryBuildError::Entities(err)),
+        };
+        bundles.try_attach_all(components, entity)?;
         Ok(entity)
     }
 }
@@ -188,6 +324,107 @@ where
     }
 }
 
+impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
+where
+    T: Bundles,
+    E: TryEntities,
+    C: Components,
+{
+    /// Tries to build new entity from the builder.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry or the entity registry will fail to create new entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
+    /// in the order of their insertion.
+    ///
+    /// This is the fallible version of [`build`][StateEntityBuilder::build()] method.
+    pub fn try_entity_build(self) -> TryEntityBuildResult<Entity, E::Err> {
+        let Self {
+            entities,
+            components,
+            builder,
+        } = self;
+        builder.try_entity_build(entities, components)
+    }
+}
+
+impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
+where
+    T: TryBundles,
+    E: Entities,
+    C: Components,
+{
+    /// Tries to build new entity from the builder.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry
+    /// or storage of some component will fail to attach it to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
+    /// in the order of their insertion.
+    ///
+    /// This is the fallible version of [`build`][StateEntityBuilder::build()] method.
+    pub fn try_bundle_build(self) -> TryBundleResult<Entity, T::Err> {
+        let Self {
+            entities,
+            components,
+            builder,
+        } = self;
+        builder.try_bundle_build(entities, components)
+    }
+}
+
+impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
+where
+    T: TryBundles,
+    E: TryEntities,
+    C: Components,
+{
+    /// Tries to build new entity from the builder.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in provided bundles
+    /// was not registered in the component registry, the entity registry will fail to create new entity
+    /// or storage of some component will fail to attach it to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// Note that the contents of inserted bundles are attached to the newly created entity
+    /// in the order of their insertion.
+    ///
+    /// This is the fallible version of [`build`][StateEntityBuilder::build()] method.
+    pub fn try_build(self) -> TryBuildResult<Entity, E::Err, T::Err> {
+        let Self {
+            entities,
+            components,
+            builder,
+        } = self;
+        builder.try_build(entities, components)
+    }
+}
+
 /// Converts stateful entity builder into stateless.
 impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilder<T> {
     fn from(builder: StateEntityBuilder<'state, E, C, T>) -> Self {
@@ -247,5 +484,65 @@ where
         let Cons(head, tail) = self;
         Head::attach(components, entity, head)?;
         tail.attach_all(components, entity)
+    }
+}
+
+#[doc(hidden)]
+pub trait TryBundles: Bundles {
+    type Err;
+
+    fn try_attach_all<C>(
+        self,
+        components: &mut C,
+        entity: Entity,
+    ) -> TryBundleResult<(), Self::Err>
+    where
+        C: Components;
+}
+
+impl TryBundles for Nil {
+    type Err = core::convert::Infallible;
+
+    fn try_attach_all<C>(self, _: &mut C, _: Entity) -> TryBundleResult<(), Self::Err>
+    where
+        C: Components,
+    {
+        Ok(())
+    }
+}
+
+impl<Head, Tail> TryBundles for Cons<Head, Tail>
+where
+    Head: TryBundle,
+    Tail: TryBundles,
+{
+    type Err = Either<Head::Err, Tail::Err>;
+
+    fn try_attach_all<C>(self, components: &mut C, entity: Entity) -> TryBundleResult<(), Self::Err>
+    where
+        C: Components,
+    {
+        let Cons(head, tail) = self;
+        match Head::try_attach(components, entity, head) {
+            Ok(_) => (),
+            Err(error) => match error {
+                TryBundleError::NotRegistered(error) => return Err(error.into()),
+                TryBundleError::Storage(error) => {
+                    let error = Either::Left(error);
+                    return Err(TryBundleError::Storage(error));
+                }
+            },
+        }
+        match tail.try_attach_all(components, entity) {
+            Ok(_) => (),
+            Err(error) => match error {
+                TryBundleError::NotRegistered(error) => return Err(error.into()),
+                TryBundleError::Storage(error) => {
+                    let error = Either::Right(error);
+                    return Err(TryBundleError::Storage(error));
+                }
+            },
+        }
+        Ok(())
     }
 }
