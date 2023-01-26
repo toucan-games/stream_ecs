@@ -1,4 +1,4 @@
-//! Entity registry implementation backed by an array.
+//! Basic entity registry implementation backed by an array.
 
 use core::{
     iter::{Enumerate, FusedIterator},
@@ -9,10 +9,9 @@ use arrayvec::ArrayVec;
 
 use crate::entity::{
     error::{NotPresentError, NotPresentResult},
+    registry::{Registry, TryRegistry},
     Entity,
 };
-
-use super::{Registry, TryRegistry};
 
 #[derive(Debug, Clone, Copy)]
 enum SlotEntry<T> {
@@ -90,12 +89,12 @@ impl<const N: usize> ArrayRegistry<N> {
     ///
     /// assert!(registry.is_empty());
     /// ```
-    pub fn drain(&mut self) -> ArrayRegistryDrain<'_, N> {
+    pub fn drain(&mut self) -> Drain<'_, N> {
         let iter = self.slots.drain(..).enumerate();
         let num_left = self.len;
         self.free_head = 0;
         self.len = 0;
-        ArrayRegistryDrain { iter, num_left }
+        Drain { iter, num_left }
     }
 }
 
@@ -154,12 +153,12 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         self.len = 0;
     }
 
-    type Iter<'a> = ArrayRegistryIter<'a> where Self: 'a;
+    type Iter<'a> = Iter<'a> where Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         let iter = self.slots.iter().enumerate();
         let num_left = self.len;
-        ArrayRegistryIter { iter, num_left }
+        Iter { iter, num_left }
     }
 }
 
@@ -202,7 +201,7 @@ impl<const N: usize> TryRegistry for ArrayRegistry<N> {
 impl<'a, const N: usize> IntoIterator for &'a ArrayRegistry<N> {
     type Item = Entity;
 
-    type IntoIter = ArrayRegistryIter<'a>;
+    type IntoIter = Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
@@ -212,23 +211,23 @@ impl<'a, const N: usize> IntoIterator for &'a ArrayRegistry<N> {
 impl<const N: usize> IntoIterator for ArrayRegistry<N> {
     type Item = Entity;
 
-    type IntoIter = ArrayRegistryIntoIter<N>;
+    type IntoIter = IntoIter<N>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.slots.into_iter().enumerate();
         let num_left = self.len;
-        ArrayRegistryIntoIter { iter, num_left }
+        IntoIter { iter, num_left }
     }
 }
 
 /// Iterator over alive entities contained in the array registry.
 #[derive(Debug, Clone)]
-pub struct ArrayRegistryIter<'a> {
+pub struct Iter<'a> {
     iter: Enumerate<slice::Iter<'a, Slot<()>>>,
     num_left: u32,
 }
 
-impl Iterator for ArrayRegistryIter<'_> {
+impl Iterator for Iter<'_> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -250,7 +249,7 @@ impl Iterator for ArrayRegistryIter<'_> {
     }
 }
 
-impl DoubleEndedIterator for ArrayRegistryIter<'_> {
+impl DoubleEndedIterator for Iter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next_back()?;
@@ -265,21 +264,21 @@ impl DoubleEndedIterator for ArrayRegistryIter<'_> {
     }
 }
 
-impl ExactSizeIterator for ArrayRegistryIter<'_> {
+impl ExactSizeIterator for Iter<'_> {
     fn len(&self) -> usize {
         self.num_left as usize
     }
 }
 
-impl FusedIterator for ArrayRegistryIter<'_> {}
+impl FusedIterator for Iter<'_> {}
 
 /// Type of iterator in which array registry can be converted.
-pub struct ArrayRegistryIntoIter<const N: usize> {
+pub struct IntoIter<const N: usize> {
     iter: Enumerate<arrayvec::IntoIter<Slot<()>, N>>,
     num_left: u32,
 }
 
-impl<const N: usize> Iterator for ArrayRegistryIntoIter<N> {
+impl<const N: usize> Iterator for IntoIter<N> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -301,7 +300,7 @@ impl<const N: usize> Iterator for ArrayRegistryIntoIter<N> {
     }
 }
 
-impl<const N: usize> DoubleEndedIterator for ArrayRegistryIntoIter<N> {
+impl<const N: usize> DoubleEndedIterator for IntoIter<N> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next_back()?;
@@ -316,21 +315,21 @@ impl<const N: usize> DoubleEndedIterator for ArrayRegistryIntoIter<N> {
     }
 }
 
-impl<const N: usize> ExactSizeIterator for ArrayRegistryIntoIter<N> {
+impl<const N: usize> ExactSizeIterator for IntoIter<N> {
     fn len(&self) -> usize {
         self.num_left as usize
     }
 }
 
-impl<const N: usize> FusedIterator for ArrayRegistryIntoIter<N> {}
+impl<const N: usize> FusedIterator for IntoIter<N> {}
 
 /// A draining iterator for the array registry.
-pub struct ArrayRegistryDrain<'a, const N: usize> {
+pub struct Drain<'a, const N: usize> {
     iter: Enumerate<arrayvec::Drain<'a, Slot<()>, N>>,
     num_left: u32,
 }
 
-impl<const N: usize> Iterator for ArrayRegistryDrain<'_, N> {
+impl<const N: usize> Iterator for Drain<'_, N> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -352,7 +351,7 @@ impl<const N: usize> Iterator for ArrayRegistryDrain<'_, N> {
     }
 }
 
-impl<const N: usize> DoubleEndedIterator for ArrayRegistryDrain<'_, N> {
+impl<const N: usize> DoubleEndedIterator for Drain<'_, N> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next_back()?;
@@ -367,15 +366,18 @@ impl<const N: usize> DoubleEndedIterator for ArrayRegistryDrain<'_, N> {
     }
 }
 
-impl<const N: usize> ExactSizeIterator for ArrayRegistryDrain<'_, N> {
+impl<const N: usize> ExactSizeIterator for Drain<'_, N> {
     fn len(&self) -> usize {
         self.num_left as usize
     }
 }
 
-impl<const N: usize> FusedIterator for ArrayRegistryDrain<'_, N> {}
+impl<const N: usize> FusedIterator for Drain<'_, N> {}
 
-/// The type of error which is returned when array registry capacity was exceeded.
+/// The result type which is returned when array registry capacity was exceeded.
+pub type ArrayRegistryResult<T> = Result<T, ArrayRegistryError>;
+
+/// The error type which is returned when array registry capacity was exceeded.
 #[derive(Debug, Clone, Copy)]
 pub struct ArrayRegistryError;
 
