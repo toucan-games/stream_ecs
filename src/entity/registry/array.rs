@@ -74,6 +74,30 @@ impl<const N: usize> ArrayRegistry<N> {
     pub const fn capacity(&self) -> usize {
         self.slots.capacity()
     }
+
+    /// Create a draining iterator that removes all the entities from start to end.
+    /// Entities range is removed even if the iterator is not consumed until the end.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// for _ in 0..10 {
+    ///     registry.create();
+    /// }
+    /// registry.drain().take(3).for_each(|_| ());
+    ///
+    /// assert!(registry.is_empty());
+    /// ```
+    pub fn drain(&mut self) -> ArrayRegistryDrain<'_, N> {
+        let iter = self.slots.drain(..).enumerate();
+        let num_left = self.len;
+        self.free_head = 0;
+        self.len = 0;
+        ArrayRegistryDrain { iter, num_left }
+    }
 }
 
 impl<const N: usize> Registry for ArrayRegistry<N> {
@@ -301,6 +325,57 @@ impl<const N: usize> ExactSizeIterator for ArrayRegistryIntoIter<N> {
 
 impl<const N: usize> FusedIterator for ArrayRegistryIntoIter<N> {}
 
+/// A draining iterator for the array registry.
+pub struct ArrayRegistryDrain<'a, const N: usize> {
+    iter: Enumerate<arrayvec::Drain<'a, Slot<()>, N>>,
+    num_left: u32,
+}
+
+impl<const N: usize> Iterator for ArrayRegistryDrain<'_, N> {
+    type Item = Entity;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let entity = loop {
+            let (index, slot) = self.iter.next()?;
+            let Slot { entry, generation } = slot;
+            if let SlotEntry::Free { .. } = entry {
+                continue;
+            }
+            self.num_left -= 1;
+            break Entity::new(index as u32, generation);
+        };
+        Some(entity)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.num_left as usize;
+        (len, Some(len))
+    }
+}
+
+impl<const N: usize> DoubleEndedIterator for ArrayRegistryDrain<'_, N> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let entity = loop {
+            let (index, slot) = self.iter.next_back()?;
+            let Slot { entry, generation } = slot;
+            if let SlotEntry::Free { .. } = entry {
+                continue;
+            }
+            self.num_left -= 1;
+            break Entity::new(index as u32, generation);
+        };
+        Some(entity)
+    }
+}
+
+impl<const N: usize> ExactSizeIterator for ArrayRegistryDrain<'_, N> {
+    fn len(&self) -> usize {
+        self.num_left as usize
+    }
+}
+
+impl<const N: usize> FusedIterator for ArrayRegistryDrain<'_, N> {}
+
 /// The type of error which is returned when array registry capacity was exceeded.
 #[derive(Debug, Clone, Copy)]
 pub struct ArrayRegistryError;
@@ -390,5 +465,16 @@ mod tests {
 
         let entity = iter.find(|entity| entity.index() == 2);
         assert!(entity.is_none());
+    }
+
+    #[test]
+    fn drain() {
+        let mut registry = ArrayRegistry::<10>::new();
+        for _ in 0..10 {
+            registry.create();
+        }
+        registry.drain().take(3).for_each(|_| ());
+
+        assert!(registry.is_empty());
     }
 }
