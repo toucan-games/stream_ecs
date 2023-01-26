@@ -2,6 +2,8 @@
 
 use super::{error::NotPresentResult, Entity};
 
+pub mod array;
+
 /// Entity registry of the world.
 ///
 /// This trait represents type of container for unique entities of the current world.
@@ -45,10 +47,12 @@ pub trait Registry: Send + Sync {
     fn clear(&mut self);
 
     /// Type of iterator of alive entities created by the registry.
-    type Iter: Iterator<Item = Entity>;
+    type Iter<'a>: Iterator<Item = Entity>
+    where
+        Self: 'a;
 
     /// Returns an iterator of alive entities created by the registry.
-    fn iter(&self) -> Self::Iter;
+    fn iter(&self) -> Self::Iter<'_>;
 }
 
 /// Extension of entity [registry](Registry) which allows to implement fallible operations for the registry.
