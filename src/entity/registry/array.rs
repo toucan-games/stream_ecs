@@ -15,7 +15,6 @@ use crate::entity::{
 use super::{Registry, TryRegistry};
 
 #[derive(Debug, Clone, Copy)]
-#[allow(dead_code)]
 enum SlotEntry<T> {
     Free { next_free: u32 },
     Occupied { value: T },
@@ -130,9 +129,9 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         let Some(slot) = self.slots.get_mut(index) else {
             return Err(NotPresentError::new(entity));
         };
-        if let SlotEntry::Free { .. } = slot.entry {
+        let SlotEntry::Occupied { value } = slot.entry else {
             return Err(NotPresentError::new(entity));
-        }
+        };
         if slot.generation != entity.generation {
             return Err(NotPresentError::new(entity));
         }
@@ -142,7 +141,7 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         slot.generation += 1;
         self.free_head = entity.index;
         self.len -= 1;
-        Ok(())
+        Ok(value)
     }
 
     fn len(&self) -> usize {
