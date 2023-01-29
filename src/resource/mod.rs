@@ -1,5 +1,7 @@
 //! Provides utilities for resources in ECS.
 
+use as_any::AsAny;
+
 pub mod registry;
 
 /// Trait for data that can be stored as singleton in ECS
@@ -15,3 +17,11 @@ pub mod registry;
 ///
 /// [component]: crate::component::Component
 pub trait Resource: Send + Sync + 'static {}
+
+/// Erased variant of [resource](self::Resource) of some resource type in ECS.
+///
+/// Compared to [`Resource`] trait, this trait is guaranteed to be object safe, so it can be used as trait object.
+/// This trait is implemented for all the resources, so it can be used as trait object for any type of resource.
+pub trait ErasedResource: Send + Sync + AsAny {}
+
+impl<T> ErasedResource for T where T: Resource {}
