@@ -14,13 +14,13 @@ use crate::entity::{
 
 use super::ArrayRegistryError;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum SlotEntry<T> {
     Free { next_free: u32 },
     Occupied { value: T },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Slot<T> {
     entry: SlotEntry<T>,
     generation: u32,
@@ -91,11 +91,11 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         let Some(slot) = self.slots.get(index) else {
             return false;
         };
-        let &Slot { entry, generation } = slot;
+        let Slot { entry, generation } = slot;
         if let SlotEntry::Free { .. } = entry {
             return false;
         }
-        generation == entity.generation
+        *generation == entity.generation
     }
 
     fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
@@ -212,12 +212,12 @@ impl Iterator for Iter<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next()?;
-            let &Slot { entry, generation } = slot;
+            let Slot { entry, generation } = slot;
             if let SlotEntry::Free { .. } = entry {
                 continue;
             }
             self.num_left -= 1;
-            break Entity::new(index as u32, generation);
+            break Entity::new(index as u32, *generation);
         };
         Some(entity)
     }
@@ -232,12 +232,12 @@ impl DoubleEndedIterator for Iter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next_back()?;
-            let &Slot { entry, generation } = slot;
+            let Slot { entry, generation } = slot;
             if let SlotEntry::Free { .. } = entry {
                 continue;
             }
             self.num_left -= 1;
-            break Entity::new(index as u32, generation);
+            break Entity::new(index as u32, *generation);
         };
         Some(entity)
     }
@@ -305,6 +305,7 @@ impl<const N: usize> FusedIterator for IntoIter<N> {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn new() {
         let registry = ArrayRegistry::<10>::new();

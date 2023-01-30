@@ -8,6 +8,8 @@ pub use self::error::TypeMismatchError;
 
 use crate::{component::Component, entity::Entity};
 
+pub mod array;
+
 mod error;
 
 /// Storage of some component type in ECS.
