@@ -1,5 +1,7 @@
 //! Provides utilities for ECS worlds.
 
+pub use self::error::{EntityError, TryAttachError};
+
 use crate::{
     component::{
         bundle::{Bundle, GetBundle, TryBundle},
@@ -9,8 +11,7 @@ use crate::{
     entity::{
         builder::StateEntityBuilder,
         entry::{EntityEntry, EntityEntryMut},
-        error::{NotPresentError, NotPresentResult},
-        registry::{Registry as Entities, TryRegistry as TryEntities},
+        registry::{NotPresentError, Registry as Entities, TryRegistry as TryEntities},
         Entity,
     },
     resource::{
@@ -19,9 +20,7 @@ use crate::{
     },
 };
 
-use self::error::{EntityResult, TryAttachResult};
-
-pub mod error;
+mod error;
 
 /// ECS world — storage of [entities](Entity) and all the [data](Component) attached to them.
 ///
@@ -161,7 +160,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn destroy(&mut self, entity: Entity) -> NotPresentResult<()> {
+    pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
         self.entities.destroy(entity)
     }
 }
@@ -378,7 +377,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn attach<B>(&mut self, entity: Entity, bundle: B) -> EntityResult<Option<B>>
+    pub fn attach<B>(&mut self, entity: Entity, bundle: B) -> Result<Option<B>, EntityError>
     where
         B: Bundle,
     {
@@ -409,7 +408,11 @@ where
     /// ```
     ///
     /// This is the fallible version of [`attach`][World::attach()] method.
-    pub fn try_attach<B>(&mut self, entity: Entity, bundle: B) -> TryAttachResult<Option<B>, B::Err>
+    pub fn try_attach<B>(
+        &mut self,
+        entity: Entity,
+        bundle: B,
+    ) -> Result<Option<B>, TryAttachError<B::Err>>
     where
         B: TryBundle,
     {
@@ -433,7 +436,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn is_attached<B>(&self, entity: Entity) -> EntityResult<bool>
+    pub fn is_attached<B>(&self, entity: Entity) -> Result<bool, EntityError>
     where
         B: Bundle,
     {
@@ -457,7 +460,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn is_entity_empty(&self, entity: Entity) -> NotPresentResult<bool> {
+    pub fn is_entity_empty(&self, entity: Entity) -> Result<bool, NotPresentError> {
         if !self.entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error);
@@ -479,7 +482,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn remove<B>(&mut self, entity: Entity) -> EntityResult<Option<B>>
+    pub fn remove<B>(&mut self, entity: Entity) -> Result<Option<B>, EntityError>
     where
         B: Bundle,
     {
@@ -503,7 +506,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn remove_all(&mut self, entity: Entity) -> NotPresentResult<()> {
+    pub fn remove_all(&mut self, entity: Entity) -> Result<(), NotPresentError> {
         if !self.entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error);
@@ -525,7 +528,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get<B>(&self, entity: Entity) -> EntityResult<Option<B::Ref<'_>>>
+    pub fn get<B>(&self, entity: Entity) -> Result<Option<B::Ref<'_>>, EntityError>
     where
         B: GetBundle,
     {
@@ -550,7 +553,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get_mut<B>(&mut self, entity: Entity) -> EntityResult<Option<B::RefMut<'_>>>
+    pub fn get_mut<B>(&mut self, entity: Entity) -> Result<Option<B::RefMut<'_>>, EntityError>
     where
         B: GetBundle,
     {

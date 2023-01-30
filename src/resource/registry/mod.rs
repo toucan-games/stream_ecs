@@ -73,7 +73,7 @@ pub trait Registry: Send + Sync {
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
-/// Extension of resource [registry](Registry) which allows to implement fallible operations for the registry.
+/// Extension of resource registry which allows to implement fallible operations for the registry.
 pub trait TryRegistry: Registry {
     /// The type of error which can be returned on failure.
     type Err;

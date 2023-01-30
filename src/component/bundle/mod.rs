@@ -1,15 +1,16 @@
-//! Provides utilities for bundles - collection of components.
-
-use core::any::TypeId;
+//! Provides utilities for bundles — heterogenous collections of components.
 
 use crate::entity::Entity;
 
+pub use self::error::{NotRegisteredError, TryBundleError};
+
 use super::{
-    error::{NotRegisteredError, NotRegisteredResult, TryBundleError, TryBundleResult},
     registry::Registry as Components,
     storage::{Storage, TryStorage},
     Component,
 };
+
+mod error;
 
 /// Collection of components that can be attached to an entity one after another.
 ///
@@ -35,7 +36,7 @@ pub trait Bundle: Copy + Send + Sync + 'static {
         components: &mut C,
         entity: Entity,
         bundle: Self,
-    ) -> NotRegisteredResult<Option<Self>>
+    ) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components;
 
@@ -54,7 +55,7 @@ pub trait Bundle: Copy + Send + Sync + 'static {
     /// ```
     /// todo!()
     /// ```
-    fn remove<C>(components: &mut C, entity: Entity) -> NotRegisteredResult<Option<Self>>
+    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components;
 
@@ -70,7 +71,7 @@ pub trait Bundle: Copy + Send + Sync + 'static {
     /// ```
     /// todo!()
     /// ```
-    fn is_attached<C>(components: &C, entity: Entity) -> NotRegisteredResult<bool>
+    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
     where
         C: Components;
 }
@@ -84,7 +85,7 @@ where
         components: &mut C,
         entity: Entity,
         component: Self,
-    ) -> NotRegisteredResult<Option<Self>>
+    ) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components,
     {
@@ -95,7 +96,7 @@ where
         Ok(component)
     }
 
-    fn remove<C>(components: &mut C, entity: Entity) -> NotRegisteredResult<Option<Self>>
+    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components,
     {
@@ -106,7 +107,7 @@ where
         Ok(component)
     }
 
-    fn is_attached<C>(components: &C, entity: Entity) -> NotRegisteredResult<bool>
+    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
     where
         C: Components,
     {
@@ -118,7 +119,7 @@ where
     }
 }
 
-/// Extension of [bundle](Bundle) which allows to implement fallible operations for the bundle.
+/// Extension of bundle which allows to implement fallible operations for the bundle.
 pub trait TryBundle: Bundle {
     /// The type of error which can be returned on failure.
     type Err;
@@ -145,7 +146,7 @@ pub trait TryBundle: Bundle {
         components: &mut C,
         entity: Entity,
         bundle: Self,
-    ) -> TryBundleResult<Option<Self>, Self::Err>
+    ) -> Result<Option<Self>, TryBundleError<Self::Err>>
     where
         C: Components;
 }
@@ -162,7 +163,7 @@ where
         components: &mut C,
         entity: Entity,
         component: Self,
-    ) -> TryBundleResult<Option<Self>, Self::Err>
+    ) -> Result<Option<Self>, TryBundleError<Self::Err>>
     where
         C: Components,
     {
@@ -178,7 +179,7 @@ where
     }
 }
 
-/// Extension for [bundles](self::Bundle) which allows to get a reference to a bundle from the component registry.
+/// Extension of bundle which allows to get a reference to a bundle from the component registry.
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the component registry.
     type Ref<'a>
@@ -198,7 +199,7 @@ pub trait GetBundle: Bundle {
     /// ```
     /// todo!()
     /// ```
-    fn get<C>(components: &C, entity: Entity) -> NotRegisteredResult<Option<Self::Ref<'_>>>
+    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components;
 
@@ -223,7 +224,7 @@ pub trait GetBundle: Bundle {
     fn get_mut<C>(
         components: &mut C,
         entity: Entity,
-    ) -> NotRegisteredResult<Option<Self::RefMut<'_>>>
+    ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components;
 }
@@ -237,7 +238,7 @@ where
     where
         Self: 'a;
 
-    fn get<C>(components: &C, entity: Entity) -> NotRegisteredResult<Option<Self::Ref<'_>>>
+    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components,
     {
@@ -255,7 +256,7 @@ where
     fn get_mut<C>(
         components: &mut C,
         entity: Entity,
-    ) -> NotRegisteredResult<Option<Self::RefMut<'_>>>
+    ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components,
     {
@@ -279,9 +280,9 @@ macro_rules! bundle_for_tuple {
             $($types: Component,)*
         {
             #[allow(non_snake_case)]
-            fn attach<_C>(components: &mut _C, entity: Entity, bundle: Self) -> NotRegisteredResult<Option<Self>>
+            fn attach<__C>(components: &mut __C, entity: Entity, bundle: Self) -> Result<Option<Self>, NotRegisteredError>
             where
-                _C: Components,
+                __C: Components,
             {
                 let _ = Self::is_attached(components, entity)?;
                 let ($($types,)*) = bundle;
@@ -292,9 +293,9 @@ macro_rules! bundle_for_tuple {
             }
 
             #[allow(non_snake_case)]
-            fn remove<_C>(components: &mut _C, entity: Entity) -> NotRegisteredResult<Option<Self>>
+            fn remove<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
             where
-                _C: Components,
+                __C: Components,
             {
                 let _ = Self::is_attached(components, entity)?;
                 $(let $types = $types::remove(components, entity)?;)*
@@ -303,9 +304,9 @@ macro_rules! bundle_for_tuple {
                 Ok(components)
             }
 
-            fn is_attached<_C>(components: &_C, entity: Entity) -> NotRegisteredResult<bool>
+            fn is_attached<__C>(components: &__C, entity: Entity) -> Result<bool, NotRegisteredError>
             where
-                _C: Components,
+                __C: Components,
             {
                 let is_attached = $($types::is_attached(components, entity)?)&&*;
                 Ok(is_attached)
@@ -357,13 +358,13 @@ macro_rules! try_bundle_for_tuple {
             type Err = $error_name<$(<$types::Storage as TryStorage>::Err),*>;
 
             #[allow(non_snake_case)]
-            fn try_attach<_C>(
-                components: &mut _C,
+            fn try_attach<__C>(
+                components: &mut __C,
                 entity: Entity,
                 bundle: Self,
-            ) -> TryBundleResult<Option<Self>, Self::Err>
+            ) -> Result<Option<Self>, TryBundleError<Self::Err>>
             where
-                _C: Components,
+                __C: Components,
             {
                 let _ = Self::is_attached(components, entity)?;
                 let ($($types,)*) = bundle;
@@ -409,9 +410,9 @@ macro_rules! get_bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get<_C>(components: &_C, entity: Entity) -> NotRegisteredResult<Option<Self::Ref<'_>>>
+            fn get<__C>(components: &__C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
             where
-                _C: Components,
+                __C: Components,
             {
                 $(let $types = $types::get(components, entity)?;)*
                 $(let Some($types) = $types else { return Ok(None); };)*
@@ -424,13 +425,15 @@ macro_rules! get_bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get_mut<_C>(
-                components: &mut _C,
+            fn get_mut<__C>(
+                components: &mut __C,
                 entity: Entity,
-            ) -> NotRegisteredResult<Option<Self::RefMut<'_>>>
+            ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
             where
-                _C: Components,
+                __C: Components,
             {
+                use core::any::TypeId;
+
                 let mut storages: arrayvec::ArrayVec<_, {tuple_length!($($types)*)}> = components
                     .iter_mut()
                     .filter(|storage| {
@@ -438,11 +441,10 @@ macro_rules! get_bundle_for_tuple {
                         $(type_id == TypeId::of::<$types>())||*
                     })
                     .collect();
-                storages.as_mut_slice().sort_unstable_by_key(|storage| storage.type_id());
+                storages.sort_unstable_by_key(|storage| storage.type_id());
 
                 $(
                 let idx = storages
-                    .as_slice()
                     .binary_search_by_key(&TypeId::of::<$types>(), |storage| storage.type_id())
                     .ok();
                 let Some(idx) = idx else {

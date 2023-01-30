@@ -1,8 +1,7 @@
 //! Provides an entry to the entity.
 
 use crate::component::{
-    bundle::{Bundle, GetBundle, TryBundle},
-    error::{NotRegisteredResult, TryBundleResult},
+    bundle::{Bundle, GetBundle, NotRegisteredError, TryBundle, TryBundleError},
     registry::Registry as Components,
 };
 
@@ -127,7 +126,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn is_attached<B>(&self) -> NotRegisteredResult<bool>
+    pub fn is_attached<B>(&self) -> Result<bool, NotRegisteredError>
     where
         B: Bundle,
     {
@@ -152,7 +151,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get<B>(&self) -> NotRegisteredResult<Option<B::Ref<'_>>>
+    pub fn get<B>(&self) -> Result<Option<B::Ref<'_>>, NotRegisteredError>
     where
         B: GetBundle,
     {
@@ -317,7 +316,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn attach<B>(&mut self, bundle: B) -> NotRegisteredResult<Option<B>>
+    pub fn attach<B>(&mut self, bundle: B) -> Result<Option<B>, NotRegisteredError>
     where
         B: Bundle,
     {
@@ -344,7 +343,7 @@ where
     /// ```
     ///
     /// This is the fallible version of [`attach`][EntityEntryMut::attach()] method.
-    pub fn try_attach<B>(&mut self, bundle: B) -> TryBundleResult<Option<B>, B::Err>
+    pub fn try_attach<B>(&mut self, bundle: B) -> Result<Option<B>, TryBundleError<B::Err>>
     where
         B: TryBundle,
     {
@@ -365,7 +364,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn is_attached<B>(&self) -> NotRegisteredResult<bool>
+    pub fn is_attached<B>(&self) -> Result<bool, NotRegisteredError>
     where
         B: Bundle,
     {
@@ -389,7 +388,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn remove<B>(&mut self) -> NotRegisteredResult<Option<B>>
+    pub fn remove<B>(&mut self) -> Result<Option<B>, NotRegisteredError>
     where
         B: Bundle,
     {
@@ -411,7 +410,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get<B>(&self) -> NotRegisteredResult<Option<B::Ref<'_>>>
+    pub fn get<B>(&self) -> Result<Option<B::Ref<'_>>, NotRegisteredError>
     where
         B: GetBundle,
     {
@@ -433,7 +432,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get_mut<B>(&mut self) -> NotRegisteredResult<Option<B::RefMut<'_>>>
+    pub fn get_mut<B>(&mut self) -> Result<Option<B::RefMut<'_>>, NotRegisteredError>
     where
         B: GetBundle,
     {

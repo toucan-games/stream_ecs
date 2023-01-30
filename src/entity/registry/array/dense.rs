@@ -8,8 +8,7 @@ use core::{
 use arrayvec::ArrayVec;
 
 use crate::entity::{
-    error::{NotPresentError, NotPresentResult},
-    registry::{Registry, TryRegistry},
+    registry::{NotPresentError, Registry, TryRegistry},
     Entity,
 };
 
@@ -101,7 +100,7 @@ impl<const N: usize> Registry for DenseArrayRegistry<N> {
         slot.generation == entity.generation
     }
 
-    fn destroy(&mut self, entity: Entity) -> NotPresentResult<()> {
+    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
         let Ok(index) = usize::try_from(entity.index) else {
             return Err(NotPresentError::new(entity));
         };

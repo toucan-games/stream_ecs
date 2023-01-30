@@ -1,15 +1,14 @@
-//! Utilities for [storages](Storage) of components in ECS.
+//! Utilities for storages of components in ECS.
 
 use core::any::Any;
 
 use as_any::AsAny;
 
-use crate::entity::Entity;
+pub use self::error::TypeMismatchError;
 
-use super::{
-    error::{TypeMismatchError, TypeMismatchResult},
-    Component,
-};
+use crate::{component::Component, entity::Entity};
+
+mod error;
 
 /// Storage of some component type in ECS.
 ///
@@ -22,6 +21,9 @@ pub trait Storage: Send + Sync + 'static {
 
     /// Attaches provided component to the entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// Note that this method can reuse existing entities when provided entity
+    /// is newer (its generation is greater) than an actual entity with the same index.
     fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item>;
 
     /// Checks if any component is attached to provided entity.
@@ -35,7 +37,7 @@ pub trait Storage: Send + Sync + 'static {
     /// Returns [`None`] if provided entity does not have component of such type.
     fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item>;
 
-    /// Removes component from the entity.
+    /// Removes component from provided entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.
     fn remove(&mut self, entity: Entity) -> Option<Self::Item>;
 
@@ -71,7 +73,7 @@ pub trait Storage: Send + Sync + 'static {
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
-/// Extension of [storage](Storage) which allows to implement fallible operations for the storage.
+/// Extension of storage which allows to implement fallible operations for the storage.
 pub trait TryStorage: Storage {
     /// The type of error which can be returned on failure.
     type Err;
@@ -98,7 +100,7 @@ pub trait TryStorage: Storage {
     ) -> Result<Option<Self::Item>, Self::Err>;
 }
 
-/// Erased variant of [storage](self::Storage) of some component type in ECS.
+/// Erased variant of storage of some component type in ECS.
 ///
 /// This trait represents container of components attached to some entities.
 /// Furthermore, this trait defines basic operations for such container
@@ -120,8 +122,11 @@ pub trait ErasedStorage: Send + Sync + AsAny {
     /// ```
     /// todo!()
     /// ```
+    ///
+    /// Note that this method can reuse existing entities when provided entity
+    /// is newer (its generation is greater) than an actual entity with the same index.
     // FIXME: replace result `Ok` type with `Option<impl Component>` when stabilized
-    fn attach(&mut self, entity: Entity, component: &dyn Any) -> TypeMismatchResult<()>;
+    fn attach(&mut self, entity: Entity, component: &dyn Any) -> Result<(), TypeMismatchError>;
 
     /// Checks if any component is attached to provided entity.
     fn is_attached(&self, entity: Entity) -> bool;
@@ -134,7 +139,7 @@ pub trait ErasedStorage: Send + Sync + AsAny {
     /// Returns [`None`] if provided entity does not have component of such type.
     fn get_mut(&mut self, entity: Entity) -> Option<&mut dyn Any>;
 
-    /// Removes component from the entity.
+    /// Removes component from provided entity.
     // FIXME: replace return type with `Option<impl Component>` when stabilized
     fn remove(&mut self, entity: Entity);
 
@@ -154,7 +159,7 @@ impl<T> ErasedStorage for T
 where
     T: Storage,
 {
-    fn attach(&mut self, entity: Entity, component: &dyn Any) -> TypeMismatchResult<()> {
+    fn attach(&mut self, entity: Entity, component: &dyn Any) -> Result<(), TypeMismatchError> {
         let Some(component) = component.downcast_ref().copied() else {
             return Err(TypeMismatchError::new::<T::Item>(component));
         };

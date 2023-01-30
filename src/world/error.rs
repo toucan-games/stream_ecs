@@ -1,12 +1,9 @@
-//! Utilities for error handling when operating with world in ECS.
+use core::fmt::Display;
 
 use crate::{
-    component::error::{NotRegisteredError, TryBundleError},
-    entity::error::NotPresentError,
+    component::bundle::{NotRegisteredError, TryBundleError},
+    entity::registry::NotPresentError,
 };
-
-/// The result type which is returned when operating with entities in the ECS world.
-pub type EntityResult<T> = Result<T, EntityError>;
 
 /// The error type which is returned when operating with entities in the ECS world.
 #[derive(Debug, Clone, Copy)]
@@ -29,7 +26,7 @@ impl From<NotPresentError> for EntityError {
     }
 }
 
-impl core::fmt::Display for EntityError {
+impl Display for EntityError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NotRegistered(error) => error.fmt(f),
@@ -37,9 +34,6 @@ impl core::fmt::Display for EntityError {
         }
     }
 }
-
-/// The result type which is returned when trying to attach a bundle to the entity in the world.
-pub type TryAttachResult<T, Err> = Result<T, TryAttachError<Err>>;
 
 /// The error type which is returned when trying to attach a bundle to the entity in the world.
 #[derive(Debug, Clone, Copy)]
@@ -73,9 +67,9 @@ impl<Err> From<TryBundleError<Err>> for TryAttachError<Err> {
     }
 }
 
-impl<Err> core::fmt::Display for TryAttachError<Err>
+impl<Err> Display for TryAttachError<Err>
 where
-    Err: core::fmt::Display,
+    Err: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {

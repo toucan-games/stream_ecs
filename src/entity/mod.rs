@@ -4,7 +4,6 @@ use self::builder::EntityBuilder;
 
 pub mod builder;
 pub mod entry;
-pub mod error;
 pub mod registry;
 
 /// Unique key of the entity in ECS.

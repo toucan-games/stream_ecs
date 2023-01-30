@@ -3,20 +3,19 @@
 use either::Either;
 use hlist2::{ops::Append, Cons, Nil};
 
+pub use self::error::{TryBuildError, TryEntityBuildError};
+
 use crate::component::{
-    bundle::{Bundle, TryBundle},
-    error::{NotRegisteredResult, TryBundleError, TryBundleResult},
+    bundle::{Bundle, NotRegisteredError, TryBundle, TryBundleError},
     registry::Registry as Components,
 };
-
-use self::error::{TryBuildError, TryBuildResult, TryEntityBuildError, TryEntityBuildResult};
 
 use super::{
     registry::{Registry as Entities, TryRegistry as TryEntities},
     Entity,
 };
 
-pub mod error;
+mod error;
 
 /// Entity builder which creates new entity with provided components.
 ///
@@ -95,7 +94,11 @@ where
     ///
     /// Note that the contents of inserted bundles are attached to the newly created entity
     /// in the order of their insertion.
-    pub fn build<E, C>(self, entities: &mut E, components: &mut C) -> NotRegisteredResult<Entity>
+    pub fn build<E, C>(
+        self,
+        entities: &mut E,
+        components: &mut C,
+    ) -> Result<Entity, NotRegisteredError>
     where
         E: Entities,
         C: Components,
@@ -132,7 +135,7 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> TryEntityBuildResult<Entity, E::Err>
+    ) -> Result<Entity, TryEntityBuildError<E::Err>>
     where
         E: TryEntities,
         C: Components,
@@ -178,7 +181,7 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> TryBundleResult<Entity, T::Err>
+    ) -> Result<Entity, TryBundleError<T::Err>>
     where
         E: Entities,
         C: Components,
@@ -217,7 +220,7 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> TryBuildResult<Entity, E::Err, T::Err>
+    ) -> Result<Entity, TryBuildError<E::Err, T::Err>>
     where
         E: TryEntities,
         C: Components,
@@ -240,12 +243,9 @@ impl Default for EntityBuilder {
     }
 }
 
-/// Type of [entity builder][builder] with state
-/// provided by entity and component registries.
+/// Type of entity builder with state provided by entity and component registries.
 ///
-/// This struct uses [entity builder][builder] stateless implementation to build new entity.
-///
-/// [builder]: self::EntityBuilder
+/// This struct uses [entity builder](self::EntityBuilder) stateless implementation to build new entity.
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
 #[derive(Debug)]
 pub struct StateEntityBuilder<'state, E, C, T = Nil> {
@@ -314,7 +314,7 @@ where
     ///
     /// Note that the contents of inserted bundles are attached to the newly created entity
     /// in the order of their insertion.
-    pub fn build(self) -> NotRegisteredResult<Entity> {
+    pub fn build(self) -> Result<Entity, NotRegisteredError> {
         let Self {
             entities,
             components,
@@ -347,7 +347,7 @@ where
     /// in the order of their insertion.
     ///
     /// This is the fallible version of [`build`][StateEntityBuilder::build()] method.
-    pub fn try_entity_build(self) -> TryEntityBuildResult<Entity, E::Err> {
+    pub fn try_entity_build(self) -> Result<Entity, TryEntityBuildError<E::Err>> {
         let Self {
             entities,
             components,
@@ -381,7 +381,7 @@ where
     /// in the order of their insertion.
     ///
     /// This is the fallible version of [`build`][StateEntityBuilder::build()] method.
-    pub fn try_bundle_build(self) -> TryBundleResult<Entity, T::Err> {
+    pub fn try_bundle_build(self) -> Result<Entity, TryBundleError<T::Err>> {
         let Self {
             entities,
             components,
@@ -415,7 +415,7 @@ where
     /// in the order of their insertion.
     ///
     /// This is the fallible version of [`build`][StateEntityBuilder::build()] method.
-    pub fn try_build(self) -> TryBuildResult<Entity, E::Err, T::Err> {
+    pub fn try_build(self) -> Result<Entity, TryBuildError<E::Err, T::Err>> {
         let Self {
             entities,
             components,
@@ -439,24 +439,24 @@ impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilde
 
 #[doc(hidden)]
 pub trait Bundles: Append {
-    fn check_all<C>(components: &mut C) -> NotRegisteredResult<()>
+    fn check_all<C>(components: &mut C) -> Result<(), NotRegisteredError>
     where
         C: Components;
 
-    fn attach_all<C>(self, components: &mut C, entity: Entity) -> NotRegisteredResult<()>
+    fn attach_all<C>(self, components: &mut C, entity: Entity) -> Result<(), NotRegisteredError>
     where
         C: Components;
 }
 
 impl Bundles for Nil {
-    fn check_all<C>(_: &mut C) -> NotRegisteredResult<()>
+    fn check_all<C>(_: &mut C) -> Result<(), NotRegisteredError>
     where
         C: Components,
     {
         Ok(())
     }
 
-    fn attach_all<C>(self, _: &mut C, _: Entity) -> NotRegisteredResult<()>
+    fn attach_all<C>(self, _: &mut C, _: Entity) -> Result<(), NotRegisteredError>
     where
         C: Components,
     {
@@ -469,7 +469,7 @@ where
     Head: Bundle,
     Tail: Bundles,
 {
-    fn check_all<C>(components: &mut C) -> NotRegisteredResult<()>
+    fn check_all<C>(components: &mut C) -> Result<(), NotRegisteredError>
     where
         C: Components,
     {
@@ -477,7 +477,7 @@ where
         Tail::check_all(components)
     }
 
-    fn attach_all<C>(self, components: &mut C, entity: Entity) -> NotRegisteredResult<()>
+    fn attach_all<C>(self, components: &mut C, entity: Entity) -> Result<(), NotRegisteredError>
     where
         C: Components,
     {
@@ -495,7 +495,7 @@ pub trait TryBundles: Bundles {
         self,
         components: &mut C,
         entity: Entity,
-    ) -> TryBundleResult<(), Self::Err>
+    ) -> Result<(), TryBundleError<Self::Err>>
     where
         C: Components;
 }
@@ -503,7 +503,7 @@ pub trait TryBundles: Bundles {
 impl TryBundles for Nil {
     type Err = core::convert::Infallible;
 
-    fn try_attach_all<C>(self, _: &mut C, _: Entity) -> TryBundleResult<(), Self::Err>
+    fn try_attach_all<C>(self, _: &mut C, _: Entity) -> Result<(), TryBundleError<Self::Err>>
     where
         C: Components,
     {
@@ -518,7 +518,11 @@ where
 {
     type Err = Either<Head::Err, Tail::Err>;
 
-    fn try_attach_all<C>(self, components: &mut C, entity: Entity) -> TryBundleResult<(), Self::Err>
+    fn try_attach_all<C>(
+        self,
+        components: &mut C,
+        entity: Entity,
+    ) -> Result<(), TryBundleError<Self::Err>>
     where
         C: Components,
     {

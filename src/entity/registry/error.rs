@@ -1,10 +1,6 @@
-//! Utilities for error handling when operating with entities in ECS.
+use core::fmt::Display;
 
-use super::Entity;
-
-/// The result type which is returned when the entity
-/// could be missing in the entity registry.
-pub type NotPresentResult<T> = Result<T, NotPresentError>;
+use crate::entity::Entity;
 
 /// The error type which is returned when the entity
 /// does not present in the entity registry.
@@ -25,7 +21,7 @@ impl NotPresentError {
     }
 }
 
-impl core::fmt::Display for NotPresentError {
+impl Display for NotPresentError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let entity = self.entity;
         write!(f, "Entity {entity} does not present in the registry")

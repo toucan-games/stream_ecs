@@ -1,9 +1,6 @@
-//! Utilities for error handling when operating with entity builder in ECS.
+use core::fmt::Display;
 
-use crate::component::error::{NotRegisteredError, TryBundleError};
-
-/// The result type which is returned when trying to build a new entity.
-pub type TryEntityBuildResult<T, Err> = Result<T, TryEntityBuildError<Err>>;
+use crate::component::bundle::{NotRegisteredError, TryBundleError};
 
 /// The error type which is returned when trying to build a new entity.
 #[derive(Debug, Clone, Copy)]
@@ -20,9 +17,9 @@ impl<Err> From<NotRegisteredError> for TryEntityBuildError<Err> {
     }
 }
 
-impl<Err> core::fmt::Display for TryEntityBuildError<Err>
+impl<Err> Display for TryEntityBuildError<Err>
 where
-    Err: core::fmt::Display,
+    Err: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -33,10 +30,6 @@ where
         }
     }
 }
-
-/// The result type which is returned when trying to build a new entity.
-pub type TryBuildResult<T, EntitiesErr, StorageErr> =
-    Result<T, TryBuildError<EntitiesErr, StorageErr>>;
 
 /// The error type which is returned when trying to build a new entity.
 #[derive(Debug, Clone, Copy)]
@@ -66,10 +59,10 @@ impl<EntitiesErr, StorageErr> From<TryBundleError<StorageErr>>
     }
 }
 
-impl<EntitiesErr, StorageErr> core::fmt::Display for TryBuildError<EntitiesErr, StorageErr>
+impl<EntitiesErr, StorageErr> Display for TryBuildError<EntitiesErr, StorageErr>
 where
-    EntitiesErr: core::fmt::Display,
-    StorageErr: core::fmt::Display,
+    EntitiesErr: Display,
+    StorageErr: Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {

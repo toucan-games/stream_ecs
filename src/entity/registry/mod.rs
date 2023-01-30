@@ -1,8 +1,12 @@
 //! Utilities for entity management.
 
-use super::{error::NotPresentResult, Entity};
+pub use self::error::NotPresentError;
+
+use super::Entity;
 
 pub mod array;
+
+mod error;
 
 /// Entity registry of the world.
 ///
@@ -33,7 +37,7 @@ pub trait Registry: Send + Sync {
     /// ```
     ///
     /// Note that provided entity will be removed from the registry.
-    fn destroy(&mut self, entity: Entity) -> NotPresentResult<()>;
+    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError>;
 
     /// Returns count of currently alive entities.
     fn len(&self) -> usize;
@@ -55,7 +59,7 @@ pub trait Registry: Send + Sync {
     fn iter(&self) -> Self::Iter<'_>;
 }
 
-/// Extension of entity [registry](Registry) which allows to implement fallible operations for the registry.
+/// Extension of entity registry which allows to implement fallible operations for the registry.
 pub trait TryRegistry: Registry {
     /// The type of error which can be returned on failure.
     type Err;
