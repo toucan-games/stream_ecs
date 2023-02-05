@@ -113,7 +113,7 @@ where
         let Self {
             entities,
             components,
-            resources: _,
+            ..
         } = self;
         EntityEntry::new(entity, entities, components)
     }
@@ -124,7 +124,7 @@ where
         let Self {
             entities,
             components,
-            resources: _,
+            ..
         } = self;
         EntityEntryMut::new(entity, entities, components)
     }
@@ -138,7 +138,7 @@ where
         let Self {
             entities,
             components,
-            resources: _,
+            ..
         } = self;
         EntityEntryMut::spawn(entities, components)
     }
@@ -207,7 +207,7 @@ where
         let Self {
             entities,
             components,
-            resources: _,
+            ..
         } = self;
         EntityEntryMut::try_spawn(entities, components)
     }
@@ -357,7 +357,7 @@ where
         let Self {
             entities,
             components,
-            resources: _,
+            ..
         } = self;
         StateEntityBuilder::new(entities, components)
     }
@@ -381,11 +381,17 @@ where
     where
         B: Bundle,
     {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error.into());
         }
-        let bundle = B::attach(&mut self.components, entity, bundle)?;
+        let bundle = B::attach(components, entity, bundle)?;
         Ok(bundle)
     }
 
@@ -416,11 +422,17 @@ where
     where
         B: TryBundle,
     {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error.into());
         }
-        let bundle = B::try_attach(&mut self.components, entity, bundle)?;
+        let bundle = B::try_attach(components, entity, bundle)?;
         Ok(bundle)
     }
 
@@ -440,11 +452,17 @@ where
     where
         B: Bundle,
     {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error.into());
         }
-        let is_attached = B::is_attached(&self.components, entity)?;
+        let is_attached = B::is_attached(components, entity)?;
         Ok(is_attached)
     }
 
@@ -461,11 +479,17 @@ where
     /// todo!()
     /// ```
     pub fn is_entity_empty(&self, entity: Entity) -> Result<bool, NotPresentError> {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error);
         }
-        let is_empty = self.components.is_entity_empty(entity);
+        let is_empty = components.is_entity_empty(entity);
         Ok(is_empty)
     }
 
@@ -486,11 +510,17 @@ where
     where
         B: Bundle,
     {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error.into());
         }
-        let bundle = B::remove(&mut self.components, entity)?;
+        let bundle = B::remove(components, entity)?;
         Ok(bundle)
     }
 
@@ -507,11 +537,17 @@ where
     /// todo!()
     /// ```
     pub fn remove_all(&mut self, entity: Entity) -> Result<(), NotPresentError> {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error);
         }
-        self.components.remove_all(entity);
+        components.remove_all(entity);
         Ok(())
     }
 
@@ -532,11 +568,17 @@ where
     where
         B: GetBundle,
     {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error.into());
         }
-        let bundle = B::get(&self.components, entity)?;
+        let bundle = B::get(components, entity)?;
         Ok(bundle)
     }
 
@@ -557,11 +599,17 @@ where
     where
         B: GetBundle,
     {
-        if !self.entities.contains(entity) {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
             let error = NotPresentError::new(entity);
             return Err(error.into());
         }
-        let bundle = B::get_mut(&mut self.components, entity)?;
+        let bundle = B::get_mut(components, entity)?;
         Ok(bundle)
     }
 }
@@ -574,13 +622,24 @@ where
 {
     /// Checks if the world contains no entities, components or resources.
     pub fn is_empty(&self) -> bool {
-        self.entities.is_empty() && self.components.is_empty() && self.resources.is_empty()
+        let Self {
+            entities,
+            components,
+            resources,
+        } = self;
+        entities.is_empty() && components.is_empty() && resources.is_empty()
     }
 
     /// Clears the current world, destroying all entities, their components and all resources of the world.
     pub fn clear(&mut self) {
-        self.entities.clear();
-        self.components.clear();
-        self.resources.clear();
+        let Self {
+            entities,
+            components,
+            resources,
+        } = self;
+
+        entities.clear();
+        components.clear();
+        resources.clear();
     }
 }

@@ -4,9 +4,7 @@ use super::{ErasedResource, Resource};
 
 /// Resource registry of the world.
 ///
-/// This trait represents type of container for [resources][resource].
-///
-/// [resource]: super::Resource
+/// This trait represents type of container for [resources](Resource).
 pub trait Registry: Send + Sync {
     /// Insert provided resource to the registry.
     /// Returns previous value of the resource, or [`None`] if the resource was not in the registry.

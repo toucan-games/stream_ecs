@@ -1,5 +1,7 @@
 //! Provides utilities for entities in ECS.
 
+use core::fmt::Display;
+
 use self::builder::EntityBuilder;
 
 pub mod builder;
@@ -77,7 +79,7 @@ impl Default for Entity {
     }
 }
 
-impl core::fmt::Display for Entity {
+impl Display for Entity {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}v{}", self.index, self.generation)
     }

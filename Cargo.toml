@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 hlist2 = "0.0.2"
-as-any = "0.3.0"
-arrayvec = { version = "0.7.2", default-features = false }
-either = { version = "1.8.0", default-features = false }
+as-any = "0.3"
+arrayvec = { version = "0.7", default-features = false }
+either = { version = "1", default-features = false }

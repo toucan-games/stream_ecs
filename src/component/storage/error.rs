@@ -48,17 +48,18 @@ impl core::fmt::Display for TypeMismatchError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let provided = self.provided_type_name;
         let actual = self.actual_type_name;
-        write!(f, "Type of component in the storage was mismatched: provided type {provided}, but storage actually stores components of type {actual}")
+        write!(f, "type of component in the storage was mismatched: \
+                   provided type is {provided}, but storage actually stores components of type {actual}")
     }
 }
 
-trait AnyTypeName: Any {
+trait TypeName {
     fn type_name(&self) -> &'static str;
 }
 
-impl<T> AnyTypeName for T
+impl<T> TypeName for T
 where
-    T: Any + ?Sized,
+    T: ?Sized,
 {
     fn type_name(&self) -> &'static str {
         core::any::type_name::<T>()

@@ -102,9 +102,9 @@ impl<'state, E, C> EntityEntry<'state, E, C> {
     /// Retrieves references of the underlying entity and component registries.
     pub fn all(&self) -> (&'state E, &'state C) {
         let &Self {
-            entity: _,
             entities,
             components,
+            ..
         } = self;
         (entities, components)
     }
@@ -131,9 +131,7 @@ where
         B: Bundle,
     {
         let &Self {
-            entity,
-            entities: _,
-            components,
+            entity, components, ..
         } = self;
         B::is_attached(components, entity)
     }
@@ -156,9 +154,7 @@ where
         B: GetBundle,
     {
         let &Self {
-            entity,
-            entities: _,
-            components,
+            entity, components, ..
         } = self;
         B::get(components, entity)
     }
@@ -208,9 +204,7 @@ where
     /// Destroys the underlying entity, returning its handle.
     pub fn destroy(self) -> Entity {
         let Self {
-            entity,
-            entities,
-            components: _,
+            entity, entities, ..
         } = self;
         entities
             .destroy(entity)
@@ -279,9 +273,9 @@ impl<'state, E, C> EntityEntryMut<'state, E, C> {
     /// Retrieves references of the underlying entity and component registries.
     pub fn all(&self) -> (&E, &C) {
         let Self {
-            entity: _,
             entities,
             components,
+            ..
         } = self;
         (entities, components)
     }
@@ -289,9 +283,9 @@ impl<'state, E, C> EntityEntryMut<'state, E, C> {
     /// Retrieves mutable references of the underlying entity and component registries.
     pub fn all_mut(&mut self) -> (&mut E, &mut C) {
         let Self {
-            entity: _,
             entities,
             components,
+            ..
         } = self;
         (entities, components)
     }

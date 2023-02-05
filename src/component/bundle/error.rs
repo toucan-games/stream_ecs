@@ -30,7 +30,7 @@ impl NotRegisteredError {
 impl Display for NotRegisteredError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let type_name = self.type_name;
-        write!(f, "Component of type {type_name} was not registered")
+        write!(f, "component of type {type_name} was not registered")
     }
 }
 
@@ -57,7 +57,7 @@ where
         match self {
             Self::NotRegistered(error) => error.fmt(f),
             Self::Storage(error) => {
-                write!(f, "Storage failed to attach a component: {error}")
+                write!(f, "storage failed to attach a component: {error}")
             }
         }
     }

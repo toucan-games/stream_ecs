@@ -14,7 +14,7 @@ use crate::{
     entity::Entity,
 };
 
-use super::ArrayRegistryError;
+use super::ArrayStorageError;
 
 #[derive(Debug, Clone)]
 enum Slot<T> {
@@ -128,17 +128,15 @@ where
     fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.slots.get_mut(index)?;
-        match mem::replace(slot, Slot::Free) {
-            Slot::Free => None,
-            Slot::Occupied { value, generation } => {
-                if entity.generation() != generation {
-                    *slot = Slot::Occupied { value, generation };
-                    return None;
-                }
-                self.len -= 1;
-                Some(value)
-            }
+        let Slot::Occupied { value, generation } = mem::replace(slot, Slot::Free) else {
+            return None;
+        };
+        if entity.generation() != generation {
+            *slot = Slot::Occupied { value, generation };
+            return None;
         }
+        self.len -= 1;
+        Some(value)
     }
 
     fn clear(&mut self) {
@@ -171,7 +169,7 @@ impl<T, const N: usize> TryStorage for ArrayStorage<T, N>
 where
     T: Component,
 {
-    type Err = ArrayRegistryError;
+    type Err = ArrayStorageError;
 
     fn try_attach(
         &mut self,
@@ -179,10 +177,10 @@ where
         component: Self::Item,
     ) -> Result<Option<Self::Item>, Self::Err> {
         let Ok(index) = usize::try_from(entity.index()) else {
-            return Err(ArrayRegistryError);
+            return Err(ArrayStorageError);
         };
         let Some(slot) = self.slots.get_mut(index) else {
-            return Err(ArrayRegistryError);
+            return Err(ArrayStorageError);
         };
         match slot {
             Slot::Free => {

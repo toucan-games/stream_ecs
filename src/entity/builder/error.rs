@@ -25,7 +25,7 @@ where
         match self {
             Self::NotRegistered(error) => error.fmt(f),
             Self::Entities(error) => {
-                write!(f, "Entity registry failed to create new entity: {error}")
+                write!(f, "entity registry failed to create new entity: {error}")
             }
         }
     }
@@ -68,9 +68,9 @@ where
         match self {
             Self::NotRegistered(error) => error.fmt(f),
             Self::Entities(error) => {
-                write!(f, "Entity registry failed to create new entity: {error}")
+                write!(f, "entity registry failed to create new entity: {error}")
             }
-            Self::Storage(error) => write!(f, "Storage failed to attach a component: {error}"),
+            Self::Storage(error) => write!(f, "storage failed to attach a component: {error}"),
         }
     }
 }

@@ -74,7 +74,7 @@ where
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NotRegistered(error) => error.fmt(f),
-            Self::Storage(error) => write!(f, "Storage failed to attach a component: {error}"),
+            Self::Storage(error) => write!(f, "storage failed to attach a component: {error}"),
             Self::NotPresent(error) => error.fmt(f),
         }
     }

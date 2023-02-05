@@ -24,6 +24,6 @@ impl NotPresentError {
 impl Display for NotPresentError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let entity = self.entity;
-        write!(f, "Entity {entity} does not present in the registry")
+        write!(f, "entity {entity} does not present in the registry")
     }
 }

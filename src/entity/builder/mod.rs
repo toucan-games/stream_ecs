@@ -428,11 +428,7 @@ where
 /// Converts stateful entity builder into stateless.
 impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilder<T> {
     fn from(builder: StateEntityBuilder<'state, E, C, T>) -> Self {
-        let StateEntityBuilder {
-            entities: _,
-            components: _,
-            builder,
-        } = builder;
+        let StateEntityBuilder { builder, .. } = builder;
         builder
     }
 }
