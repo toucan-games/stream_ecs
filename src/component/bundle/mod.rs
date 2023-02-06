@@ -400,6 +400,42 @@ try_bundle_for_tuple!(A, B; TryBundleErrorTuple2);
 try_bundle_for_tuple!(A; TryBundleErrorTuple1);
 
 macro_rules! get_bundle_for_tuple {
+    ($type:ident) => {
+        impl<$type> GetBundle for ($type,)
+        where
+            $type: Component,
+        {
+            type Ref<'a> = (&'a $type,)
+            where
+                Self: 'a;
+
+            #[allow(non_snake_case)]
+            fn get<__C>(components: &__C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+            where
+                __C: Components,
+            {
+                let $type = $type::get(components, entity)?;
+                let Some($type) = $type else { return Ok(None); };
+                let components = Some(($type,));
+                Ok(components)
+            }
+
+            type RefMut<'a> = (&'a mut $type,)
+            where
+                Self: 'a;
+
+            #[allow(non_snake_case)]
+            fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
+            where
+                __C: Components,
+            {
+                let $type = $type::get_mut(components, entity)?;
+                let Some($type) = $type else { return Ok(None); };
+                let components = Some(($type,));
+                Ok(components)
+            }
+        }
+    };
     ($($types:ident),*) => {
         impl<$($types),*> GetBundle for ($($types,)*)
         where
@@ -425,10 +461,7 @@ macro_rules! get_bundle_for_tuple {
                 Self: 'a;
 
             #[allow(non_snake_case)]
-            fn get_mut<__C>(
-                components: &mut __C,
-                entity: Entity,
-            ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
+            fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
             where
                 __C: Components,
             {
