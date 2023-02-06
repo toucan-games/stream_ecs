@@ -95,19 +95,19 @@ where
         let Some(slot) = self.slots.get(index) else {
             return false;
         };
-        let Slot::Occupied { generation, .. } = slot else {
+        let &Slot::Occupied { generation, .. } = slot else {
             return false;
         };
-        *generation == entity.generation()
+        generation == entity.generation()
     }
 
     fn get(&self, entity: Entity) -> Option<&Self::Item> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.slots.get(index)?;
-        let Slot::Occupied { generation, value } = slot else {
+        let &Slot::Occupied { generation, ref value } = slot else {
             return None;
         };
-        if *generation != entity.generation() {
+        if generation != entity.generation() {
             return None;
         }
         Some(value)
@@ -116,10 +116,10 @@ where
     fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.slots.get_mut(index)?;
-        let Slot::Occupied { generation, value } = slot else {
+        let &mut Slot::Occupied { generation, ref mut value } = slot else {
             return None;
         };
-        if *generation != entity.generation() {
+        if generation != entity.generation() {
             return None;
         }
         Some(value)
@@ -267,10 +267,10 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next()?;
-            let Slot::Occupied { value, generation } = slot else {
+            let &Slot::Occupied { ref value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, *generation);
+            let entity = Entity::new(index as u32, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -290,10 +290,10 @@ where
     fn next_back(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next_back()?;
-            let Slot::Occupied { value, generation } = slot else {
+            let &Slot::Occupied { ref value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, *generation);
+            let entity = Entity::new(index as u32, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -331,10 +331,10 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next()?;
-            let Slot::Occupied { value, generation } = slot else {
+            let &mut Slot::Occupied { ref mut value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, *generation);
+            let entity = Entity::new(index as u32, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -354,10 +354,10 @@ where
     fn next_back(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next_back()?;
-            let Slot::Occupied { value, generation } = slot else {
+            let &mut Slot::Occupied { ref mut value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, *generation);
+            let entity = Entity::new(index as u32, generation);
             self.num_left -= 1;
             break (entity, value);
         };

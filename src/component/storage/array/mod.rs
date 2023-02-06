@@ -5,8 +5,10 @@
 use core::fmt::Display;
 
 pub use self::basic::ArrayStorage;
+pub use self::dense::DenseArrayStorage;
 
 pub mod basic;
+pub mod dense;
 
 /// The error type which is returned when array registry capacity was exceeded.
 #[derive(Debug, Clone, Copy)]
