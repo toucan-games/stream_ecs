@@ -5,9 +5,11 @@
 use core::fmt::Display;
 
 pub use self::basic::ArrayStorage;
+pub use self::dense::DenseArrayStorage;
 pub use self::hash::HashArrayStorage;
 
 pub mod basic;
+pub mod dense;
 pub mod hash;
 
 /// The error type which is returned when array storage capacity was exceeded.

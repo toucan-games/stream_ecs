@@ -59,7 +59,7 @@ enum HashIndex {
     Occupied { hash: HashValue, index: u32 },
 }
 
-/// Hash dense implementation of the component storage backed by an array.
+/// Hash implementation of the component storage backed by an array.
 #[derive(Debug, Clone)]
 pub struct HashArrayStorage<T, S, const N: usize>
 where
@@ -75,7 +75,7 @@ where
     T: Component,
     S: Default,
 {
-    /// Creates new empty hash dense array component storage.
+    /// Creates new empty hash array component storage.
     ///
     /// # Examples
     ///
@@ -95,7 +95,7 @@ where
     const EMPTY_INDEX: HashIndex = HashIndex::Free;
     const EMPTY_ARRAY: [HashIndex; N] = [Self::EMPTY_INDEX; N];
 
-    /// Creates new empty hash dense array component storage with provided hasher.
+    /// Creates new empty hash array component storage with provided hasher.
     ///
     /// # Examples
     ///
@@ -110,7 +110,7 @@ where
         }
     }
 
-    /// Returns the capacity of the hash dense array component storage.
+    /// Returns the capacity of the hash array component storage.
     ///
     /// # Examples
     ///
@@ -331,9 +331,6 @@ where
             TakeFromRich { start_index: usize },
         }
 
-        if self.len() == self.capacity() {
-            return Err(ArrayStorageError);
-        }
         let entity_hash = HashValue::new(&entity.index(), &self.build_hasher);
         let probe_len = self.capacity() as u64;
         let desired_index = entity_hash.desired_index(probe_len) as usize;
@@ -377,7 +374,9 @@ where
                         key: entity,
                         value: component,
                     };
-                    self.buckets.push(bucket);
+                    if self.buckets.try_push(bucket).is_err() {
+                        return Err(ArrayStorageError);
+                    }
                     *hash_index = HashIndex::Occupied {
                         hash: entity_hash,
                         index: self.buckets.len() as u32 - 1,
@@ -412,7 +411,9 @@ where
                     key: entity,
                     value: component,
                 };
-                self.buckets.push(bucket);
+                if self.buckets.try_push(bucket).is_err() {
+                    return Err(ArrayStorageError);
+                }
                 *next_hash_index = hash_index;
                 return Ok(None);
             }
@@ -464,7 +465,7 @@ where
 }
 
 /// Iterator of entities with references of components attached to them
-/// in the dense array storage.
+/// in the hash array storage.
 pub struct Iter<'a, T>
 where
     T: Component,
@@ -510,7 +511,7 @@ where
 impl<T> FusedIterator for Iter<'_, T> where T: Component {}
 
 /// Iterator of entities with mutable references of components attached to them
-/// in the dense array storage.
+/// in the hash array storage.
 pub struct IterMut<'a, T>
 where
     T: Component,
@@ -559,7 +560,7 @@ where
 
 impl<T> FusedIterator for IterMut<'_, T> where T: Component {}
 
-/// Iterator of entities with components attached to them in the dense array storage.
+/// Iterator of entities with components attached to them in the hash array storage.
 pub struct IntoIter<T, const N: usize>
 where
     T: Component,

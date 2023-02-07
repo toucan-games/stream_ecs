@@ -14,13 +14,13 @@ use crate::entity::{
 
 use super::ArrayRegistryError;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum SlotEntry {
     Occupied { dense_index: u32 },
     Free { next_free: u32 },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Slot {
     entry: SlotEntry,
     generation: u32,
@@ -160,8 +160,7 @@ impl<const N: usize> TryRegistry for DenseArrayRegistry<N> {
     type Err = ArrayRegistryError;
 
     fn try_create(&mut self) -> Result<Entity, Self::Err> {
-        let new_len = self.len() as u32 + 1;
-        if usize::try_from(new_len).is_err() || new_len == u32::MAX {
+        if self.len() == self.capacity() {
             return Err(ArrayRegistryError);
         }
 
