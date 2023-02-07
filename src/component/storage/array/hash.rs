@@ -466,6 +466,7 @@ where
 
 /// Iterator of entities with references of components attached to them
 /// in the hash array storage.
+#[derive(Debug, Clone)]
 pub struct Iter<'a, T>
 where
     T: Component,
@@ -512,6 +513,7 @@ impl<T> FusedIterator for Iter<'_, T> where T: Component {}
 
 /// Iterator of entities with mutable references of components attached to them
 /// in the hash array storage.
+#[derive(Debug)]
 pub struct IterMut<'a, T>
 where
     T: Component,
@@ -561,6 +563,7 @@ where
 impl<T> FusedIterator for IterMut<'_, T> where T: Component {}
 
 /// Iterator of entities with components attached to them in the hash array storage.
+#[derive(Debug, Clone)]
 pub struct IntoIter<T, const N: usize>
 where
     T: Component,

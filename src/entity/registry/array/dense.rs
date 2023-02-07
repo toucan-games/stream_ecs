@@ -223,6 +223,7 @@ impl<const N: usize> IntoIterator for DenseArrayRegistry<N> {
 }
 
 /// Iterator over alive entities contained in the dense array registry.
+#[derive(Debug, Clone)]
 pub struct Iter<'a> {
     iter: Copied<slice::Iter<'a, Entity>>,
 }
@@ -254,6 +255,7 @@ impl ExactSizeIterator for Iter<'_> {
 impl FusedIterator for Iter<'_> {}
 
 /// Type of iterator in which dense array registry can be converted.
+#[derive(Debug, Clone)]
 pub struct IntoIter<const N: usize> {
     iter: arrayvec::IntoIter<Entity, N>,
 }

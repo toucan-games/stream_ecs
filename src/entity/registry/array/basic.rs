@@ -261,6 +261,7 @@ impl ExactSizeIterator for Iter<'_> {
 impl FusedIterator for Iter<'_> {}
 
 /// Type of iterator in which array registry can be converted.
+#[derive(Debug, Clone)]
 pub struct IntoIter<const N: usize> {
     iter: Enumerate<arrayvec::IntoIter<Slot<()>, N>>,
     num_left: u32,
