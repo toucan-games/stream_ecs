@@ -1,4 +1,4 @@
-//! Dense component storage implementation backed by an array.
+//! Hash dense component storage implementation backed by an array.
 
 use core::{
     hash::{BuildHasher, Hash, Hasher},
@@ -59,9 +59,9 @@ enum HashIndex {
     Occupied { hash: HashValue, index: u32 },
 }
 
-/// Dense implementation of the component storage backed by an array.
+/// Hash dense implementation of the component storage backed by an array.
 #[derive(Debug, Clone)]
-pub struct DenseArrayStorage<T, S, const N: usize>
+pub struct HashArrayStorage<T, S, const N: usize>
 where
     T: Component,
 {
@@ -70,12 +70,12 @@ where
     build_hasher: S,
 }
 
-impl<T, S, const N: usize> DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> HashArrayStorage<T, S, N>
 where
     T: Component,
     S: Default,
 {
-    /// Creates new empty dense array component storage.
+    /// Creates new empty hash dense array component storage.
     ///
     /// # Examples
     ///
@@ -88,14 +88,14 @@ where
     }
 }
 
-impl<T, S, const N: usize> DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> HashArrayStorage<T, S, N>
 where
     T: Component,
 {
     const EMPTY_INDEX: HashIndex = HashIndex::Free;
     const EMPTY_ARRAY: [HashIndex; N] = [Self::EMPTY_INDEX; N];
 
-    /// Creates new empty dense array component storage with provided hasher.
+    /// Creates new empty hash dense array component storage with provided hasher.
     ///
     /// # Examples
     ///
@@ -110,7 +110,7 @@ where
         }
     }
 
-    /// Returns the capacity of the dense array component storage.
+    /// Returns the capacity of the hash dense array component storage.
     ///
     /// # Examples
     ///
@@ -122,7 +122,7 @@ where
     }
 }
 
-impl<T, S, const N: usize> Default for DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> Default for HashArrayStorage<T, S, N>
 where
     T: Component,
     S: Default,
@@ -138,7 +138,7 @@ struct FindBucket {
     bucket_index: u32,
 }
 
-impl<T, S, const N: usize> DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> HashArrayStorage<T, S, N>
 where
     T: Component,
     S: BuildHasher,
@@ -188,7 +188,7 @@ where
     }
 }
 
-impl<T, S, const N: usize> Storage for DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> Storage for HashArrayStorage<T, S, N>
 where
     T: Component,
     S: BuildHasher + Send + Sync + 'static,
@@ -314,7 +314,7 @@ where
     }
 }
 
-impl<T, S, const N: usize> TryStorage for DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> TryStorage for HashArrayStorage<T, S, N>
 where
     T: Component,
     S: BuildHasher + Send + Sync + 'static,
@@ -421,7 +421,7 @@ where
     }
 }
 
-impl<'a, T, S, const N: usize> IntoIterator for &'a DenseArrayStorage<T, S, N>
+impl<'a, T, S, const N: usize> IntoIterator for &'a HashArrayStorage<T, S, N>
 where
     T: Component,
 {
@@ -435,7 +435,7 @@ where
     }
 }
 
-impl<'a, T, S, const N: usize> IntoIterator for &'a mut DenseArrayStorage<T, S, N>
+impl<'a, T, S, const N: usize> IntoIterator for &'a mut HashArrayStorage<T, S, N>
 where
     T: Component,
 {
@@ -449,7 +449,7 @@ where
     }
 }
 
-impl<T, S, const N: usize> IntoIterator for DenseArrayStorage<T, S, N>
+impl<T, S, const N: usize> IntoIterator for HashArrayStorage<T, S, N>
 where
     T: Component,
 {
@@ -614,22 +614,22 @@ mod tests {
     #[derive(Debug, Clone, Copy)]
     struct Marker;
 
-    type DenseArrayStorage<T, const N: usize> =
-        super::DenseArrayStorage<T, BuildHasherDefault<DefaultHasher>, N>;
+    type HashArrayStorage<T, const N: usize> =
+        super::HashArrayStorage<T, BuildHasherDefault<DefaultHasher>, N>;
 
     impl Component for Marker {
-        type Storage = DenseArrayStorage<Self, 0>;
+        type Storage = HashArrayStorage<Self, 0>;
     }
 
     #[test]
     fn new() {
-        let storage = DenseArrayStorage::<Marker, 10>::new();
+        let storage = HashArrayStorage::<Marker, 10>::new();
         assert!(storage.is_empty());
     }
 
     #[test]
     fn attach() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::<Marker, 10>::new();
         let entity = Entity::new(0, 0);
 
         let marker = storage.attach(entity, Marker);
@@ -639,7 +639,7 @@ mod tests {
 
     #[test]
     fn attach_many() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::<Marker, 10>::new();
         for index in 0..storage.capacity() as u32 {
             let entity = Entity::new(index, 0);
             storage.attach(entity, Marker);
@@ -649,7 +649,7 @@ mod tests {
 
     #[test]
     fn remove() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::<Marker, 10>::new();
         let entity = Entity::new(1, 0);
 
         storage.attach(entity, Marker);
@@ -660,7 +660,7 @@ mod tests {
 
     #[test]
     fn reattach() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::<Marker, 10>::new();
         let entity = Entity::new(2, 0);
 
         let marker = storage.attach(entity, Marker);
@@ -678,7 +678,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn too_many() {
-        let mut storage = DenseArrayStorage::<Marker, 2>::new();
+        let mut storage = HashArrayStorage::<Marker, 2>::new();
 
         let entity = Entity::new(0, 0);
         storage.attach(entity, Marker);
@@ -692,7 +692,7 @@ mod tests {
 
     #[test]
     fn iter() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::<Marker, 10>::new();
         let _ = storage.attach(Entity::new(0, 0), Marker);
         let _ = storage.attach(Entity::new(1, 0), Marker);
         let _ = storage.attach(Entity::new(2, 0), Marker);
@@ -709,7 +709,7 @@ mod tests {
 
     #[test]
     fn into_iter() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::<Marker, 10>::new();
         let _ = storage.attach(Entity::new(0, 0), Marker);
         let _ = storage.attach(Entity::new(1, 0), Marker);
         let _ = storage.attach(Entity::new(2, 0), Marker);
