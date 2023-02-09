@@ -1,9 +1,6 @@
 //! Dense entity registry implementation backed by an array.
 
-use core::{
-    iter::{Copied, FusedIterator},
-    slice,
-};
+use core::{iter::FusedIterator, slice};
 
 use arrayvec::ArrayVec;
 
@@ -73,18 +70,112 @@ impl<const N: usize> DenseArrayRegistry<N> {
     pub const fn capacity(&self) -> usize {
         self.dense.capacity()
     }
-}
 
-impl<const N: usize> Registry for DenseArrayRegistry<N> {
+    /// Creates new entity in the dense array registry.
+    ///
+    /// This method reuses indices from destroyed entities, but the resulting key is unique.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the count of already created entities
+    /// is the same as the capacity of the registry.
+    ///
+    /// If you wish to handle an error rather than panicking,
+    /// you should use [`try_create`][Self::try_create()] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    /// assert_ne!(first, second);
+    /// ```
     #[track_caller]
-    fn create(&mut self) -> Entity {
+    pub fn create(&mut self) -> Entity {
         match self.try_create() {
             Ok(entity) => entity,
             Err(err) => panic!("{err}"),
         }
     }
 
-    fn contains(&self, entity: Entity) -> bool {
+    /// Tries to create new entity in the dense array registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the count of already created entities
+    /// is the same as the capacity of the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<2>::new();
+    /// let _ = registry.try_create().unwrap();
+    /// let _ = registry.try_create().unwrap();
+    /// let entity = registry.try_create();
+    /// assert!(entity.is_err());
+    /// ```
+    ///
+    /// This is the fallible version of [`create`][Self::create()] method.
+    pub fn try_create(&mut self) -> Result<Entity, ArrayRegistryError> {
+        if self.len() == self.capacity() {
+            return Err(ArrayRegistryError);
+        }
+
+        let entity = if let Some(slot) = self.sparse.get_mut(self.free_head as usize) {
+            if let SlotEntry::Free { next_free } = slot.entry {
+                let entity = Entity::new(self.free_head, slot.generation);
+                if self.dense.try_push(entity).is_err() {
+                    return Err(ArrayRegistryError);
+                }
+                self.free_head = next_free;
+                slot.entry = SlotEntry::Occupied {
+                    dense_index: self.dense.len() as u32 - 1,
+                };
+                entity
+            } else {
+                unreachable!("free head must not point to the occupied entry")
+            }
+        } else {
+            let generation = 0;
+            let entity = Entity::new(self.free_head, generation);
+            let slot = Slot {
+                entry: SlotEntry::Occupied {
+                    dense_index: self.dense.len() as u32,
+                },
+                generation,
+            };
+            if self.dense.try_push(entity).is_err() {
+                return Err(ArrayRegistryError);
+            }
+            if self.sparse.try_push(slot).is_err() {
+                return Err(ArrayRegistryError);
+            }
+            self.free_head = self.sparse.len() as u32;
+            entity
+        };
+        Ok(entity)
+    }
+
+    /// Checks if the dense array registry contains provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<10>::new();
+    /// let entity = registry.create();
+    /// assert!(registry.contains(entity));
+    ///
+    /// registry.destroy(entity).unwrap();
+    /// assert!(!registry.contains(entity))
+    /// ```
+    pub fn contains(&self, entity: Entity) -> bool {
         let Ok(index) = usize::try_from(entity.index) else {
             return false;
         };
@@ -100,7 +191,28 @@ impl<const N: usize> Registry for DenseArrayRegistry<N> {
         slot.generation == entity.generation
     }
 
-    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+    /// Destroys provided entity which was previously created in the dense array registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity
+    /// was destroyed earlier or was not created in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<10>::new();
+    /// let entity = registry.create();
+    ///
+    /// let result = registry.destroy(entity);
+    /// assert!(result.is_ok());
+    ///
+    /// let result = registry.destroy(entity);
+    /// assert!(result.is_err());
+    /// ```
+    pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
         let Ok(index) = usize::try_from(entity.index) else {
             return Err(NotPresentError::new(entity));
         };
@@ -137,22 +249,114 @@ impl<const N: usize> Registry for DenseArrayRegistry<N> {
         Ok(())
     }
 
-    fn len(&self) -> usize {
+    /// Returns count of currently alive entities of the dense array registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<10>::new();
+    /// let _ = registry.create();
+    /// let _ = registry.create();
+    /// assert_eq!(registry.len(), 2);
+    /// ```
+    pub const fn len(&self) -> usize {
         self.dense.len()
     }
 
-    fn clear(&mut self) {
+    /// Checks if the dense array registry contains no alive entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<10>::new();
+    /// assert!(registry.is_empty());
+    ///
+    /// let entity = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.destroy(entity).unwrap();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Clears the dense array registry, destroying all the entities in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.clear();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
         self.dense.clear();
         self.sparse.clear();
         self.free_head = 0;
     }
 
-    type Iter<'a> = <&'a Self as IntoIterator>::IntoIter
+    /// Returns an iterator of alive entities created by the dense array registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    ///
+    /// for entity in registry.iter() {
+    ///     println!("entity is {entity}");
+    /// }
+    /// ```
+    pub fn iter(&self) -> Iter<'_> {
+        self.into_iter()
+    }
+}
+
+impl<const N: usize> Registry for DenseArrayRegistry<N> {
+    fn create(&mut self) -> Entity {
+        DenseArrayRegistry::create(self)
+    }
+
+    fn contains(&self, entity: Entity) -> bool {
+        DenseArrayRegistry::contains(self, entity)
+    }
+
+    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+        DenseArrayRegistry::destroy(self, entity)
+    }
+
+    fn len(&self) -> usize {
+        DenseArrayRegistry::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        DenseArrayRegistry::is_empty(self)
+    }
+
+    fn clear(&mut self) {
+        DenseArrayRegistry::clear(self)
+    }
+
+    type Iter<'a> = Iter<'a>
     where
         Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
-        self.into_iter()
+        DenseArrayRegistry::iter(self)
     }
 }
 
@@ -160,43 +364,7 @@ impl<const N: usize> TryRegistry for DenseArrayRegistry<N> {
     type Err = ArrayRegistryError;
 
     fn try_create(&mut self) -> Result<Entity, Self::Err> {
-        if self.len() == self.capacity() {
-            return Err(ArrayRegistryError);
-        }
-
-        let entity = if let Some(slot) = self.sparse.get_mut(self.free_head as usize) {
-            if let SlotEntry::Free { next_free } = slot.entry {
-                let entity = Entity::new(self.free_head, slot.generation);
-                if self.dense.try_push(entity).is_err() {
-                    return Err(ArrayRegistryError);
-                }
-                self.free_head = next_free;
-                slot.entry = SlotEntry::Occupied {
-                    dense_index: self.dense.len() as u32 - 1,
-                };
-                entity
-            } else {
-                unreachable!("Free head must not point to the occupied entry")
-            }
-        } else {
-            let generation = 0;
-            let entity = Entity::new(self.free_head, generation);
-            let slot = Slot {
-                entry: SlotEntry::Occupied {
-                    dense_index: self.dense.len() as u32,
-                },
-                generation,
-            };
-            if self.dense.try_push(entity).is_err() {
-                return Err(ArrayRegistryError);
-            }
-            if self.sparse.try_push(slot).is_err() {
-                return Err(ArrayRegistryError);
-            }
-            self.free_head = self.sparse.len() as u32;
-            entity
-        };
-        Ok(entity)
+        DenseArrayRegistry::try_create(self)
     }
 }
 
@@ -206,7 +374,7 @@ impl<'a, const N: usize> IntoIterator for &'a DenseArrayRegistry<N> {
     type IntoIter = Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let iter = self.dense.iter().copied();
+        let iter = self.dense.iter();
         Iter { iter }
     }
 }
@@ -225,14 +393,14 @@ impl<const N: usize> IntoIterator for DenseArrayRegistry<N> {
 /// Iterator over alive entities contained in the dense array registry.
 #[derive(Debug, Clone)]
 pub struct Iter<'a> {
-    iter: Copied<slice::Iter<'a, Entity>>,
+    iter: slice::Iter<'a, Entity>,
 }
 
 impl Iterator for Iter<'_> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().copied()
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -242,7 +410,7 @@ impl Iterator for Iter<'_> {
 
 impl DoubleEndedIterator for Iter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back()
+        self.iter.next_back().copied()
     }
 }
 
@@ -288,7 +456,8 @@ impl<const N: usize> FusedIterator for IntoIter<N> {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::DenseArrayRegistry;
+
     #[test]
     fn new() {
         let registry = DenseArrayRegistry::<10>::new();

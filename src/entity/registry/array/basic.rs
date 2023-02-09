@@ -73,18 +73,104 @@ impl<const N: usize> ArrayRegistry<N> {
     pub const fn capacity(&self) -> usize {
         self.slots.capacity()
     }
-}
 
-impl<const N: usize> Registry for ArrayRegistry<N> {
+    /// Creates new entity in the array registry.
+    ///
+    /// This method reuses indices from destroyed entities, but the resulting key is unique.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the count of already created entities
+    /// is the same as the capacity of the registry.
+    ///
+    /// If you wish to handle an error rather than panicking,
+    /// you should use [`try_create`][Self::try_create()] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    /// assert_ne!(first, second);
+    /// ```
     #[track_caller]
-    fn create(&mut self) -> Entity {
+    pub fn create(&mut self) -> Entity {
         match self.try_create() {
             Ok(entity) => entity,
             Err(err) => panic!("{err}"),
         }
     }
 
-    fn contains(&self, entity: Entity) -> bool {
+    /// Tries to create new entity in the array registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the count of already created entities
+    /// is the same as the capacity of the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<2>::new();
+    /// let _ = registry.try_create().unwrap();
+    /// let _ = registry.try_create().unwrap();
+    /// let entity = registry.try_create();
+    /// assert!(entity.is_err());
+    /// ```
+    ///
+    /// This is the fallible version of [`create`][Self::create()] method.
+    pub fn try_create(&mut self) -> Result<Entity, ArrayRegistryError> {
+        let new_len = self.len + 1;
+        if usize::try_from(new_len).is_err() || new_len == u32::MAX {
+            return Err(ArrayRegistryError);
+        }
+
+        let entity = if let Some(slot) = self.slots.get_mut(self.free_head as usize) {
+            if let SlotEntry::Free { next_free } = slot.entry {
+                let entity = Entity::new(self.free_head, slot.generation);
+                self.free_head = next_free;
+                slot.entry = SlotEntry::Occupied { value: () };
+                entity
+            } else {
+                unreachable!("free head must not point to the occupied entry")
+            }
+        } else {
+            let generation = 0;
+            let entity = Entity::new(self.len, generation);
+            let slot = Slot {
+                entry: SlotEntry::Occupied { value: () },
+                generation,
+            };
+            if self.slots.try_push(slot).is_err() {
+                return Err(ArrayRegistryError);
+            }
+            self.free_head = entity.index + 1;
+            entity
+        };
+        self.len = new_len;
+        Ok(entity)
+    }
+
+    /// Checks if the array registry contains provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// let entity = registry.create();
+    /// assert!(registry.contains(entity));
+    ///
+    /// registry.destroy(entity).unwrap();
+    /// assert!(!registry.contains(entity))
+    /// ```
+    pub fn contains(&self, entity: Entity) -> bool {
         let Ok(index) = usize::try_from(entity.index) else {
             return false;
         };
@@ -101,7 +187,28 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         generation == entity.generation
     }
 
-    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+    /// Destroys provided entity which was previously created in the array registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity
+    /// was destroyed earlier or was not created in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// let entity = registry.create();
+    ///
+    /// let result = registry.destroy(entity);
+    /// assert!(result.is_ok());
+    ///
+    /// let result = registry.destroy(entity);
+    /// assert!(result.is_err());
+    /// ```
+    pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
         let Ok(index) = usize::try_from(entity.index) else {
             return Err(NotPresentError::new(entity));
         };
@@ -123,22 +230,114 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         Ok(value)
     }
 
-    fn len(&self) -> usize {
+    /// Returns count of currently alive entities of the array registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// let _ = registry.create();
+    /// let _ = registry.create();
+    /// assert_eq!(registry.len(), 2);
+    /// ```
+    pub const fn len(&self) -> usize {
         self.len as usize
     }
 
-    fn clear(&mut self) {
+    /// Checks if the array registry contains no alive entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// assert!(registry.is_empty());
+    ///
+    /// let entity = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.destroy(entity).unwrap();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Clears the array registry, destroying all the entities in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.clear();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
         self.slots.clear();
         self.free_head = 0;
         self.len = 0;
     }
 
-    type Iter<'a> = <&'a Self as IntoIterator>::IntoIter
+    /// Returns an iterator of alive entities created by the array registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    ///
+    /// for entity in registry.iter() {
+    ///     println!("entity is {entity}");
+    /// }
+    /// ```
+    pub fn iter(&self) -> Iter<'_> {
+        self.into_iter()
+    }
+}
+
+impl<const N: usize> Registry for ArrayRegistry<N> {
+    fn create(&mut self) -> Entity {
+        ArrayRegistry::create(self)
+    }
+
+    fn contains(&self, entity: Entity) -> bool {
+        ArrayRegistry::contains(self, entity)
+    }
+
+    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+        ArrayRegistry::destroy(self, entity)
+    }
+
+    fn len(&self) -> usize {
+        ArrayRegistry::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        ArrayRegistry::is_empty(self)
+    }
+
+    fn clear(&mut self) {
+        ArrayRegistry::clear(self)
+    }
+
+    type Iter<'a> = Iter<'a>
     where
         Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
-        self.into_iter()
+        ArrayRegistry::iter(self)
     }
 }
 
@@ -146,35 +345,7 @@ impl<const N: usize> TryRegistry for ArrayRegistry<N> {
     type Err = ArrayRegistryError;
 
     fn try_create(&mut self) -> Result<Entity, Self::Err> {
-        let new_len = self.len + 1;
-        if usize::try_from(new_len).is_err() || new_len == u32::MAX {
-            return Err(ArrayRegistryError);
-        }
-
-        let entity = if let Some(slot) = self.slots.get_mut(self.free_head as usize) {
-            if let SlotEntry::Free { next_free } = slot.entry {
-                let entity = Entity::new(self.free_head, slot.generation);
-                self.free_head = next_free;
-                slot.entry = SlotEntry::Occupied { value: () };
-                entity
-            } else {
-                unreachable!("Free head must not point to the occupied entry")
-            }
-        } else {
-            let generation = 0;
-            let entity = Entity::new(self.len, generation);
-            let slot = Slot {
-                entry: SlotEntry::Occupied { value: () },
-                generation,
-            };
-            if self.slots.try_push(slot).is_err() {
-                return Err(ArrayRegistryError);
-            }
-            self.free_head = entity.index + 1;
-            entity
-        };
-        self.len = new_len;
-        Ok(entity)
+        ArrayRegistry::try_create(self)
     }
 }
 
@@ -314,7 +485,7 @@ impl<const N: usize> FusedIterator for IntoIter<N> {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::ArrayRegistry;
 
     #[test]
     fn new() {
