@@ -28,7 +28,7 @@ pub trait Storage: Send + Sync + 'static {
     /// is newer (its generation is greater) than an actual entity with the same index.
     fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item>;
 
-    /// Checks if any component is attached to provided entity.
+    /// Checks if a component is attached to provided entity.
     fn is_attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
@@ -70,8 +70,8 @@ pub trait Storage: Send + Sync + 'static {
     where
         Self: 'a;
 
-    /// Returns a mutable iterator over entity keys
-    /// with references of components attached to them.
+    /// Returns an iterator over entity keys
+    /// with mutable references of components attached to them.
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 

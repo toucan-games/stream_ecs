@@ -63,119 +63,54 @@ where
     pub const fn capacity(&self) -> usize {
         self.slots.len()
     }
-}
 
-impl<T, const N: usize> Default for ArrayStorage<T, N>
-where
-    T: Component,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T, const N: usize> Storage for ArrayStorage<T, N>
-where
-    T: Component,
-{
-    type Item = T;
-
+    /// Attaches provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// This method reuses existing entities when provided entity
+    /// is newer (its generation is greater) than an actual entity with the same index.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the count of components attached to some entities
+    /// is the same as the capacity of the storage.
+    ///
+    /// If you wish to handle an error rather than panicking,
+    /// you should use [`try_attach`][Self::try_attach()] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     #[track_caller]
-    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+    pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
         match self.try_attach(entity, component) {
             Ok(component) => component,
             Err(err) => panic!("{err}"),
         }
     }
 
-    fn is_attached(&self, entity: Entity) -> bool {
-        let Ok(index) = usize::try_from(entity.index()) else {
-            return false;
-        };
-        let Some(slot) = self.slots.get(index) else {
-            return false;
-        };
-        let &Slot::Occupied { generation, .. } = slot else {
-            return false;
-        };
-        generation == entity.generation()
-    }
-
-    fn get(&self, entity: Entity) -> Option<&Self::Item> {
-        let index = usize::try_from(entity.index()).ok()?;
-        let slot = self.slots.get(index)?;
-        let &Slot::Occupied { generation, ref value } = slot else {
-            return None;
-        };
-        if generation != entity.generation() {
-            return None;
-        }
-        Some(value)
-    }
-
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
-        let index = usize::try_from(entity.index()).ok()?;
-        let slot = self.slots.get_mut(index)?;
-        let &mut Slot::Occupied { generation, ref mut value } = slot else {
-            return None;
-        };
-        if generation != entity.generation() {
-            return None;
-        }
-        Some(value)
-    }
-
-    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
-        let index = usize::try_from(entity.index()).ok()?;
-        let slot = self.slots.get_mut(index)?;
-        let Slot::Occupied { value, generation } = mem::replace(slot, Slot::Free) else {
-            return None;
-        };
-        if entity.generation() != generation {
-            *slot = Slot::Occupied { value, generation };
-            return None;
-        }
-        self.len -= 1;
-        Some(value)
-    }
-
-    fn clear(&mut self) {
-        self.slots = Self::FREE_ARRAY;
-        self.len = 0;
-    }
-
-    fn len(&self) -> usize {
-        self.len as usize
-    }
-
-    type Iter<'a> = <&'a Self as IntoIterator>::IntoIter
-    where
-        Self: 'a;
-
-    fn iter(&self) -> Self::Iter<'_> {
-        self.into_iter()
-    }
-
-    type IterMut<'a> = <&'a mut Self as IntoIterator>::IntoIter
-    where
-        Self: 'a;
-
-    fn iter_mut(&mut self) -> Self::IterMut<'_> {
-        self.into_iter()
-    }
-}
-
-impl<T, const N: usize> TryStorage for ArrayStorage<T, N>
-where
-    T: Component,
-{
-    type Err = ArrayStorageError;
-
-    fn try_attach(
+    /// Tries to attach provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the count of components attached to some entities
+    /// is the same as the capacity of the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`attach`][Self::attach()] method.
+    pub fn try_attach(
         &mut self,
         entity: Entity,
-        component: Self::Item,
-    ) -> Result<Option<Self::Item>, Self::Err> {
+        component: T,
+    ) -> Result<Option<T>, ArrayStorageError> {
         let Ok(index) = usize::try_from(entity.index()) else {
             return Err(ArrayStorageError);
         };
@@ -200,6 +135,223 @@ where
                 Ok(Some(component))
             }
         }
+    }
+
+    /// Checks if a component is attached to provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_attached(&self, entity: Entity) -> bool {
+        let Ok(index) = usize::try_from(entity.index()) else {
+            return false;
+        };
+        let Some(slot) = self.slots.get(index) else {
+            return false;
+        };
+        let &Slot::Occupied { generation, .. } = slot else {
+            return false;
+        };
+        generation == entity.generation()
+    }
+
+    /// Retrieves a reference to the component attached to provided entity.
+    /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get(&self, entity: Entity) -> Option<&T> {
+        let index = usize::try_from(entity.index()).ok()?;
+        let slot = self.slots.get(index)?;
+        let &Slot::Occupied { generation, ref value } = slot else {
+            return None;
+        };
+        if generation != entity.generation() {
+            return None;
+        }
+        Some(value)
+    }
+
+    /// Retrieves a mutable reference to the component attached to provided entity.
+    /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
+        let index = usize::try_from(entity.index()).ok()?;
+        let slot = self.slots.get_mut(index)?;
+        let &mut Slot::Occupied { generation, ref mut value } = slot else {
+            return None;
+        };
+        if generation != entity.generation() {
+            return None;
+        }
+        Some(value)
+    }
+
+    /// Removes component from provided entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn remove(&mut self, entity: Entity) -> Option<T> {
+        let index = usize::try_from(entity.index()).ok()?;
+        let slot = self.slots.get_mut(index)?;
+        let Slot::Occupied { value, generation } = mem::replace(slot, Slot::Free) else {
+            return None;
+        };
+        if entity.generation() != generation {
+            *slot = Slot::Occupied { value, generation };
+            return None;
+        }
+        self.len -= 1;
+        Some(value)
+    }
+
+    /// Clears this array storage, destroying all components in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn clear(&mut self) {
+        self.slots = Self::FREE_ARRAY;
+        self.len = 0;
+    }
+
+    /// Returns count of components which are stored in the array storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub const fn len(&self) -> usize {
+        self.len as usize
+    }
+
+    /// Checks if the array storage is empty, or has no components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns an iterator over entity keys with references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.into_iter()
+    }
+
+    /// Returns an iterator over entity keys with mutable references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.into_iter()
+    }
+}
+
+impl<T, const N: usize> Default for ArrayStorage<T, N>
+where
+    T: Component,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T, const N: usize> Storage for ArrayStorage<T, N>
+where
+    T: Component,
+{
+    type Item = T;
+
+    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+        ArrayStorage::attach(self, entity, component)
+    }
+
+    fn is_attached(&self, entity: Entity) -> bool {
+        ArrayStorage::is_attached(self, entity)
+    }
+
+    fn get(&self, entity: Entity) -> Option<&Self::Item> {
+        ArrayStorage::get(self, entity)
+    }
+
+    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
+        ArrayStorage::get_mut(self, entity)
+    }
+
+    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
+        ArrayStorage::remove(self, entity)
+    }
+
+    fn clear(&mut self) {
+        ArrayStorage::clear(self)
+    }
+
+    fn len(&self) -> usize {
+        ArrayStorage::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        ArrayStorage::is_empty(self)
+    }
+
+    type Iter<'a> = Iter<'a, T>
+    where
+        Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        ArrayStorage::iter(self)
+    }
+
+    type IterMut<'a> = IterMut<'a, T>
+    where
+        Self: 'a;
+
+    fn iter_mut(&mut self) -> Self::IterMut<'_> {
+        ArrayStorage::iter_mut(self)
+    }
+}
+
+impl<T, const N: usize> TryStorage for ArrayStorage<T, N>
+where
+    T: Component,
+{
+    type Err = ArrayStorageError;
+
+    fn try_attach(
+        &mut self,
+        entity: Entity,
+        component: Self::Item,
+    ) -> Result<Option<Self::Item>, Self::Err> {
+        ArrayStorage::try_attach(self, entity, component)
     }
 }
 
@@ -444,7 +596,9 @@ impl<T, const N: usize> FusedIterator for IntoIter<T, N> where T: Component {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::{component::Component, entity::Entity};
+
+    use super::ArrayStorage;
 
     #[derive(Debug, Clone, Copy)]
     struct Marker;

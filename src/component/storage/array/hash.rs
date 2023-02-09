@@ -1,4 +1,4 @@
-//! Hash dense component storage implementation backed by an array.
+//! Hash component storage implementation backed by an array.
 
 use core::{
     hash::{BuildHasher, Hash, Hasher},
@@ -120,6 +120,62 @@ where
     pub const fn capacity(&self) -> usize {
         self.buckets.capacity()
     }
+
+    /// Clears this hash array storage, destroying all components in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn clear(&mut self) {
+        self.buckets.clear();
+        self.indices = Self::EMPTY_ARRAY;
+    }
+
+    /// Returns count of components which are stored in the hash array storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub const fn len(&self) -> usize {
+        self.buckets.len()
+    }
+
+    /// Checks if the hash array storage is empty, or has no components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns an iterator over entity keys with references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.into_iter()
+    }
+
+    /// Returns an iterator over entity keys with mutable references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.into_iter()
+    }
 }
 
 impl<T, S, const N: usize> Default for HashArrayStorage<T, S, N>
@@ -186,146 +242,54 @@ where
         };
         item
     }
-}
 
-impl<T, S, const N: usize> Storage for HashArrayStorage<T, S, N>
-where
-    T: Component,
-    S: BuildHasher + Send + Sync + 'static,
-{
-    type Item = T;
-
+    /// Attaches provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// This method reuses existing entities when provided entity
+    /// is newer (its generation is greater) than an actual entity with the same index.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the count of components attached to some entities
+    /// is the same as the capacity of the storage.
+    ///
+    /// If you wish to handle an error rather than panicking,
+    /// you should use [`try_attach`][Self::try_attach()] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     #[track_caller]
-    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+    pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
         match self.try_attach(entity, component) {
             Ok(component) => component,
             Err(err) => panic!("{err}"),
         }
     }
 
-    fn is_attached(&self, entity: Entity) -> bool {
-        self.find_bucket(entity).is_some()
-    }
-
-    fn get(&self, entity: Entity) -> Option<&Self::Item> {
-        let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
-        let Bucket { value, .. } = self
-            .buckets
-            .get(bucket_index as usize)
-            .expect("index should point to the valid bucket");
-        Some(value)
-    }
-
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
-        let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
-        let Bucket { value, .. } = self
-            .buckets
-            .get_mut(bucket_index as usize)
-            .expect("index should point to the valid bucket");
-        Some(value)
-    }
-
-    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
-        let FindBucket {
-            hash_index,
-            bucket_index,
-        } = self.find_bucket(entity)?;
-
-        {
-            let hash_index = self
-                .indices
-                .get_mut(hash_index as usize)
-                .expect("index should point to the valid hash index");
-            *hash_index = Self::EMPTY_INDEX;
-        }
-
-        let bucket = self
-            .buckets
-            .swap_pop(bucket_index as usize)
-            .expect("index should point to the valid bucket");
-        if let Some(bucket) = self.buckets.get(bucket_index as usize) {
-            let &Bucket { hash, .. } = bucket;
-            let probe_len = self.capacity() as u64;
-            let desired_index = hash.desired_index(probe_len) as usize;
-            let mut skip = desired_index;
-            'outer: loop {
-                for hash_index in self.indices.iter_mut().skip(skip) {
-                    let &mut HashIndex::Occupied { index, .. } = hash_index else {
-                        continue;
-                    };
-                    if (index as usize) < self.buckets.len() {
-                        continue;
-                    }
-                    *hash_index = HashIndex::Occupied {
-                        hash,
-                        index: bucket_index,
-                    };
-                    break 'outer;
-                }
-                skip = 0;
-            }
-        }
-
-        let mut last_current = hash_index as usize;
-        let probe_len = self.capacity() as u64;
-        let mut skip = last_current + 1;
-        'outer: loop {
-            for current in skip..probe_len as usize {
-                let HashIndex::Occupied { hash, .. } = self.indices[current] else {
-                    break 'outer;
-                };
-                let probe_distance = hash.probe_distance(probe_len, current as u64);
-                if probe_distance == 0 {
-                    break 'outer;
-                }
-                self.indices[last_current] = self.indices[current];
-                self.indices[current] = HashIndex::Free;
-                last_current = current;
-            }
-            skip = 0;
-        }
-
-        Some(bucket.value)
-    }
-
-    fn clear(&mut self) {
-        self.buckets.clear();
-        self.indices = Self::EMPTY_ARRAY;
-    }
-
-    fn len(&self) -> usize {
-        self.buckets.len()
-    }
-
-    type Iter<'a> = <&'a Self as IntoIterator>::IntoIter
-    where
-        Self: 'a;
-
-    fn iter(&self) -> Self::Iter<'_> {
-        self.into_iter()
-    }
-
-    type IterMut<'a> = <&'a mut Self as IntoIterator>::IntoIter
-    where
-        Self: 'a;
-
-    fn iter_mut(&mut self) -> Self::IterMut<'_> {
-        self.into_iter()
-    }
-}
-
-impl<T, S, const N: usize> TryStorage for HashArrayStorage<T, S, N>
-where
-    T: Component,
-    S: BuildHasher + Send + Sync + 'static,
-{
-    type Err = ArrayStorageError;
-
-    fn try_attach(
+    /// Tries to attach provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the count of components attached to some entities
+    /// is the same as the capacity of the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`attach`][Self::attach()] method.
+    pub fn try_attach(
         &mut self,
         entity: Entity,
-        component: Self::Item,
-    ) -> Result<Option<Self::Item>, Self::Err> {
+        component: T,
+    ) -> Result<Option<T>, ArrayStorageError> {
         enum AttachOperation<'a> {
             Replace { hash_index: &'a mut HashIndex },
             TakeFromRich { start_index: usize },
@@ -419,6 +383,194 @@ where
             }
             skip = 0;
         }
+    }
+
+    /// Checks if a component is attached to provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_attached(&self, entity: Entity) -> bool {
+        self.find_bucket(entity).is_some()
+    }
+
+    /// Retrieves a reference to the component attached to provided entity.
+    /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get(&self, entity: Entity) -> Option<&T> {
+        let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
+        let Bucket { value, .. } = self
+            .buckets
+            .get(bucket_index as usize)
+            .expect("index should point to the valid bucket");
+        Some(value)
+    }
+
+    /// Retrieves a mutable reference to the component attached to provided entity.
+    /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
+        let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
+        let Bucket { value, .. } = self
+            .buckets
+            .get_mut(bucket_index as usize)
+            .expect("index should point to the valid bucket");
+        Some(value)
+    }
+
+    /// Removes component from provided entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn remove(&mut self, entity: Entity) -> Option<T> {
+        let FindBucket {
+            hash_index,
+            bucket_index,
+        } = self.find_bucket(entity)?;
+
+        {
+            let hash_index = self
+                .indices
+                .get_mut(hash_index as usize)
+                .expect("index should point to the valid hash index");
+            *hash_index = Self::EMPTY_INDEX;
+        }
+
+        let bucket = self
+            .buckets
+            .swap_pop(bucket_index as usize)
+            .expect("index should point to the valid bucket");
+        if let Some(bucket) = self.buckets.get(bucket_index as usize) {
+            let &Bucket { hash, .. } = bucket;
+            let probe_len = self.capacity() as u64;
+            let desired_index = hash.desired_index(probe_len) as usize;
+            let mut skip = desired_index;
+            'outer: loop {
+                for hash_index in self.indices.iter_mut().skip(skip) {
+                    let &mut HashIndex::Occupied { index, .. } = hash_index else {
+                        continue;
+                    };
+                    if (index as usize) < self.buckets.len() {
+                        continue;
+                    }
+                    *hash_index = HashIndex::Occupied {
+                        hash,
+                        index: bucket_index,
+                    };
+                    break 'outer;
+                }
+                skip = 0;
+            }
+        }
+
+        let mut last_current = hash_index as usize;
+        let probe_len = self.capacity() as u64;
+        let mut skip = last_current + 1;
+        'outer: loop {
+            for current in skip..probe_len as usize {
+                let HashIndex::Occupied { hash, .. } = self.indices[current] else {
+                    break 'outer;
+                };
+                let probe_distance = hash.probe_distance(probe_len, current as u64);
+                if probe_distance == 0 {
+                    break 'outer;
+                }
+                self.indices[last_current] = self.indices[current];
+                self.indices[current] = HashIndex::Free;
+                last_current = current;
+            }
+            skip = 0;
+        }
+
+        Some(bucket.value)
+    }
+}
+
+impl<T, S, const N: usize> Storage for HashArrayStorage<T, S, N>
+where
+    T: Component,
+    S: BuildHasher + Send + Sync + 'static,
+{
+    type Item = T;
+
+    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+        HashArrayStorage::attach(self, entity, component)
+    }
+
+    fn is_attached(&self, entity: Entity) -> bool {
+        HashArrayStorage::is_attached(self, entity)
+    }
+
+    fn get(&self, entity: Entity) -> Option<&Self::Item> {
+        HashArrayStorage::get(self, entity)
+    }
+
+    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
+        HashArrayStorage::get_mut(self, entity)
+    }
+
+    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
+        HashArrayStorage::remove(self, entity)
+    }
+
+    fn clear(&mut self) {
+        HashArrayStorage::clear(self)
+    }
+
+    fn len(&self) -> usize {
+        HashArrayStorage::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        HashArrayStorage::is_empty(self)
+    }
+
+    type Iter<'a> = Iter<'a, T>
+    where
+        Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        HashArrayStorage::iter(self)
+    }
+
+    type IterMut<'a> = IterMut<'a, T>
+    where
+        Self: 'a;
+
+    fn iter_mut(&mut self) -> Self::IterMut<'_> {
+        HashArrayStorage::iter_mut(self)
+    }
+}
+
+impl<T, S, const N: usize> TryStorage for HashArrayStorage<T, S, N>
+where
+    T: Component,
+    S: BuildHasher + Send + Sync + 'static,
+{
+    type Err = ArrayStorageError;
+
+    fn try_attach(
+        &mut self,
+        entity: Entity,
+        component: Self::Item,
+    ) -> Result<Option<Self::Item>, Self::Err> {
+        HashArrayStorage::try_attach(self, entity, component)
     }
 }
 
@@ -613,7 +765,7 @@ mod tests {
     use core::hash::BuildHasherDefault;
     use std::collections::hash_map::DefaultHasher;
 
-    use super::*;
+    use crate::{component::Component, entity::Entity};
 
     #[derive(Debug, Clone, Copy)]
     struct Marker;

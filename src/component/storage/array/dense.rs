@@ -70,143 +70,54 @@ where
     pub const fn capacity(&self) -> usize {
         self.dense.capacity()
     }
-}
 
-impl<T, const N: usize> Default for DenseArrayStorage<T, N>
-where
-    T: Component,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T, const N: usize> Storage for DenseArrayStorage<T, N>
-where
-    T: Component,
-{
-    type Item = T;
-
+    /// Attaches provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// This method reuses existing entities when provided entity
+    /// is newer (its generation is greater) than an actual entity with the same index.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the count of components attached to some entities
+    /// is the same as the capacity of the storage.
+    ///
+    /// If you wish to handle an error rather than panicking,
+    /// you should use [`try_attach`][Self::try_attach()] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     #[track_caller]
-    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+    pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
         match self.try_attach(entity, component) {
             Ok(component) => component,
             Err(err) => panic!("{err}"),
         }
     }
 
-    fn is_attached(&self, entity: Entity) -> bool {
-        let Ok(index) = usize::try_from(entity.index()) else {
-            return false;
-        };
-        let Some(slot) = self.sparse.get(index) else {
-            return false;
-        };
-        let &Slot::Occupied { dense_index, generation } = slot else {
-            return false;
-        };
-        let Some(_) = self.dense.get(dense_index as usize) else {
-            return false;
-        };
-        generation == entity.generation()
-    }
-
-    fn get(&self, entity: Entity) -> Option<&Self::Item> {
-        let index = usize::try_from(entity.index()).ok()?;
-        let slot = self.sparse.get(index)?;
-        let &Slot::Occupied { dense_index, generation } = slot else {
-            return None;
-        };
-        if generation != entity.generation() {
-            return None;
-        }
-        let Dense { value, .. } = self.dense.get(dense_index as usize)?;
-        Some(value)
-    }
-
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
-        let index = usize::try_from(entity.index()).ok()?;
-        let slot = self.sparse.get(index)?;
-        let &Slot::Occupied { dense_index, generation } = slot else {
-            return None;
-        };
-        if generation != entity.generation() {
-            return None;
-        }
-        let Dense { value, .. } = self.dense.get_mut(dense_index as usize)?;
-        Some(value)
-    }
-
-    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
-        let index = usize::try_from(entity.index()).ok()?;
-        let slot = self.sparse.get_mut(index)?;
-        let Slot::Occupied { dense_index, generation } = mem::replace(slot, Slot::Free) else {
-            return None;
-        };
-        if entity.generation() != generation {
-            *slot = Slot::Occupied {
-                dense_index,
-                generation,
-            };
-            return None;
-        }
-        let Dense { value, .. } = self
-            .dense
-            .swap_pop(dense_index as usize)
-            .expect("dense index should point to the valid item");
-        if let Some(Dense { entity, .. }) = self.dense.get(dense_index as usize) {
-            let slot = self
-                .sparse
-                .get_mut(entity.index() as usize)
-                .expect("index should point to the valid slot");
-            *slot = match slot {
-                Slot::Occupied { .. } => Slot::Occupied {
-                    dense_index,
-                    generation,
-                },
-                Slot::Free => Slot::Free,
-            };
-        }
-        Some(value)
-    }
-
-    fn clear(&mut self) {
-        self.dense.clear();
-        self.sparse = Self::FREE_ARRAY;
-    }
-
-    fn len(&self) -> usize {
-        self.dense.len()
-    }
-
-    type Iter<'a> = <&'a Self as IntoIterator>::IntoIter
-    where
-        Self: 'a;
-
-    fn iter(&self) -> Self::Iter<'_> {
-        self.into_iter()
-    }
-
-    type IterMut<'a> = <&'a mut Self as IntoIterator>::IntoIter
-    where
-        Self: 'a;
-
-    fn iter_mut(&mut self) -> Self::IterMut<'_> {
-        self.into_iter()
-    }
-}
-
-impl<T, const N: usize> TryStorage for DenseArrayStorage<T, N>
-where
-    T: Component,
-{
-    type Err = ArrayStorageError;
-
-    fn try_attach(
+    /// Tries to attach provided component to the entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the count of components attached to some entities
+    /// is the same as the capacity of the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`attach`][Self::attach()] method.
+    pub fn try_attach(
         &mut self,
         entity: Entity,
-        component: Self::Item,
-    ) -> Result<Option<Self::Item>, Self::Err> {
+        component: T,
+    ) -> Result<Option<T>, ArrayStorageError> {
         let Ok(index) = usize::try_from(entity.index()) else {
             return Err(ArrayStorageError);
         };
@@ -245,6 +156,247 @@ where
                 Ok(None)
             }
         }
+    }
+
+    /// Checks if a component is attached to provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_attached(&self, entity: Entity) -> bool {
+        let Ok(index) = usize::try_from(entity.index()) else {
+            return false;
+        };
+        let Some(slot) = self.sparse.get(index) else {
+            return false;
+        };
+        let &Slot::Occupied { dense_index, generation } = slot else {
+            return false;
+        };
+        let Some(_) = self.dense.get(dense_index as usize) else {
+            return false;
+        };
+        generation == entity.generation()
+    }
+
+    /// Retrieves a reference to the component attached to provided entity.
+    /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get(&self, entity: Entity) -> Option<&T> {
+        let index = usize::try_from(entity.index()).ok()?;
+        let slot = self.sparse.get(index)?;
+        let &Slot::Occupied { dense_index, generation } = slot else {
+            return None;
+        };
+        if generation != entity.generation() {
+            return None;
+        }
+        let Dense { value, .. } = self.dense.get(dense_index as usize)?;
+        Some(value)
+    }
+
+    /// Retrieves a mutable reference to the component attached to provided entity.
+    /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
+        let index = usize::try_from(entity.index()).ok()?;
+        let slot = self.sparse.get(index)?;
+        let &Slot::Occupied { dense_index, generation } = slot else {
+            return None;
+        };
+        if generation != entity.generation() {
+            return None;
+        }
+        let Dense { value, .. } = self.dense.get_mut(dense_index as usize)?;
+        Some(value)
+    }
+
+    /// Removes component from provided entity.
+    /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn remove(&mut self, entity: Entity) -> Option<T> {
+        let index = usize::try_from(entity.index()).ok()?;
+        let slot = self.sparse.get_mut(index)?;
+        let Slot::Occupied { dense_index, generation } = mem::replace(slot, Slot::Free) else {
+            return None;
+        };
+        if entity.generation() != generation {
+            *slot = Slot::Occupied {
+                dense_index,
+                generation,
+            };
+            return None;
+        }
+        let Dense { value, .. } = self
+            .dense
+            .swap_pop(dense_index as usize)
+            .expect("dense index should point to the valid item");
+        if let Some(Dense { entity, .. }) = self.dense.get(dense_index as usize) {
+            let slot = self
+                .sparse
+                .get_mut(entity.index() as usize)
+                .expect("index should point to the valid slot");
+            *slot = match slot {
+                Slot::Occupied { .. } => Slot::Occupied {
+                    dense_index,
+                    generation,
+                },
+                Slot::Free => Slot::Free,
+            };
+        }
+        Some(value)
+    }
+
+    /// Clears this dense array storage, destroying all components in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn clear(&mut self) {
+        self.dense.clear();
+        self.sparse = Self::FREE_ARRAY;
+    }
+
+    /// Returns count of components which are stored in the dense array storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub const fn len(&self) -> usize {
+        self.dense.len()
+    }
+
+    /// Checks if the dense array storage is empty, or has no components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns an iterator over entity keys with references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.into_iter()
+    }
+
+    /// Returns an iterator over entity keys with mutable references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.into_iter()
+    }
+}
+
+impl<T, const N: usize> Default for DenseArrayStorage<T, N>
+where
+    T: Component,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T, const N: usize> Storage for DenseArrayStorage<T, N>
+where
+    T: Component,
+{
+    type Item = T;
+
+    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+        DenseArrayStorage::attach(self, entity, component)
+    }
+
+    fn is_attached(&self, entity: Entity) -> bool {
+        DenseArrayStorage::is_attached(self, entity)
+    }
+
+    fn get(&self, entity: Entity) -> Option<&Self::Item> {
+        DenseArrayStorage::get(self, entity)
+    }
+
+    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
+        DenseArrayStorage::get_mut(self, entity)
+    }
+
+    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
+        DenseArrayStorage::remove(self, entity)
+    }
+
+    fn clear(&mut self) {
+        DenseArrayStorage::clear(self)
+    }
+
+    fn len(&self) -> usize {
+        DenseArrayStorage::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        DenseArrayStorage::is_empty(self)
+    }
+
+    type Iter<'a> = Iter<'a, T>
+    where
+        Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        DenseArrayStorage::iter(self)
+    }
+
+    type IterMut<'a> = IterMut<'a, T>
+    where
+        Self: 'a;
+
+    fn iter_mut(&mut self) -> Self::IterMut<'_> {
+        DenseArrayStorage::iter_mut(self)
+    }
+}
+
+impl<T, const N: usize> TryStorage for DenseArrayStorage<T, N>
+where
+    T: Component,
+{
+    type Err = ArrayStorageError;
+
+    fn try_attach(
+        &mut self,
+        entity: Entity,
+        component: Self::Item,
+    ) -> Result<Option<Self::Item>, Self::Err> {
+        DenseArrayStorage::try_attach(self, entity, component)
     }
 }
 
@@ -438,7 +590,9 @@ impl<T, const N: usize> FusedIterator for IntoIter<T, N> where T: Component {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::{component::Component, entity::Entity};
+
+    use super::DenseArrayStorage;
 
     #[derive(Debug, Clone, Copy)]
     struct Marker;
