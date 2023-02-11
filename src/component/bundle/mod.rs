@@ -202,7 +202,31 @@ pub trait GetBundle: Bundle {
     fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components;
+}
 
+/// Trivial implementation for components, which forwards implementation to the component storage.
+impl<T> GetBundle for T
+where
+    T: Component,
+{
+    type Ref<'a> = &'a Self
+    where
+        Self: 'a;
+
+    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let Some(storage) = components.get::<T>() else {
+            return Err(NotRegisteredError::new::<Self>());
+        };
+        let component = storage.get(entity);
+        Ok(component)
+    }
+}
+
+/// Extension of bundle which allows to get a **mutable** reference to a bundle from the component registry.
+pub trait GetBundleMut: Bundle {
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
     type RefMut<'a>
     where
@@ -230,25 +254,10 @@ pub trait GetBundle: Bundle {
 }
 
 /// Trivial implementation for components, which forwards implementation to the component storage.
-impl<T> GetBundle for T
+impl<T> GetBundleMut for T
 where
     T: Component,
 {
-    type Ref<'a> = &'a Self
-    where
-        Self: 'a;
-
-    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
-    where
-        C: Components,
-    {
-        let Some(storage) = components.get::<T>() else {
-            return Err(NotRegisteredError::new::<Self>());
-        };
-        let component = storage.get(entity);
-        Ok(component)
-    }
-
     type RefMut<'a> = &'a mut Self
     where
         Self: 'a;
@@ -312,7 +321,7 @@ macro_rules! bundle_for_tuple {
                 Ok(is_attached)
             }
         }
-    }
+    };
 }
 
 // `Bundle` is implemented for tuples of size 12 and less
@@ -382,7 +391,7 @@ macro_rules! try_bundle_for_tuple {
                 Ok(components)
             }
         }
-    }
+    };
 }
 
 // `TryBundle` is implemented for tuples of size 12 and less
@@ -400,42 +409,6 @@ try_bundle_for_tuple!(A, B; TryBundleErrorTuple2);
 try_bundle_for_tuple!(A; TryBundleErrorTuple1);
 
 macro_rules! get_bundle_for_tuple {
-    ($type:ident) => {
-        impl<$type> GetBundle for ($type,)
-        where
-            $type: Component,
-        {
-            type Ref<'a> = (&'a $type,)
-            where
-                Self: 'a;
-
-            #[allow(non_snake_case)]
-            fn get<__C>(components: &__C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let $type = $type::get(components, entity)?;
-                let Some($type) = $type else { return Ok(None); };
-                let components = Some(($type,));
-                Ok(components)
-            }
-
-            type RefMut<'a> = (&'a mut $type,)
-            where
-                Self: 'a;
-
-            #[allow(non_snake_case)]
-            fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let $type = $type::get_mut(components, entity)?;
-                let Some($type) = $type else { return Ok(None); };
-                let components = Some(($type,));
-                Ok(components)
-            }
-        }
-    };
     ($($types:ident),*) => {
         impl<$($types),*> GetBundle for ($($types,)*)
         where
@@ -455,7 +428,51 @@ macro_rules! get_bundle_for_tuple {
                 let components = Some(($($types,)*));
                 Ok(components)
             }
+        }
+    };
+}
 
+// `GetBundle` is implemented for tuples of size 12 and less
+get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
+get_bundle_for_tuple!(A, B, C, D, E, F, G, H);
+get_bundle_for_tuple!(A, B, C, D, E, F, G);
+get_bundle_for_tuple!(A, B, C, D, E, F);
+get_bundle_for_tuple!(A, B, C, D, E);
+get_bundle_for_tuple!(A, B, C, D);
+get_bundle_for_tuple!(A, B, C);
+get_bundle_for_tuple!(A, B);
+get_bundle_for_tuple!(A);
+
+macro_rules! get_bundle_mut_for_tuple {
+    ($type:ident) => {
+        impl<$type> GetBundleMut for ($type,)
+        where
+            $type: Component,
+        {
+            type RefMut<'a> = (&'a mut $type,)
+            where
+                Self: 'a;
+
+            #[allow(non_snake_case)]
+            fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
+            where
+                __C: Components,
+            {
+                let $type = $type::get_mut(components, entity)?;
+                let Some($type) = $type else { return Ok(None); };
+                let components = Some(($type,));
+                Ok(components)
+            }
+        }
+    };
+    ($($types:ident),*) => {
+        impl<$($types),*> GetBundleMut for ($($types,)*)
+        where
+            $($types: Component,)*
+        {
             type RefMut<'a> = ($(&'a mut $types,)*)
             where
                 Self: 'a;
@@ -496,19 +513,19 @@ macro_rules! get_bundle_for_tuple {
                 Ok(components)
             }
         }
-    }
+    };
 }
 
-// `GetBundle` is implemented for tuples of size 12 and less
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H);
-get_bundle_for_tuple!(A, B, C, D, E, F, G);
-get_bundle_for_tuple!(A, B, C, D, E, F);
-get_bundle_for_tuple!(A, B, C, D, E);
-get_bundle_for_tuple!(A, B, C, D);
-get_bundle_for_tuple!(A, B, C);
-get_bundle_for_tuple!(A, B);
-get_bundle_for_tuple!(A);
+// `GetBundleMut` is implemented for tuples of size 12 and less
+get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I);
+get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H);
+get_bundle_mut_for_tuple!(A, B, C, D, E, F, G);
+get_bundle_mut_for_tuple!(A, B, C, D, E, F);
+get_bundle_mut_for_tuple!(A, B, C, D, E);
+get_bundle_mut_for_tuple!(A, B, C, D);
+get_bundle_mut_for_tuple!(A, B, C);
+get_bundle_mut_for_tuple!(A, B);
+get_bundle_mut_for_tuple!(A);

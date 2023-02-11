@@ -4,7 +4,7 @@ pub use self::error::{EntityError, TryAttachError};
 
 use crate::{
     component::{
-        bundle::{Bundle, GetBundle, TryBundle},
+        bundle::{Bundle, GetBundle, GetBundleMut, TryBundle},
         registry::{Registry as Components, TryRegistry as TryComponents},
         Component,
     },
@@ -597,7 +597,7 @@ where
     /// ```
     pub fn get_mut<B>(&mut self, entity: Entity) -> Result<Option<B::RefMut<'_>>, EntityError>
     where
-        B: GetBundle,
+        B: GetBundleMut,
     {
         let Self {
             entities,

@@ -1,7 +1,7 @@
 //! Provides an entry to the entity.
 
 use crate::component::{
-    bundle::{Bundle, GetBundle, NotRegisteredError, TryBundle, TryBundleError},
+    bundle::{Bundle, GetBundle, GetBundleMut, NotRegisteredError, TryBundle, TryBundleError},
     registry::Registry as Components,
 };
 
@@ -428,7 +428,7 @@ where
     /// ```
     pub fn get_mut<B>(&mut self) -> Result<Option<B::RefMut<'_>>, NotRegisteredError>
     where
-        B: GetBundle,
+        B: GetBundleMut,
     {
         let entity = self.entity;
         let components = &mut *self.components;
