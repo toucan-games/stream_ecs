@@ -1,5 +1,11 @@
 //! Provides utilities for bundles — heterogenous collections of components.
 
+use either::Either;
+use hlist::{
+    tuple::{IntoHList, IntoTuple},
+    Cons, HList, Nil,
+};
+
 use crate::entity::Entity;
 
 pub use self::error::{NotRegisteredError, TryBundleError};
@@ -119,6 +125,97 @@ where
     }
 }
 
+/// More complex implementation for heterogenous list with single element.
+impl<Head> Bundle for Cons<Head, Nil>
+where
+    Head: Bundle,
+{
+    fn attach<C>(
+        components: &mut C,
+        entity: Entity,
+        bundle: Self,
+    ) -> Result<Option<Self>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let Cons(bundle, nil) = bundle;
+        let Some(bundle) = Head::attach(components, entity, bundle)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(bundle, nil);
+        Ok(Some(bundle))
+    }
+
+    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let Some(bundle) = Head::remove(components, entity)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(bundle, Nil);
+        Ok(Some(bundle))
+    }
+
+    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
+    where
+        C: Components,
+    {
+        Head::is_attached(components, entity)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail> Bundle for Cons<Head, Tail>
+where
+    Head: Bundle,
+    Tail: Bundle + HList,
+{
+    fn attach<C>(
+        components: &mut C,
+        entity: Entity,
+        bundle: Self,
+    ) -> Result<Option<Self>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let _ = Self::is_attached(components, entity)?;
+        let Cons(head, tail) = bundle;
+        let Some(head) = Head::attach(components, entity, head)? else {
+            return Ok(None);
+        };
+        let Some(tail) = Tail::attach(components, entity, tail)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(head, tail);
+        Ok(Some(bundle))
+    }
+
+    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let _ = Self::is_attached(components, entity)?;
+        let Some(head) = Head::remove(components, entity)? else {
+            return Ok(None);
+        };
+        let Some(tail) = Tail::remove(components, entity)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(head, tail);
+        Ok(Some(bundle))
+    }
+
+    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let head = Head::is_attached(components, entity)?;
+        let tail = Tail::is_attached(components, entity)?;
+        Ok(head && tail)
+    }
+}
+
 /// Extension of bundle which allows to implement fallible operations for the bundle.
 pub trait TryBundle: Bundle {
     /// The type of error which can be returned on failure.
@@ -179,6 +276,75 @@ where
     }
 }
 
+/// More complex implementation for heterogenous list with single element.
+impl<Head> TryBundle for Cons<Head, Nil>
+where
+    Head: TryBundle,
+{
+    type Err = Head::Err;
+
+    fn try_attach<C>(
+        components: &mut C,
+        entity: Entity,
+        bundle: Self,
+    ) -> Result<Option<Self>, TryBundleError<Self::Err>>
+    where
+        C: Components,
+    {
+        let Cons(bundle, nil) = bundle;
+        let Some(bundle) = Head::attach(components, entity, bundle)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(bundle, nil);
+        Ok(Some(bundle))
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail> TryBundle for Cons<Head, Tail>
+where
+    Head: TryBundle,
+    Tail: TryBundle + HList,
+{
+    type Err = Either<Head::Err, Tail::Err>;
+
+    fn try_attach<C>(
+        components: &mut C,
+        entity: Entity,
+        bundle: Self,
+    ) -> Result<Option<Self>, TryBundleError<Self::Err>>
+    where
+        C: Components,
+    {
+        let _ = Self::is_attached(components, entity)?;
+        let Cons(head, tail) = bundle;
+        let head = match Head::try_attach(components, entity, head) {
+            Ok(Some(head)) => head,
+            Ok(None) => return Ok(None),
+            Err(error) => match error {
+                TryBundleError::NotRegistered(error) => return Err(error.into()),
+                TryBundleError::Storage(error) => {
+                    let error = Either::Left(error);
+                    return Err(TryBundleError::Storage(error));
+                }
+            },
+        };
+        let tail = match Tail::try_attach(components, entity, tail) {
+            Ok(Some(head)) => head,
+            Ok(None) => return Ok(None),
+            Err(error) => match error {
+                TryBundleError::NotRegistered(error) => return Err(error.into()),
+                TryBundleError::Storage(error) => {
+                    let error = Either::Right(error);
+                    return Err(TryBundleError::Storage(error));
+                }
+            },
+        };
+        let bundle = Cons(head, tail);
+        Ok(Some(bundle))
+    }
+}
+
 /// Extension of bundle which allows to get a reference to a bundle from the component registry.
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the component registry.
@@ -222,6 +388,53 @@ where
         };
         let component = storage.get(entity);
         Ok(component)
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head> GetBundle for Cons<Head, Nil>
+where
+    Head: GetBundle,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Nil>
+    where
+        Self: 'a;
+
+    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let Some(bundle) = Head::get(components, entity)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(bundle, Nil);
+        Ok(Some(bundle))
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail> GetBundle for Cons<Head, Tail>
+where
+    Head: GetBundle,
+    Tail: GetBundle + HList,
+    for<'a> Tail::Ref<'a>: HList,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
+    where
+        Self: 'a;
+
+    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let Some(head) = Head::get(components, entity)? else {
+            return Ok(None);
+        };
+        let Some(tail) = Tail::get(components, entity)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(head, tail);
+        Ok(Some(bundle))
     }
 }
 
@@ -277,47 +490,87 @@ where
     }
 }
 
-macro_rules! tuple_length {
-    () => {0usize};
-    ($head:tt $($tail:tt)*) => {1usize + tuple_length!($($tail)*)};
+/// More complex implementation for heterogenous list with single element.
+impl<Head> GetBundleMut for Cons<Head, Nil>
+where
+    Head: GetBundleMut,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
+    where
+        Self: 'a;
+
+    fn get_mut<C>(
+        components: &mut C,
+        entity: Entity,
+    ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        let Some(bundle) = Head::get_mut(components, entity)? else {
+            return Ok(None);
+        };
+        let bundle = Cons(bundle, Nil);
+        Ok(Some(bundle))
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
+where
+    Head: GetBundleMut,
+    Tail: GetBundleMut + HList,
+    for<'a> Tail::RefMut<'a>: HList,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
+    where
+        Self: 'a;
+
+    fn get_mut<C>(
+        _components: &mut C,
+        _entity: Entity,
+    ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
+    where
+        C: Components,
+    {
+        // TODO get hlist of multiple storages, then retrieve a mutable reference from each of them
+        todo!()
+    }
 }
 
 macro_rules! bundle_for_tuple {
     ($($types:ident),*) => {
         impl<$($types),*> Bundle for ($($types,)*)
         where
-            $($types: Component,)*
+            $($types: Bundle,)*
         {
-            #[allow(non_snake_case)]
             fn attach<__C>(components: &mut __C, entity: Entity, bundle: Self) -> Result<Option<Self>, NotRegisteredError>
             where
                 __C: Components,
             {
-                let _ = Self::is_attached(components, entity)?;
-                let ($($types,)*) = bundle;
-                $(let $types = $types::attach(components, entity, $types)?;)*
-                $(let Some($types) = $types else { return Ok(None); };)*
-                let components = Some(($($types,)*));
-                Ok(components)
+                let bundle = bundle.into_hlist();
+                let Some(bundle) = Bundle::attach(components, entity, bundle)? else {
+                    return Ok(None);
+                };
+                let bundle = bundle.into_tuple();
+                Ok(Some(bundle))
             }
 
-            #[allow(non_snake_case)]
             fn remove<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
             where
                 __C: Components,
             {
-                let _ = Self::is_attached(components, entity)?;
-                $(let $types = $types::remove(components, entity)?;)*
-                $(let Some($types) = $types else { return Ok(None); };)*
-                let components = Some(($($types,)*));
-                Ok(components)
+                let Some(bundle) = <Self as IntoHList>::Output::remove(components, entity)? else {
+                    return Ok(None);
+                };
+                let bundle = bundle.into_tuple();
+                Ok(Some(bundle))
             }
 
             fn is_attached<__C>(components: &__C, entity: Entity) -> Result<bool, NotRegisteredError>
             where
                 __C: Components,
             {
-                let is_attached = $($types::is_attached(components, entity)?)&&*;
+                let is_attached = <Self as IntoHList>::Output::is_attached(components, entity)?;
                 Ok(is_attached)
             }
         }
@@ -339,34 +592,13 @@ bundle_for_tuple!(A, B);
 bundle_for_tuple!(A);
 
 macro_rules! try_bundle_for_tuple {
-    ($($types:ident),*; $error_name:ident) => {
-        #[doc(hidden)]
-        #[derive(Debug, Clone, Copy)]
-        pub enum $error_name<$($types),*> {
-            $($types($types),)*
-        }
-
-        impl<$($types),*> core::fmt::Display for $error_name<$($types),*>
-        where
-            $($types: core::fmt::Display,)*
-        {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                match self {
-                    $($error_name::$types(err) => err.fmt(f),)*
-                }
-            }
-        }
-
+    ($($types:ident),*) => {
         impl<$($types),*> TryBundle for ($($types,)*)
         where
-            $(
-            $types: Component,
-            $types::Storage: TryStorage,
-            )*
+            $($types: TryBundle,)*
         {
-            type Err = $error_name<$(<$types::Storage as TryStorage>::Err),*>;
+            type Err = <<Self as IntoHList>::Output as TryBundle>::Err;
 
-            #[allow(non_snake_case)]
             fn try_attach<__C>(
                 components: &mut __C,
                 entity: Entity,
@@ -375,58 +607,50 @@ macro_rules! try_bundle_for_tuple {
             where
                 __C: Components,
             {
-                let _ = Self::is_attached(components, entity)?;
-                let ($($types,)*) = bundle;
-                $(
-                let $types = match $types::try_attach(components, entity, $types) {
-                    Ok(bundle) => bundle,
-                    Err(err) => match err {
-                        TryBundleError::NotRegistered(err) => return Err(err.into()),
-                        TryBundleError::Storage(err) => return Err(TryBundleError::Storage($error_name::$types(err))),
-                    },
+                let bundle = bundle.into_hlist();
+                let Some(bundle) = TryBundle::try_attach(components, entity, bundle)? else {
+                    return Ok(None);
                 };
-                )*
-                $(let Some($types) = $types else { return Ok(None); };)*
-                let components = Some(($($types,)*));
-                Ok(components)
+                let bundle = bundle.into_tuple();
+                Ok(Some(bundle))
             }
         }
     };
 }
 
 // `TryBundle` is implemented for tuples of size 12 and less
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L; TryBundleErrorTuple12);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K; TryBundleErrorTuple11);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J; TryBundleErrorTuple10);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I; TryBundleErrorTuple9);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H; TryBundleErrorTuple8);
-try_bundle_for_tuple!(A, B, C, D, E, F, G; TryBundleErrorTuple7);
-try_bundle_for_tuple!(A, B, C, D, E, F; TryBundleErrorTuple6);
-try_bundle_for_tuple!(A, B, C, D, E; TryBundleErrorTuple5);
-try_bundle_for_tuple!(A, B, C, D; TryBundleErrorTuple4);
-try_bundle_for_tuple!(A, B, C; TryBundleErrorTuple3);
-try_bundle_for_tuple!(A, B; TryBundleErrorTuple2);
-try_bundle_for_tuple!(A; TryBundleErrorTuple1);
+try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
+try_bundle_for_tuple!(A, B, C, D, E, F, G, H);
+try_bundle_for_tuple!(A, B, C, D, E, F, G);
+try_bundle_for_tuple!(A, B, C, D, E, F);
+try_bundle_for_tuple!(A, B, C, D, E);
+try_bundle_for_tuple!(A, B, C, D);
+try_bundle_for_tuple!(A, B, C);
+try_bundle_for_tuple!(A, B);
+try_bundle_for_tuple!(A);
 
 macro_rules! get_bundle_for_tuple {
     ($($types:ident),*) => {
         impl<$($types),*> GetBundle for ($($types,)*)
         where
-            $($types: Component,)*
+            $($types: GetBundle,)*
         {
-            type Ref<'a> = ($(&'a $types,)*)
+            type Ref<'a> = ($($types::Ref<'a>,)*)
             where
                 Self: 'a;
 
-            #[allow(non_snake_case)]
             fn get<__C>(components: &__C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
             where
                 __C: Components,
             {
-                $(let $types = $types::get(components, entity)?;)*
-                $(let Some($types) = $types else { return Ok(None); };)*
-                let components = Some(($($types,)*));
-                Ok(components)
+                let Some(bundle) = <Self as IntoHList>::Output::get(components, entity)? else {
+                    return Ok(None);
+                };
+                let bundle = bundle.into_tuple();
+                Ok(Some(bundle))
             }
         }
     };
@@ -447,70 +671,24 @@ get_bundle_for_tuple!(A, B);
 get_bundle_for_tuple!(A);
 
 macro_rules! get_bundle_mut_for_tuple {
-    ($type:ident) => {
-        impl<$type> GetBundleMut for ($type,)
-        where
-            $type: Component,
-        {
-            type RefMut<'a> = (&'a mut $type,)
-            where
-                Self: 'a;
-
-            #[allow(non_snake_case)]
-            fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let $type = $type::get_mut(components, entity)?;
-                let Some($type) = $type else { return Ok(None); };
-                let components = Some(($type,));
-                Ok(components)
-            }
-        }
-    };
     ($($types:ident),*) => {
         impl<$($types),*> GetBundleMut for ($($types,)*)
         where
-            $($types: Component,)*
+            $($types: GetBundleMut,)*
         {
-            type RefMut<'a> = ($(&'a mut $types,)*)
+            type RefMut<'a> = ($($types::RefMut<'a>,)*)
             where
                 Self: 'a;
 
-            #[allow(non_snake_case)]
             fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
             where
                 __C: Components,
             {
-                use core::any::TypeId;
-
-                let mut storages: arrayvec::ArrayVec<_, {tuple_length!($($types)*)}> = components
-                    .iter_mut()
-                    .filter(|storage| {
-                        let type_id = storage.type_id();
-                        $(type_id == TypeId::of::<$types>())||*
-                    })
-                    .collect();
-                storages.sort_unstable_by_key(|storage| storage.type_id());
-
-                $(
-                let idx = storages
-                    .binary_search_by_key(&TypeId::of::<$types>(), |storage| storage.type_id())
-                    .ok();
-                let Some(idx) = idx else {
-                    return Err(NotRegisteredError::new::<$types>());
+                let Some(bundle) = <Self as IntoHList>::Output::get_mut(components, entity)? else {
+                    return Ok(None);
                 };
-                let storage = storages
-                    .remove(idx)
-                    .as_any_mut()
-                    .downcast_mut::<$types::Storage>()
-                    .expect("storage type casting should succeed because storage was found by TypeId");
-                let $types = storage.get_mut(entity);
-                )*
-                $(let Some($types) = $types else { return Ok(None); };)*
-
-                let components = Some(($($types,)*));
-                Ok(components)
+                let bundle = bundle.into_tuple();
+                Ok(Some(bundle))
             }
         }
     };

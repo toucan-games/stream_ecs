@@ -10,7 +10,7 @@ use crate::{
     },
     entity::{
         builder::StateEntityBuilder,
-        entry::{EntityEntry, EntityEntryMut},
+        entry::{Entry, EntryMut},
         registry::{NotPresentError, Registry as Entities, TryRegistry as TryEntities},
         Entity,
     },
@@ -107,40 +107,40 @@ where
         self.entities.create()
     }
 
-    /// Creates an [entry](EntityEntry) for the provided entity.
+    /// Creates an [entry](Entry) for the provided entity.
     /// Returns [`None`] if provided entity was not in the current world.
-    pub fn entry(&self, entity: Entity) -> Option<EntityEntry<'_, E, C>> {
+    pub fn entry(&self, entity: Entity) -> Option<Entry<'_, E, C>> {
         let Self {
             entities,
             components,
             ..
         } = self;
-        EntityEntry::new(entity, entities, components)
+        Entry::new(entity, entities, components)
     }
 
-    /// Creates a mutable [entry](EntityEntryMut) for the provided entity.
+    /// Creates a mutable [entry](EntryMut) for the provided entity.
     /// Returns [`None`] if provided entity was not in the current world.
-    pub fn entry_mut(&mut self, entity: Entity) -> Option<EntityEntryMut<'_, E, C>> {
+    pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut<'_, E, C>> {
         let Self {
             entities,
             components,
             ..
         } = self;
-        EntityEntryMut::new(entity, entities, components)
+        EntryMut::new(entity, entities, components)
     }
 
-    /// Spawns a new entity and returns a corresponding [entry](EntityEntryMut).
+    /// Spawns a new entity and returns a corresponding [entry](EntryMut).
     ///
     /// This is considered as the main API for creation of new entities in the world.
     /// If you only need to create new entity, use [`create`][World::create()] method.
     /// If you need to create entity *lazily*, use [`builder`][World::builder()] method.
-    pub fn spawn(&mut self) -> EntityEntryMut<'_, E, C> {
+    pub fn spawn(&mut self) -> EntryMut<'_, E, C> {
         let Self {
             entities,
             components,
             ..
         } = self;
-        EntityEntryMut::spawn(entities, components)
+        EntryMut::spawn(entities, components)
     }
 
     /// Checks if the world contains provided entity.
@@ -189,7 +189,7 @@ where
         self.entities.try_create()
     }
 
-    /// Tries to spawn a new entity and return a corresponding [entry](EntityEntryMut).
+    /// Tries to spawn a new entity and return a corresponding [entry](EntryMut).
     ///
     /// # Errors
     ///
@@ -203,13 +203,13 @@ where
     /// ```
     ///
     /// This is the fallible version of [`spawn`][World::spawn()] method.
-    pub fn try_spawn(&mut self) -> Result<EntityEntryMut<'_, E, C>, E::Err> {
+    pub fn try_spawn(&mut self) -> Result<EntryMut<'_, E, C>, E::Err> {
         let Self {
             entities,
             components,
             ..
         } = self;
-        EntityEntryMut::try_spawn(entities, components)
+        EntryMut::try_spawn(entities, components)
     }
 }
 

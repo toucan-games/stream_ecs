@@ -15,13 +15,13 @@ use super::{
 /// Use this struct to simplify access to the entity so
 /// you don't have to provide it each time to retrieve something:
 /// you can do it only once during struct initialization.
-pub struct EntityEntry<'state, E, C> {
+pub struct Entry<'state, E, C> {
     entity: Entity,
     entities: &'state E,
     components: &'state C,
 }
 
-impl<'state, E, C> EntityEntry<'state, E, C>
+impl<'state, E, C> Entry<'state, E, C>
 where
     E: Entities,
 {
@@ -52,7 +52,7 @@ where
     }
 }
 
-impl<'state, E, C> EntityEntry<'state, E, C>
+impl<'state, E, C> Entry<'state, E, C>
 where
     E: TryEntities,
 {
@@ -71,7 +71,7 @@ where
     /// todo!()
     /// ```
     ///
-    /// This is the fallible version of [`spawn`][EntityEntry::spawn()] method.
+    /// This is the fallible version of [`spawn`][Entry::spawn()] method.
     pub fn try_spawn(entities: &'state mut E, components: &'state C) -> Result<Self, E::Err> {
         let entity = entities.try_create()?;
         let entry = Self {
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl<'state, E, C> EntityEntry<'state, E, C> {
+impl<'state, E, C> Entry<'state, E, C> {
     /// Returns unique handle of the entity.
     pub fn entity(&self) -> Entity {
         self.entity
@@ -110,7 +110,7 @@ impl<'state, E, C> EntityEntry<'state, E, C> {
     }
 }
 
-impl<'state, E, C> EntityEntry<'state, E, C>
+impl<'state, E, C> Entry<'state, E, C>
 where
     C: Components,
 {
@@ -165,13 +165,13 @@ where
 /// Use this struct to simplify access to the entity so
 /// you don't have to provide it each time to retrieve something:
 /// you can do it only once during struct initialization.
-pub struct EntityEntryMut<'state, E, C> {
+pub struct EntryMut<'state, E, C> {
     entity: Entity,
     entities: &'state mut E,
     components: &'state mut C,
 }
 
-impl<'state, E, C> EntityEntryMut<'state, E, C>
+impl<'state, E, C> EntryMut<'state, E, C>
 where
     E: Entities,
 {
@@ -213,7 +213,7 @@ where
     }
 }
 
-impl<'state, E, C> EntityEntryMut<'state, E, C>
+impl<'state, E, C> EntryMut<'state, E, C>
 where
     E: TryEntities,
 {
@@ -232,7 +232,7 @@ where
     /// todo!()
     /// ```
     ///
-    /// This is the fallible version of [`spawn`][EntityEntryMut::spawn()] method.
+    /// This is the fallible version of [`spawn`][EntryMut::spawn()] method.
     pub fn try_spawn(entities: &'state mut E, components: &'state mut C) -> Result<Self, E::Err> {
         let entity = entities.try_create()?;
         let entry = Self {
@@ -244,7 +244,7 @@ where
     }
 }
 
-impl<'state, E, C> EntityEntryMut<'state, E, C> {
+impl<'state, E, C> EntryMut<'state, E, C> {
     /// Returns unique handle of the entity.
     pub fn entity(&self) -> Entity {
         self.entity
@@ -291,7 +291,7 @@ impl<'state, E, C> EntityEntryMut<'state, E, C> {
     }
 }
 
-impl<'state, E, C> EntityEntryMut<'state, E, C>
+impl<'state, E, C> EntryMut<'state, E, C>
 where
     C: Components,
 {
@@ -336,7 +336,7 @@ where
     /// todo!()
     /// ```
     ///
-    /// This is the fallible version of [`attach`][EntityEntryMut::attach()] method.
+    /// This is the fallible version of [`attach`][EntryMut::attach()] method.
     pub fn try_attach<B>(&mut self, bundle: B) -> Result<Option<B>, TryBundleError<B::Err>>
     where
         B: TryBundle,

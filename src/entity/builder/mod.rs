@@ -1,7 +1,7 @@
 //! Provides a builder pattern implementation for entities.
 
 use either::Either;
-use hlist2::{ops::Append, Cons, Nil};
+use hlist::{ops::Append, Cons, Nil};
 
 pub use self::error::{TryBuildError, TryEntityBuildError};
 

@@ -7,6 +7,8 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(test), no_std)]
 
+pub use ::hlist;
+
 pub mod component;
 pub mod entity;
 pub mod resource;
