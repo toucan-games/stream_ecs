@@ -513,7 +513,7 @@ where
     where
         C: Components,
     {
-        // TODO get hlist of multiple storages, then retrieve a mutable reference from each of them
+        // TODO get multiple storages from the registry, then retrieve a mutable reference from each storage
         todo!()
     }
 }

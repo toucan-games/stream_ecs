@@ -15,8 +15,11 @@ use crate::{
         Entity,
     },
     resource::{
+        bundle::{
+            Bundle as ResourceBundle, GetBundle as ResourceGetBundle,
+            GetBundleMut as ResourceGetBundleMut, TryBundle as ResourceTryBundle,
+        },
         registry::{Registry as Resources, TryRegistry as TryResources},
-        Resource,
     },
 };
 
@@ -24,7 +27,7 @@ mod error;
 
 /// ECS world — storage of [entities](Entity) and all the [data](Component) attached to them.
 ///
-/// Additionally ECS world can store [resources](Resource) — aka singletons in ECS
+/// Additionally ECS world can store [resources](crate::resource::Resource) — aka singletons in ECS
 /// which does not belong to any specific entity.
 #[derive(Debug, Default, Clone)]
 pub struct World<E, C, R> {
@@ -275,48 +278,53 @@ impl<E, C, R> World<E, C, R>
 where
     R: Resources,
 {
-    /// Insert provided resource into the current world.
-    /// Returns previous value of the resource, or [`None`] if the resource was not in the world.
-    pub fn insert_resource<T>(&mut self, resource: T) -> Option<T>
+    /// Insert provided resource bundle into the current world.
+    /// Returns previous value of the resource bundle, or [`None`] if the resource bundle was not in the world.
+    pub fn insert_res<B>(&mut self, bundle: B) -> Option<B>
     where
-        T: Resource,
+        B: ResourceBundle,
     {
-        self.resources.insert(resource)
+        let Self { resources, .. } = self;
+        B::insert(resources, bundle)
     }
 
-    /// Checks if the resource was previously inserted in the current world.
-    pub fn contains_resource<T>(&self) -> bool
+    /// Checks if the resource bundle was previously inserted in the current world.
+    pub fn contains_res<B>(&self) -> bool
     where
-        T: Resource,
+        B: ResourceBundle,
     {
-        self.resources.contains::<T>()
+        let Self { resources, .. } = self;
+        B::contains(resources)
     }
 
-    /// Removes the resource from the current world and returns removed resource.
-    /// Returns [`None`] if the resource was not in the world.
-    pub fn remove_resource<T>(&mut self) -> Option<T>
+    /// Removes the resource bundle from the current world and returns value of removed resource bundle.
+    /// Returns [`None`] if the resource bundle was not in the world.
+    pub fn remove_res<B>(&mut self) -> Option<B>
     where
-        T: Resource,
+        B: ResourceBundle,
     {
-        self.resources.remove()
+        let Self { resources, .. } = self;
+        B::remove(resources)
     }
 
-    /// Retrieves a reference to the inserted resource.
-    /// Returns [`None`] if the resource was not inserted in the world.
-    pub fn get_resource<T>(&self) -> Option<&T>
+    /// Retrieves a reference to the inserted resource bundle.
+    /// Returns [`None`] if the resource bundle was not inserted in the world.
+    pub fn get_res<B>(&self) -> Option<B::Ref<'_>>
     where
-        T: Resource,
+        B: ResourceGetBundle,
     {
-        self.resources.get()
+        let Self { resources, .. } = self;
+        B::get(resources)
     }
 
-    /// Retrieves a mutable reference to the inserted resource.
-    /// Returns [`None`] if the resource was not inserted in the world.
-    pub fn get_resource_mut<T>(&mut self) -> Option<&mut T>
+    /// Retrieves a mutable reference to the inserted resource bundle.
+    /// Returns [`None`] if the resource bundle was not inserted in the world.
+    pub fn get_res_mut<B>(&mut self) -> Option<B::RefMut<'_>>
     where
-        T: Resource,
+        B: ResourceGetBundleMut,
     {
-        self.resources.get_mut()
+        let Self { resources, .. } = self;
+        B::get_mut(resources)
     }
 }
 
@@ -324,12 +332,12 @@ impl<E, C, R> World<E, C, R>
 where
     R: TryResources,
 {
-    /// Tries to insert provided resource into the current world.
-    /// Returns previous value of the resource, or [`None`] if the resource was not in the world.
+    /// Tries to insert provided resource bundle into the current world.
+    /// Returns previous value of the resource bundle, or [`None`] if the resource bundle was not in the world.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the world will fail to insert provided resource.
+    /// This function will return an error if the world will fail to insert provided resource bundle.
     /// Conditions of failure are provided by implementation of the resource registry.
     ///
     /// # Examples
@@ -338,12 +346,13 @@ where
     /// todo!()
     /// ```
     ///
-    /// This is the fallible version of [`insert_resource`][World::insert_resource()] method.
-    pub fn try_insert_resource<T>(&mut self, resource: T) -> Result<Option<T>, R::Err>
+    /// This is the fallible version of [`insert_res`][World::insert_res()] method.
+    pub fn try_insert_res<B>(&mut self, bundle: B) -> Result<Option<B>, R::Err>
     where
-        T: Resource,
+        B: ResourceTryBundle,
     {
-        self.resources.try_insert(resource)
+        let Self { resources, .. } = self;
+        B::try_insert(resources, bundle)
     }
 }
 

@@ -2,6 +2,7 @@
 
 use as_any::AsAny;
 
+pub mod bundle;
 pub mod registry;
 
 /// Trait for data that can be stored as singleton in ECS
