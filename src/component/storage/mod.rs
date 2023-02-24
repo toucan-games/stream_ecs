@@ -165,7 +165,7 @@ where
         let Some(component) = component.downcast_ref().copied() else {
             return Err(TypeMismatchError::new::<T::Item>(component));
         };
-        let _component = Storage::attach(self, entity, component);
+        Storage::attach(self, entity, component);
         Ok(())
     }
 
@@ -182,7 +182,7 @@ where
     }
 
     fn remove(&mut self, entity: Entity) {
-        let _component = Storage::remove(self, entity);
+        Storage::remove(self, entity);
     }
 
     fn clear(&mut self) {

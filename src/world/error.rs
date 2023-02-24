@@ -40,10 +40,10 @@ impl Display for EntityError {
 pub enum TryAttachError<Err> {
     /// Component was not registered in the world.
     NotRegistered(NotRegisteredError),
-    /// Component storage failed to attach a bundle to the entity.
-    Storage(Err),
     /// Entity was not present in the world.
     NotPresent(NotPresentError),
+    /// Component storage failed to attach a bundle to the entity.
+    Storage(Err),
 }
 
 impl<Err> From<NotRegisteredError> for TryAttachError<Err> {
@@ -74,8 +74,8 @@ where
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NotRegistered(error) => error.fmt(f),
-            Self::Storage(error) => write!(f, "storage failed to attach a component: {error}"),
             Self::NotPresent(error) => error.fmt(f),
+            Self::Storage(error) => write!(f, "storage failed to attach a component: {error}"),
         }
     }
 }
