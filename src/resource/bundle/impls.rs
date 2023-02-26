@@ -1,4 +1,3 @@
-use core::any::TypeId;
 use hlist::{
     tuple::{IntoHList, IntoTuple},
     Cons, HList, Nil,
@@ -6,7 +5,7 @@ use hlist::{
 
 use crate::resource::{
     registry::{Registry as Resources, TryRegistry as TryResources},
-    ErasedResource, Resource,
+    Resource,
 };
 
 use super::{Bundle, GetBundle, GetBundleMut, TryBundle};
@@ -336,6 +335,7 @@ get_bundle_for_tuple!(A, B, C);
 get_bundle_for_tuple!(A, B);
 get_bundle_for_tuple!(A);
 
+/// Trivial implementation for resources, which forwards implementation to the resource registry.
 impl<T> GetBundleMut for T
 where
     T: Resource,
@@ -352,6 +352,7 @@ where
     }
 }
 
+/// More complex implementation for heterogenous list with single element.
 impl<Head> GetBundleMut for Cons<Head, Nil>
 where
     Head: GetBundleMut,
@@ -370,6 +371,9 @@ where
     }
 }
 
+use self::impl_details::GetBundleMutForHList;
+
+/// More complex implementation for heterogenous list with more than one element.
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMutForHList,
@@ -394,113 +398,133 @@ where
     }
 }
 
-trait GetBundleMutForHList: GetBundleMut {
-    type RefMutContainer<'a>: Default;
+mod impl_details {
+    use core::any::TypeId;
 
-    fn should_insert_resource(container: &Self::RefMutContainer<'_>, resource_id: TypeId) -> bool;
+    use hlist::{Cons, HList, Nil};
 
-    fn insert_resource<'resource>(
-        container: &mut Self::RefMutContainer<'resource>,
-        resource: &'resource mut dyn ErasedResource,
-    );
+    use crate::resource::{bundle::GetBundleMut, ErasedResource, Resource};
 
-    fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>>;
-}
+    pub trait GetBundleMutForHList: GetBundleMut {
+        type RefMutContainer<'a>: Default;
 
-impl<T> GetBundleMutForHList for T
-where
-    T: Resource,
-{
-    type RefMutContainer<'a> = Option<&'a mut T>;
+        fn should_insert_resource(
+            container: &Self::RefMutContainer<'_>,
+            resource_id: TypeId,
+        ) -> bool;
 
-    fn should_insert_resource(container: &Self::RefMutContainer<'_>, resource_id: TypeId) -> bool {
-        match container {
-            Some(_) => true,
-            None => resource_id == TypeId::of::<T>(),
+        fn insert_resource<'resource>(
+            container: &mut Self::RefMutContainer<'resource>,
+            resource: &'resource mut dyn ErasedResource,
+        );
+
+        fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>>;
+    }
+
+    impl<T> GetBundleMutForHList for T
+    where
+        T: Resource,
+    {
+        type RefMutContainer<'a> = Option<&'a mut T>;
+
+        fn should_insert_resource(
+            container: &Self::RefMutContainer<'_>,
+            resource_id: TypeId,
+        ) -> bool {
+            match container {
+                Some(_) => true,
+                None => resource_id == TypeId::of::<T>(),
+            }
+        }
+
+        fn insert_resource<'resource>(
+            container: &mut Self::RefMutContainer<'resource>,
+            resource: &'resource mut dyn ErasedResource,
+        ) {
+            use as_any::Downcast;
+
+            if container.is_some() {
+                return;
+            }
+            let Some(resource) = resource.downcast_mut() else {
+                return;
+            };
+            *container = Some(resource);
+        }
+
+        fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>> {
+            container
         }
     }
 
-    fn insert_resource<'resource>(
-        container: &mut Self::RefMutContainer<'resource>,
-        resource: &'resource mut dyn ErasedResource,
-    ) {
-        use as_any::Downcast;
+    impl<Head> GetBundleMutForHList for Cons<Head, Nil>
+    where
+        Head: GetBundleMutForHList,
+    {
+        type RefMutContainer<'a> = Cons<Head::RefMutContainer<'a>, Nil>;
 
-        if container.is_some() {
-            return;
+        fn should_insert_resource(
+            container: &Self::RefMutContainer<'_>,
+            resource_id: TypeId,
+        ) -> bool {
+            let Cons(head, _) = container;
+            Head::should_insert_resource(head, resource_id)
         }
-        let Some(resource) = resource.downcast_mut() else {
-            return;
-        };
-        *container = Some(resource);
-    }
 
-    fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>> {
-        container
-    }
-}
-
-impl<Head> GetBundleMutForHList for Cons<Head, Nil>
-where
-    Head: GetBundleMutForHList,
-{
-    type RefMutContainer<'a> = Cons<Head::RefMutContainer<'a>, Nil>;
-
-    fn should_insert_resource(container: &Self::RefMutContainer<'_>, resource_id: TypeId) -> bool {
-        let Cons(head, _) = container;
-        Head::should_insert_resource(head, resource_id)
-    }
-
-    fn insert_resource<'resource>(
-        container: &mut Self::RefMutContainer<'resource>,
-        resource: &'resource mut dyn ErasedResource,
-    ) {
-        let Cons(head, _) = container;
-        Head::insert_resource(head, resource);
-    }
-
-    fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>> {
-        let Cons(head, nil) = container;
-        let head = Head::into_ref_mut(head)?;
-        let ref_mut = Cons(head, nil);
-        Some(ref_mut)
-    }
-}
-
-impl<Head, Tail> GetBundleMutForHList for Cons<Head, Tail>
-where
-    Head: GetBundleMutForHList,
-    Tail: GetBundleMutForHList + HList,
-    for<'a> Tail::RefMut<'a>: HList,
-    for<'a> Tail::RefMutContainer<'a>: HList,
-{
-    type RefMutContainer<'a> = Cons<Head::RefMutContainer<'a>, Tail::RefMutContainer<'a>>;
-
-    fn should_insert_resource(container: &Self::RefMutContainer<'_>, resource_id: TypeId) -> bool {
-        let Cons(head, tail) = container;
-        Head::should_insert_resource(head, resource_id)
-            || Tail::should_insert_resource(tail, resource_id)
-    }
-
-    fn insert_resource<'resource>(
-        container: &mut Self::RefMutContainer<'resource>,
-        resource: &'resource mut dyn ErasedResource,
-    ) {
-        let Cons(head, tail) = container;
-        let resource_id = resource.as_any().type_id();
-        if Head::should_insert_resource(head, resource_id) {
+        fn insert_resource<'resource>(
+            container: &mut Self::RefMutContainer<'resource>,
+            resource: &'resource mut dyn ErasedResource,
+        ) {
+            let Cons(head, _) = container;
             Head::insert_resource(head, resource);
-            return;
         }
-        Tail::insert_resource(tail, resource)
+
+        fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>> {
+            let Cons(head, nil) = container;
+            let head = Head::into_ref_mut(head)?;
+            let ref_mut = Cons(head, nil);
+            Some(ref_mut)
+        }
     }
 
-    fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>> {
-        let Cons(head, tail) = container;
-        let head = Head::into_ref_mut(head)?;
-        let tail = Tail::into_ref_mut(tail)?;
-        let ref_mut = Cons(head, tail);
-        Some(ref_mut)
+    impl<Head, Tail> GetBundleMutForHList for Cons<Head, Tail>
+    where
+        Head: GetBundleMutForHList,
+        Tail: GetBundleMutForHList + HList,
+        for<'a> Tail::RefMut<'a>: HList,
+        for<'a> Tail::RefMutContainer<'a>: HList,
+    {
+        type RefMutContainer<'a> = Cons<Head::RefMutContainer<'a>, Tail::RefMutContainer<'a>>;
+
+        fn should_insert_resource(
+            container: &Self::RefMutContainer<'_>,
+            resource_id: TypeId,
+        ) -> bool {
+            let Cons(head, tail) = container;
+            Head::should_insert_resource(head, resource_id)
+                || Tail::should_insert_resource(tail, resource_id)
+        }
+
+        fn insert_resource<'resource>(
+            container: &mut Self::RefMutContainer<'resource>,
+            resource: &'resource mut dyn ErasedResource,
+        ) {
+            let Cons(head, tail) = container;
+            let resource_id = resource.as_any().type_id();
+            if Head::should_insert_resource(head, resource_id) {
+                Head::insert_resource(head, resource);
+                return;
+            }
+            Tail::insert_resource(tail, resource)
+        }
+
+        fn into_ref_mut(container: Self::RefMutContainer<'_>) -> Option<Self::RefMut<'_>> {
+            let Cons(head, tail) = container;
+            let head = Head::into_ref_mut(head)?;
+            let tail = Tail::into_ref_mut(tail)?;
+            let ref_mut = Cons(head, tail);
+            Some(ref_mut)
+        }
     }
 }
 
@@ -526,11 +550,11 @@ macro_rules! get_bundle_mut_for_tuple {
     };
 }
 
-// `GetBundleMut` is implemented for tuples of size 12 and less
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I);
+// `GetBundleMut` is implemented for tuples of size 8 and less (not 12 because of insane compilation times)
+// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I);
 get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H);
 get_bundle_mut_for_tuple!(A, B, C, D, E, F, G);
 get_bundle_mut_for_tuple!(A, B, C, D, E, F);
