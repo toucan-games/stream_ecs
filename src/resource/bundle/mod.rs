@@ -7,7 +7,7 @@ mod impls;
 /// Collection of resources that can be inserted in the registry one after another.
 ///
 /// This trait is implemented for all of resources since they can be inserted and removed trivially.
-/// Also it is implemented for tuples with resources of size 12 and less (but not for an empty tuple).
+/// Also it is implemented for heterogenous lists of resources of any size (but not for an empty one).
 pub trait Bundle: Sized + Send + Sync + 'static {
     /// Inserts provided resource bundle to the registry.
     ///

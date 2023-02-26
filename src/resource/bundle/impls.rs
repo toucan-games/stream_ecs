@@ -1,7 +1,4 @@
-use hlist::{
-    tuple::{IntoHList, IntoTuple},
-    Cons, HList, Nil,
-};
+use hlist::{Cons, HList, Nil};
 
 use crate::resource::{
     registry::{Registry as Resources, TryRegistry as TryResources},
@@ -104,55 +101,6 @@ where
     }
 }
 
-macro_rules! bundle_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> Bundle for ($($types,)*)
-        where
-            $($types: Bundle,)*
-        {
-            fn insert<__R>(resources: &mut __R, bundle: Self) -> Option<Self>
-            where
-                __R: Resources,
-            {
-                let bundle = bundle.into_hlist();
-                let bundle = Bundle::insert(resources, bundle)?;
-                let bundle = bundle.into_tuple();
-                Some(bundle)
-            }
-
-            fn remove<__R>(resources: &mut __R) -> Option<Self>
-            where
-                __R: Resources,
-            {
-                let bundle = <Self as IntoHList>::Output::remove(resources)?;
-                let bundle = bundle.into_tuple();
-                Some(bundle)
-            }
-
-            fn contains<__R>(resources: &__R) -> bool
-            where
-                __R: Resources,
-            {
-                <Self as IntoHList>::Output::contains(resources)
-            }
-        }
-    };
-}
-
-// `Bundle` is implemented for tuples of size 12 and less
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-bundle_for_tuple!(A, B, C, D, E, F, G, H);
-bundle_for_tuple!(A, B, C, D, E, F, G);
-bundle_for_tuple!(A, B, C, D, E, F);
-bundle_for_tuple!(A, B, C, D, E);
-bundle_for_tuple!(A, B, C, D);
-bundle_for_tuple!(A, B, C);
-bundle_for_tuple!(A, B);
-bundle_for_tuple!(A);
-
 /// Trivial implementation for resources, which forwards implementation to the resource registry.
 impl<T> TryBundle for T
 where
@@ -205,41 +153,6 @@ where
         Ok(Some(bundle))
     }
 }
-
-macro_rules! try_bundle_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> TryBundle for ($($types,)*)
-        where
-            $($types: TryBundle,)*
-        {
-            fn try_insert<__R>(resources: &mut __R, bundle: Self) -> Result<Option<Self>, __R::Err>
-            where
-                __R: TryResources,
-            {
-                let bundle = bundle.into_hlist();
-                let Some(bundle) = TryBundle::try_insert(resources, bundle)? else {
-                    return Ok(None);
-                };
-                let bundle = bundle.into_tuple();
-                Ok(Some(bundle))
-            }
-        }
-    };
-}
-
-// `TryBundle` is implemented for tuples of size 12 and less
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H);
-try_bundle_for_tuple!(A, B, C, D, E, F, G);
-try_bundle_for_tuple!(A, B, C, D, E, F);
-try_bundle_for_tuple!(A, B, C, D, E);
-try_bundle_for_tuple!(A, B, C, D);
-try_bundle_for_tuple!(A, B, C);
-try_bundle_for_tuple!(A, B);
-try_bundle_for_tuple!(A);
 
 /// Trivial implementation for resources, which forwards implementation to the resource registry.
 impl<T> GetBundle for T
@@ -298,42 +211,6 @@ where
         Some(bundle)
     }
 }
-
-macro_rules! get_bundle_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> GetBundle for ($($types,)*)
-        where
-            $($types: GetBundle,)*
-        {
-            type Ref<'a> = ($($types::Ref<'a>,)*)
-            where
-                Self: 'a;
-
-            fn get<__R>(resources: &__R) -> Option<Self::Ref<'_>>
-            where
-                __R: Resources,
-            {
-                let bundle = <Self as IntoHList>::Output::get(resources)?;
-                let bundle = bundle.into_tuple();
-                Some(bundle)
-            }
-        }
-    };
-}
-
-// `GetBundle` is implemented for tuples of size 12 and less
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H);
-get_bundle_for_tuple!(A, B, C, D, E, F, G);
-get_bundle_for_tuple!(A, B, C, D, E, F);
-get_bundle_for_tuple!(A, B, C, D, E);
-get_bundle_for_tuple!(A, B, C, D);
-get_bundle_for_tuple!(A, B, C);
-get_bundle_for_tuple!(A, B);
-get_bundle_for_tuple!(A);
 
 /// Trivial implementation for resources, which forwards implementation to the resource registry.
 impl<T> GetBundleMut for T
@@ -527,39 +404,3 @@ mod impl_details {
         }
     }
 }
-
-macro_rules! get_bundle_mut_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> GetBundleMut for ($($types,)*)
-        where
-            $($types: GetBundleMutForHList,)*
-        {
-            type RefMut<'a> = ($($types::RefMut<'a>,)*)
-            where
-                Self: 'a;
-
-            fn get_mut<__R>(resources: &mut __R) -> Option<Self::RefMut<'_>>
-            where
-                __R: Resources,
-            {
-                let bundle = <Self as IntoHList>::Output::get_mut(resources)?;
-                let bundle = bundle.into_tuple();
-                Some(bundle)
-            }
-        }
-    };
-}
-
-// `GetBundleMut` is implemented for tuples of size 8 and less (not 12 because of insane compilation times)
-// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-// get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F);
-get_bundle_mut_for_tuple!(A, B, C, D, E);
-get_bundle_mut_for_tuple!(A, B, C, D);
-get_bundle_mut_for_tuple!(A, B, C);
-get_bundle_mut_for_tuple!(A, B);
-get_bundle_mut_for_tuple!(A);

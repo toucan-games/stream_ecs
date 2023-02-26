@@ -1,8 +1,5 @@
 use either::Either;
-use hlist::{
-    tuple::{IntoHList, IntoTuple},
-    Cons, HList, Nil,
-};
+use hlist::{Cons, HList, Nil};
 
 use crate::{
     component::{
@@ -149,60 +146,6 @@ where
     }
 }
 
-macro_rules! bundle_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> Bundle for ($($types,)*)
-        where
-            $($types: Bundle,)*
-        {
-            fn attach<__C>(components: &mut __C, entity: Entity, bundle: Self) -> Result<Option<Self>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let bundle = bundle.into_hlist();
-                let Some(bundle) = Bundle::attach(components, entity, bundle)? else {
-                    return Ok(None);
-                };
-                let bundle = bundle.into_tuple();
-                Ok(Some(bundle))
-            }
-
-            fn remove<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let Some(bundle) = <Self as IntoHList>::Output::remove(components, entity)? else {
-                    return Ok(None);
-                };
-                let bundle = bundle.into_tuple();
-                Ok(Some(bundle))
-            }
-
-            fn is_attached<__C>(components: &__C, entity: Entity) -> Result<bool, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let is_attached = <Self as IntoHList>::Output::is_attached(components, entity)?;
-                Ok(is_attached)
-            }
-        }
-    };
-}
-
-// `Bundle` is implemented for tuples of size 12 and less
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-bundle_for_tuple!(A, B, C, D, E, F, G, H);
-bundle_for_tuple!(A, B, C, D, E, F, G);
-bundle_for_tuple!(A, B, C, D, E, F);
-bundle_for_tuple!(A, B, C, D, E);
-bundle_for_tuple!(A, B, C, D);
-bundle_for_tuple!(A, B, C);
-bundle_for_tuple!(A, B);
-bundle_for_tuple!(A);
-
 /// Trivial implementation for components, which forwards implementation to the component storage.
 impl<T> TryBundle for T
 where
@@ -300,47 +243,6 @@ where
     }
 }
 
-macro_rules! try_bundle_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> TryBundle for ($($types,)*)
-        where
-            $($types: TryBundle,)*
-        {
-            type Err = <<Self as IntoHList>::Output as TryBundle>::Err;
-
-            fn try_attach<__C>(
-                components: &mut __C,
-                entity: Entity,
-                bundle: Self,
-            ) -> Result<Option<Self>, TryBundleError<Self::Err>>
-            where
-                __C: Components,
-            {
-                let bundle = bundle.into_hlist();
-                let Some(bundle) = TryBundle::try_attach(components, entity, bundle)? else {
-                    return Ok(None);
-                };
-                let bundle = bundle.into_tuple();
-                Ok(Some(bundle))
-            }
-        }
-    };
-}
-
-// `TryBundle` is implemented for tuples of size 12 and less
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-try_bundle_for_tuple!(A, B, C, D, E, F, G, H);
-try_bundle_for_tuple!(A, B, C, D, E, F, G);
-try_bundle_for_tuple!(A, B, C, D, E, F);
-try_bundle_for_tuple!(A, B, C, D, E);
-try_bundle_for_tuple!(A, B, C, D);
-try_bundle_for_tuple!(A, B, C);
-try_bundle_for_tuple!(A, B);
-try_bundle_for_tuple!(A);
-
 /// Trivial implementation for components, which forwards implementation to the component storage.
 impl<T> GetBundle for T
 where
@@ -408,44 +310,6 @@ where
         Ok(Some(bundle))
     }
 }
-
-macro_rules! get_bundle_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> GetBundle for ($($types,)*)
-        where
-            $($types: GetBundle,)*
-        {
-            type Ref<'a> = ($($types::Ref<'a>,)*)
-            where
-                Self: 'a;
-
-            fn get<__C>(components: &__C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let Some(bundle) = <Self as IntoHList>::Output::get(components, entity)? else {
-                    return Ok(None);
-                };
-                let bundle = bundle.into_tuple();
-                Ok(Some(bundle))
-            }
-        }
-    };
-}
-
-// `GetBundle` is implemented for tuples of size 12 and less
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H, I);
-get_bundle_for_tuple!(A, B, C, D, E, F, G, H);
-get_bundle_for_tuple!(A, B, C, D, E, F, G);
-get_bundle_for_tuple!(A, B, C, D, E, F);
-get_bundle_for_tuple!(A, B, C, D, E);
-get_bundle_for_tuple!(A, B, C, D);
-get_bundle_for_tuple!(A, B, C);
-get_bundle_for_tuple!(A, B);
-get_bundle_for_tuple!(A);
 
 /// Trivial implementation for components, which forwards implementation to the component storage.
 impl<T> GetBundleMut for T
@@ -517,41 +381,3 @@ where
         todo!()
     }
 }
-
-macro_rules! get_bundle_mut_for_tuple {
-    ($($types:ident),*) => {
-        impl<$($types),*> GetBundleMut for ($($types,)*)
-        where
-            $($types: GetBundleMut,)*
-        {
-            type RefMut<'a> = ($($types::RefMut<'a>,)*)
-            where
-                Self: 'a;
-
-            fn get_mut<__C>(components: &mut __C, entity: Entity) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
-            where
-                __C: Components,
-            {
-                let Some(bundle) = <Self as IntoHList>::Output::get_mut(components, entity)? else {
-                    return Ok(None);
-                };
-                let bundle = bundle.into_tuple();
-                Ok(Some(bundle))
-            }
-        }
-    };
-}
-
-// `GetBundleMut` is implemented for tuples of size 12 and less
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I, J);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H, I);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G, H);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F, G);
-get_bundle_mut_for_tuple!(A, B, C, D, E, F);
-get_bundle_mut_for_tuple!(A, B, C, D, E);
-get_bundle_mut_for_tuple!(A, B, C, D);
-get_bundle_mut_for_tuple!(A, B, C);
-get_bundle_mut_for_tuple!(A, B);
-get_bundle_mut_for_tuple!(A);

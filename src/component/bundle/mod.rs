@@ -12,7 +12,7 @@ mod impls;
 /// Collection of components that can be attached to an entity one after another.
 ///
 /// This trait is implemented for all of components since they can be attached and removed trivially.
-/// Also it is implemented for tuples with components of size 12 and less (but not for an empty tuple).
+/// Also it is implemented for heterogenous lists of components of any size (but not for an empty one).
 pub trait Bundle: Copy + Send + Sync + 'static {
     /// Attaches provided bundle to the entity.
     ///
