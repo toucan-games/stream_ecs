@@ -309,7 +309,7 @@ mod impl_details {
             resource_id: TypeId,
         ) -> bool {
             match container {
-                Some(_) => true,
+                Some(_) => false,
                 None => resource_id == TypeId::of::<T>(),
             }
         }
