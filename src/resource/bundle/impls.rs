@@ -248,7 +248,7 @@ where
     }
 }
 
-use crate::ref_mut::{RefMut, RefMutContainer as Rmc};
+use crate::ref_mut::{RefMut, RefMutContainer};
 
 /// More complex implementation for heterogenous list with more than one element.
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
@@ -257,8 +257,7 @@ where
     Tail: GetBundleMut + HList,
     for<'a> Head::RefMut<'a>: RefMut<'a>,
     for<'a> Tail::RefMut<'a>: RefMut<'a> + HList,
-    for<'a> <Head::RefMut<'a> as RefMut<'a>>::Container: Rmc<'a, RefMut = Head::RefMut<'a>>,
-    for<'a> <Tail::RefMut<'a> as RefMut<'a>>::Container: Rmc<'a, RefMut = Tail::RefMut<'a>> + HList,
+    for<'a> <Tail::RefMut<'a> as RefMut<'a>>::Container: HList,
 {
     type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
     where

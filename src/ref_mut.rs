@@ -3,7 +3,7 @@ use core::any::{Any, TypeId};
 use hlist::{Cons, HList, Nil};
 
 pub trait RefMut<'a> {
-    type Container: RefMutContainer<'a>;
+    type Container: RefMutContainer<'a, RefMut = Self>;
 }
 
 impl<'a, T> RefMut<'a> for &'a mut T
@@ -25,7 +25,6 @@ where
     Head: RefMut<'a>,
     Tail: RefMut<'a> + HList,
     Tail::Container: HList,
-    <Tail::Container as RefMutContainer<'a>>::RefMut: HList,
 {
     type Container = Cons<Head::Container, Tail::Container>;
 }
