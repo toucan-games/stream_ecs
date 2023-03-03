@@ -1,4 +1,4 @@
-use core::any::{Any, TypeId};
+use core::any::Any;
 
 use hlist::{Cons, HList, Nil};
 
@@ -48,7 +48,7 @@ where
     fn should_insert_any(&self, any: &dyn Any) -> bool {
         match self {
             Some(_) => false,
-            None => any.type_id() == TypeId::of::<T>(),
+            None => any.is::<T>(),
         }
     }
 
