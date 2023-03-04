@@ -19,7 +19,7 @@ mod error;
 /// (for example, to insert or remove component from the storage).
 pub trait Storage: Send + Sync + 'static {
     /// Type of component which is stored in this storage.
-    type Item: Component;
+    type Item: Component<Storage = Self>;
 
     /// Attaches provided component to the entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.

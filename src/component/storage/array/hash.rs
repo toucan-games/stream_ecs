@@ -63,7 +63,7 @@ enum HashIndex {
 #[derive(Debug, Clone)]
 pub struct HashArrayStorage<T, S, const N: usize>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     buckets: ArrayVec<Bucket<Entity, T>, N>,
     indices: [HashIndex; N],
@@ -72,7 +72,7 @@ where
 
 impl<T, S, const N: usize> HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
     S: Default,
 {
     /// Creates new empty hash array component storage.
@@ -90,7 +90,7 @@ where
 
 impl<T, S, const N: usize> HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     const EMPTY_INDEX: HashIndex = HashIndex::Free;
     const EMPTY_ARRAY: [HashIndex; N] = [Self::EMPTY_INDEX; N];
@@ -180,7 +180,7 @@ where
 
 impl<T, S, const N: usize> Default for HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
     S: Default,
 {
     fn default() -> Self {
@@ -196,7 +196,7 @@ struct FindBucket {
 
 impl<T, S, const N: usize> HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
     S: BuildHasher,
 {
     fn find_bucket(&self, entity: Entity) -> Option<FindBucket> {
@@ -504,7 +504,7 @@ where
 
 impl<T, S, const N: usize> Storage for HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
     S: BuildHasher + Send + Sync + 'static,
 {
     type Item = T;
@@ -560,7 +560,7 @@ where
 
 impl<T, S, const N: usize> TryStorage for HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
     S: BuildHasher + Send + Sync + 'static,
 {
     type Err = ArrayStorageError;
@@ -576,7 +576,7 @@ where
 
 impl<'a, T, S, const N: usize> IntoIterator for &'a HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N>>,
 {
     type Item = (Entity, &'a T);
 
@@ -590,7 +590,7 @@ where
 
 impl<'a, T, S, const N: usize> IntoIterator for &'a mut HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N>>,
 {
     type Item = (Entity, &'a mut T);
 
@@ -604,7 +604,7 @@ where
 
 impl<T, S, const N: usize> IntoIterator for HashArrayStorage<T, S, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     type Item = (Entity, T);
 
@@ -774,7 +774,7 @@ mod tests {
         super::HashArrayStorage<T, BuildHasherDefault<DefaultHasher>, N>;
 
     impl Component for Marker {
-        type Storage = HashArrayStorage<Self, 0>;
+        type Storage = HashArrayStorage<Self, 10>;
     }
 
     #[test]
@@ -785,7 +785,7 @@ mod tests {
 
     #[test]
     fn attach() {
-        let mut storage = HashArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::new();
         let entity = Entity::new(0, 0);
 
         let marker = storage.attach(entity, Marker);
@@ -795,7 +795,7 @@ mod tests {
 
     #[test]
     fn attach_many() {
-        let mut storage = HashArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::new();
         for index in 0..storage.capacity() as u32 {
             let entity = Entity::new(index, 0);
             storage.attach(entity, Marker);
@@ -805,7 +805,7 @@ mod tests {
 
     #[test]
     fn remove() {
-        let mut storage = HashArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::new();
         let entity = Entity::new(1, 0);
 
         storage.attach(entity, Marker);
@@ -816,7 +816,7 @@ mod tests {
 
     #[test]
     fn reattach() {
-        let mut storage = HashArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::new();
         let entity = Entity::new(2, 0);
 
         let marker = storage.attach(entity, Marker);
@@ -834,21 +834,16 @@ mod tests {
     #[test]
     #[should_panic]
     fn too_many() {
-        let mut storage = HashArrayStorage::<Marker, 2>::new();
-
-        let entity = Entity::new(0, 0);
-        storage.attach(entity, Marker);
-
-        let entity = Entity::new(1, 0);
-        storage.attach(entity, Marker);
-
-        let entity = Entity::new(2, 0);
-        storage.attach(entity, Marker);
+        let mut storage = HashArrayStorage::new();
+        for index in 0..11 {
+            let entity = Entity::new(index, 0);
+            storage.attach(entity, Marker);
+        }
     }
 
     #[test]
     fn iter() {
-        let mut storage = HashArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::new();
         let _ = storage.attach(Entity::new(0, 0), Marker);
         let _ = storage.attach(Entity::new(1, 0), Marker);
         let _ = storage.attach(Entity::new(2, 0), Marker);
@@ -865,7 +860,7 @@ mod tests {
 
     #[test]
     fn into_iter() {
-        let mut storage = HashArrayStorage::<Marker, 10>::new();
+        let mut storage = HashArrayStorage::new();
         let _ = storage.attach(Entity::new(0, 0), Marker);
         let _ = storage.attach(Entity::new(1, 0), Marker);
         let _ = storage.attach(Entity::new(2, 0), Marker);

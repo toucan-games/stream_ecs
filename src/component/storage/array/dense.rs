@@ -33,7 +33,7 @@ enum Slot {
 #[derive(Debug, Clone)]
 pub struct DenseArrayStorage<T, const N: usize>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     dense: ArrayVec<Dense<T>, N>,
     sparse: [Slot; N],
@@ -41,7 +41,7 @@ where
 
 impl<T, const N: usize> DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     const FREE_SLOT: Slot = Slot::Free;
     const FREE_ARRAY: [Slot; N] = [Self::FREE_SLOT; N];
@@ -323,7 +323,7 @@ where
 
 impl<T, const N: usize> Default for DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     fn default() -> Self {
         Self::new()
@@ -332,7 +332,7 @@ where
 
 impl<T, const N: usize> Storage for DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     type Item = T;
 
@@ -387,7 +387,7 @@ where
 
 impl<T, const N: usize> TryStorage for DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     type Err = ArrayStorageError;
 
@@ -402,7 +402,7 @@ where
 
 impl<'a, T, const N: usize> IntoIterator for &'a DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = DenseArrayStorage<T, N>>,
 {
     type Item = (Entity, &'a T);
 
@@ -416,7 +416,7 @@ where
 
 impl<'a, T, const N: usize> IntoIterator for &'a mut DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = DenseArrayStorage<T, N>>,
 {
     type Item = (Entity, &'a mut T);
 
@@ -430,7 +430,7 @@ where
 
 impl<T, const N: usize> IntoIterator for DenseArrayStorage<T, N>
 where
-    T: Component,
+    T: Component<Storage = Self>,
 {
     type Item = (Entity, T);
 
@@ -598,7 +598,7 @@ mod tests {
     struct Marker;
 
     impl Component for Marker {
-        type Storage = DenseArrayStorage<Self, 0>;
+        type Storage = DenseArrayStorage<Self, 10>;
     }
 
     #[test]
@@ -609,7 +609,7 @@ mod tests {
 
     #[test]
     fn attach() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = DenseArrayStorage::new();
         let entity = Entity::new(0, 0);
 
         let marker = storage.attach(entity, Marker);
@@ -619,7 +619,7 @@ mod tests {
 
     #[test]
     fn remove() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = DenseArrayStorage::new();
         let entity = Entity::new(1, 0);
 
         storage.attach(entity, Marker);
@@ -630,7 +630,7 @@ mod tests {
 
     #[test]
     fn reattach() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = DenseArrayStorage::new();
         let entity = Entity::new(2, 0);
 
         let marker = storage.attach(entity, Marker);
@@ -648,14 +648,14 @@ mod tests {
     #[test]
     #[should_panic]
     fn too_many() {
-        let mut storage = DenseArrayStorage::<Marker, 2>::new();
-        let entity = Entity::new(2, 0);
+        let mut storage = DenseArrayStorage::new();
+        let entity = Entity::new(10, 0);
         let _marker = storage.attach(entity, Marker);
     }
 
     #[test]
     fn iter() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = DenseArrayStorage::new();
         let _ = storage.attach(Entity::new(0, 0), Marker);
         let _ = storage.attach(Entity::new(1, 0), Marker);
         let _ = storage.attach(Entity::new(2, 0), Marker);
@@ -672,7 +672,7 @@ mod tests {
 
     #[test]
     fn into_iter() {
-        let mut storage = DenseArrayStorage::<Marker, 10>::new();
+        let mut storage = DenseArrayStorage::new();
         let _ = storage.attach(Entity::new(0, 0), Marker);
         let _ = storage.attach(Entity::new(1, 0), Marker);
         let _ = storage.attach(Entity::new(2, 0), Marker);

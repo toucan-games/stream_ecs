@@ -248,7 +248,7 @@ impl<T> GetBundle for T
 where
     T: Component,
 {
-    type Ref<'a> = &'a Self
+    type Ref<'a> = &'a T
     where
         Self: 'a;
 
@@ -316,7 +316,7 @@ impl<T> GetBundleMut for T
 where
     T: Component,
 {
-    type RefMut<'a> = &'a mut Self
+    type RefMut<'a> = &'a mut T
     where
         Self: 'a;
 
