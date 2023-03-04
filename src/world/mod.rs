@@ -6,7 +6,7 @@ use crate::{
     component::{
         bundle::{Bundle, GetBundle, GetBundleMut, TryBundle},
         registry::{Registry as Components, TryRegistry as TryComponents},
-        Component,
+        storage::bundle::{Bundle as StorageBundle, TryBundle as StorageTryBundle},
     },
     entity::{
         builder::StateEntityBuilder,
@@ -25,7 +25,8 @@ use crate::{
 
 mod error;
 
-/// ECS world — storage of [entities](Entity) and all the [data](Component) attached to them.
+/// ECS world — storage of [entities](Entity)
+/// and all the [data](crate::component::Component) attached to them.
 ///
 /// Additionally ECS world can store [resources](crate::resource::Resource) — aka singletons in ECS
 /// which does not belong to any specific entity.
@@ -48,32 +49,38 @@ impl<E, C, R> World<E, C, R> {
 
     /// Retrieves a reference of the entity registry of the current world.
     pub const fn entities(&self) -> &E {
-        &self.entities
+        let Self { entities, .. } = self;
+        entities
     }
 
     /// Retrieves a mutable reference of the entity registry of the current world.
     pub fn entities_mut(&mut self) -> &mut E {
-        &mut self.entities
+        let Self { entities, .. } = self;
+        entities
     }
 
     /// Retrieves a reference of the component registry of the current world.
     pub const fn components(&self) -> &C {
-        &self.components
+        let Self { components, .. } = self;
+        components
     }
 
     /// Retrieves a mutable reference of the component registry of the current world.
     pub fn components_mut(&mut self) -> &mut C {
-        &mut self.components
+        let Self { components, .. } = self;
+        components
     }
 
     /// Retrieves a reference of the resource registry of the current world.
     pub const fn resources(&self) -> &R {
-        &self.resources
+        let Self { resources, .. } = self;
+        resources
     }
 
     /// Retrieves a mutable reference of the resource registry of the current world.
     pub fn resources_mut(&mut self) -> &mut R {
-        &mut self.resources
+        let Self { resources, .. } = self;
+        resources
     }
 
     /// Retrieves references of the entity, component and resource registries of the current world.
@@ -220,30 +227,36 @@ impl<E, C, R> World<E, C, R>
 where
     C: Components,
 {
-    /// Registers the component in the current world with provided component storage.
-    /// Returns previous value of the storage, or [`None`] if the component was not registered.
-    pub fn register<T>(&mut self, storage: T::Storage) -> Option<T::Storage>
+    // TODO replace with component bundle with assoc type
+    /// Registers the component bundle in the current world with provided storage bundle.
+    /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
+    pub fn register<B>(&mut self, bundle: B) -> Option<B>
     where
-        T: Component,
+        B: StorageBundle,
     {
-        self.components.register::<T>(storage)
+        let Self { components, .. } = self;
+        B::register(components, bundle)
     }
 
-    /// Checks if the component was previously registered in the current world.
-    pub fn is_registered<T>(&self) -> bool
+    // TODO replace with component bundle with assoc type
+    /// Checks if the component bundle was previously registered in the current world.
+    pub fn is_registered<B>(&self) -> bool
     where
-        T: Component,
+        B: StorageBundle,
     {
-        self.components.is_registered::<T>()
+        let Self { components, .. } = self;
+        B::is_registered(components)
     }
 
-    /// Unregisters the component from the current world and returns storage of the component.
-    /// Returns [`None`] if the component was not registered.
-    pub fn unregister<T>(&mut self) -> Option<T::Storage>
+    // TODO replace with component bundle with assoc type
+    /// Unregisters the component bundle from the current world and returns component storage bundle.
+    /// Returns [`None`] if the component bundle was not registered.
+    pub fn unregister<B>(&mut self) -> Option<B>
     where
-        T: Component,
+        B: StorageBundle,
     {
-        self.components.unregister::<T>()
+        let Self { components, .. } = self;
+        B::unregister(components)
     }
 }
 
@@ -251,12 +264,13 @@ impl<E, C, R> World<E, C, R>
 where
     C: TryComponents,
 {
-    /// tries to register the component in the current world with provided component storage.
-    /// Returns previous value of the storage, or [`None`] if the component was not registered.
+    // TODO replace with component bundle with assoc type
+    /// tries to register the component bundle in the current world with provided component storage bundle.
+    /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the world will fail to register provided component.
+    /// This function will return an error if the world will fail to register provided component bundle.
     /// Conditions of failure are provided by implementation of the component registry.
     ///
     /// # Examples
@@ -266,11 +280,12 @@ where
     /// ```
     ///
     /// This is the fallible version of [`register`][World::register()] method.
-    pub fn try_register<T>(&mut self, storage: T::Storage) -> Result<Option<T::Storage>, C::Err>
+    pub fn try_register<B>(&mut self, bundle: B) -> Result<Option<B>, C::Err>
     where
-        T: Component,
+        B: StorageTryBundle,
     {
-        self.components.try_register::<T>(storage)
+        let Self { components, .. } = self;
+        B::try_register(components, bundle)
     }
 }
 

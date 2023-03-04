@@ -9,6 +9,7 @@ pub use self::error::TypeMismatchError;
 use crate::{component::Component, entity::Entity};
 
 pub mod array;
+pub mod bundle;
 
 mod error;
 

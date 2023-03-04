@@ -1,39 +1,39 @@
 use hlist::{Cons, HList, Nil};
 
 use crate::{
-    ref_mut::{RefMut, RefMutContainer},
-    resource::{
-        registry::{Registry as Resources, TryRegistry as TryResources},
-        Resource,
+    component::{
+        registry::{Registry as Components, TryRegistry as TryComponents},
+        storage::Storage,
     },
+    ref_mut::{RefMut, RefMutContainer},
 };
 
 use super::{Bundle, GetBundle, GetBundleMut, TryBundle};
 
-/// Trivial implementation for resources, which forwards implementation to the resource registry.
+/// Trivial implementation for storages, which forwards implementation to the component registry.
 impl<T> Bundle for T
 where
-    T: Resource,
+    T: Storage,
 {
-    fn insert<R>(resources: &mut R, resource: Self) -> Option<Self>
+    fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        R: Resources,
+        C: Components,
     {
-        resources.insert(resource)
+        components.register::<T::Item>(bundle)
     }
 
-    fn remove<R>(resources: &mut R) -> Option<Self>
+    fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        R: Resources,
+        C: Components,
     {
-        resources.remove()
+        components.unregister::<T::Item>()
     }
 
-    fn contains<R>(resources: &R) -> bool
+    fn is_registered<C>(components: &C) -> bool
     where
-        R: Resources,
+        C: Components,
     {
-        resources.contains::<T>()
+        components.is_registered::<T::Item>()
     }
 }
 
@@ -42,30 +42,30 @@ impl<Head> Bundle for Cons<Head, Nil>
 where
     Head: Bundle,
 {
-    fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
+    fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        R: Resources,
+        C: Components,
     {
         let Cons(head, nil) = bundle;
-        let head = Head::insert(resources, head)?;
+        let head = Head::register(components, head)?;
         let bundle = Cons(head, nil);
         Some(bundle)
     }
 
-    fn remove<R>(resources: &mut R) -> Option<Self>
+    fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        R: Resources,
+        C: Components,
     {
-        let head = Head::remove(resources)?;
+        let head = Head::unregister(components)?;
         let bundle = Cons(head, Nil);
         Some(bundle)
     }
 
-    fn contains<R>(resources: &R) -> bool
+    fn is_registered<C>(components: &C) -> bool
     where
-        R: Resources,
+        C: Components,
     {
-        Head::contains(resources)
+        Head::is_registered(components)
     }
 }
 
@@ -75,45 +75,45 @@ where
     Head: Bundle,
     Tail: Bundle + HList,
 {
-    fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
+    fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        R: Resources,
+        C: Components,
     {
         let Cons(head, tail) = bundle;
-        let head = Head::insert(resources, head)?;
-        let tail = Tail::insert(resources, tail)?;
+        let head = Head::register(components, head)?;
+        let tail = Tail::register(components, tail)?;
         let bundle = Cons(head, tail);
         Some(bundle)
     }
 
-    fn remove<R>(resources: &mut R) -> Option<Self>
+    fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        R: Resources,
+        C: Components,
     {
-        let head = Head::remove(resources)?;
-        let tail = Tail::remove(resources)?;
+        let head = Head::unregister(components)?;
+        let tail = Tail::unregister(components)?;
         let bundle = Cons(head, tail);
         Some(bundle)
     }
 
-    fn contains<R>(resources: &R) -> bool
+    fn is_registered<C>(components: &C) -> bool
     where
-        R: Resources,
+        C: Components,
     {
-        Head::contains(resources) && Tail::contains(resources)
+        Head::is_registered(components) && Tail::is_registered(components)
     }
 }
 
-/// Trivial implementation for resources, which forwards implementation to the resource registry.
+/// Trivial implementation for storages, which forwards implementation to the component registry.
 impl<T> TryBundle for T
 where
-    T: Resource,
+    T: Storage,
 {
-    fn try_insert<R>(resources: &mut R, resource: Self) -> Result<Option<Self>, R::Err>
+    fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        R: TryResources,
+        C: TryComponents,
     {
-        resources.try_insert(resource)
+        components.try_register::<T::Item>(bundle)
     }
 }
 
@@ -122,12 +122,12 @@ impl<Head> TryBundle for Cons<Head, Nil>
 where
     Head: TryBundle,
 {
-    fn try_insert<R>(resources: &mut R, bundle: Self) -> Result<Option<Self>, R::Err>
+    fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        R: TryResources,
+        C: TryComponents,
     {
         let Cons(head, nil) = bundle;
-        let Some(head) = Head::try_insert(resources, head)? else {
+        let Some(head) = Head::try_register(components, head)? else {
             return Ok(None);
         };
         let bundle = Cons(head, nil);
@@ -141,36 +141,36 @@ where
     Head: TryBundle,
     Tail: TryBundle + HList,
 {
-    fn try_insert<R>(resources: &mut R, bundle: Self) -> Result<Option<Self>, R::Err>
+    fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        R: TryResources,
+        C: TryComponents,
     {
         let Cons(head, tail) = bundle;
-        let Some(head) = Head::try_insert(resources, head)? else {
-            return Ok(None);
-        };
-        let Some(tail) = Tail::try_insert(resources, tail)? else {
-            return Ok(None);
-        };
+        let Some(head) = Head::try_register(components, head)? else {
+                return Ok(None);
+            };
+        let Some(tail) = Tail::try_register(components, tail)? else {
+                return Ok(None);
+            };
         let bundle = Cons(head, tail);
         Ok(Some(bundle))
     }
 }
 
-/// Trivial implementation for resources, which forwards implementation to the resource registry.
+/// Trivial implementation for storages, which forwards implementation to the component registry.
 impl<T> GetBundle for T
 where
-    T: Resource,
+    T: Storage,
 {
     type Ref<'a> = &'a T
     where
         Self: 'a;
 
-    fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
+    fn get<C>(components: &C) -> Option<Self::Ref<'_>>
     where
-        R: Resources,
+        C: Components,
     {
-        resources.get()
+        components.get::<T::Item>()
     }
 }
 
@@ -183,11 +183,11 @@ where
     where
         Self: 'a;
 
-    fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
+    fn get<C>(components: &C) -> Option<Self::Ref<'_>>
     where
-        R: Resources,
+        C: Components,
     {
-        let head = Head::get(resources)?;
+        let head = Head::get(components)?;
         let bundle = Cons(head, Nil);
         Some(bundle)
     }
@@ -204,31 +204,31 @@ where
     where
         Self: 'a;
 
-    fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
+    fn get<C>(components: &C) -> Option<Self::Ref<'_>>
     where
-        R: Resources,
+        C: Components,
     {
-        let head = Head::get(resources)?;
-        let tail = Tail::get(resources)?;
+        let head = Head::get(components)?;
+        let tail = Tail::get(components)?;
         let bundle = Cons(head, tail);
         Some(bundle)
     }
 }
 
-/// Trivial implementation for resources, which forwards implementation to the resource registry.
+/// Trivial implementation for storages, which forwards implementation to the component registry.
 impl<T> GetBundleMut for T
 where
-    T: Resource,
+    T: Storage,
 {
     type RefMut<'a> = &'a mut T
     where
         Self: 'a;
 
-    fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
+    fn get_mut<C>(components: &mut C) -> Option<Self::RefMut<'_>>
     where
-        R: Resources,
+        C: Components,
     {
-        resources.get_mut()
+        components.get_mut::<T::Item>()
     }
 }
 
@@ -241,11 +241,11 @@ where
     where
         Self: 'a;
 
-    fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
+    fn get_mut<C>(components: &mut C) -> Option<Self::RefMut<'_>>
     where
-        R: Resources,
+        C: Components,
     {
-        let head = Head::get_mut(resources)?;
+        let head = Head::get_mut(components)?;
         let bundle = Cons(head, Nil);
         Some(bundle)
     }
@@ -264,15 +264,15 @@ where
     where
         Self: 'a;
 
-    fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
+    fn get_mut<C>(components: &mut C) -> Option<Self::RefMut<'_>>
     where
-        R: Resources,
+        C: Components,
     {
         type Container<'a, T> = <T as RefMut<'a>>::Container;
 
         let mut container: Container<Self::RefMut<'_>> = Default::default();
-        for resource in resources.iter_mut() {
-            let any = resource.as_any_mut();
+        for storage in components.iter_mut() {
+            let any = storage.as_any_mut();
             container.insert_any(any);
         }
         container.into_ref_mut()
