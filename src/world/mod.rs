@@ -227,36 +227,33 @@ impl<E, C, R> World<E, C, R>
 where
     C: Components,
 {
-    // TODO replace with component bundle with assoc type
     /// Registers the component bundle in the current world with provided storage bundle.
     /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
-    pub fn register<B>(&mut self, bundle: B) -> Option<B>
+    pub fn register<B>(&mut self, bundle: B::Storages) -> Option<B::Storages>
     where
-        B: StorageBundle,
+        B: Bundle,
     {
         let Self { components, .. } = self;
-        B::register(components, bundle)
+        B::Storages::register(components, bundle)
     }
 
-    // TODO replace with component bundle with assoc type
     /// Checks if the component bundle was previously registered in the current world.
     pub fn is_registered<B>(&self) -> bool
     where
-        B: StorageBundle,
+        B: Bundle,
     {
         let Self { components, .. } = self;
-        B::is_registered(components)
+        B::Storages::is_registered(components)
     }
 
-    // TODO replace with component bundle with assoc type
     /// Unregisters the component bundle from the current world and returns component storage bundle.
     /// Returns [`None`] if the component bundle was not registered.
-    pub fn unregister<B>(&mut self) -> Option<B>
+    pub fn unregister<B>(&mut self) -> Option<B::Storages>
     where
-        B: StorageBundle,
+        B: Bundle,
     {
         let Self { components, .. } = self;
-        B::unregister(components)
+        B::Storages::unregister(components)
     }
 }
 
@@ -264,8 +261,7 @@ impl<E, C, R> World<E, C, R>
 where
     C: TryComponents,
 {
-    // TODO replace with component bundle with assoc type
-    /// tries to register the component bundle in the current world with provided component storage bundle.
+    /// Tries to register the component bundle in the current world with provided component storage bundle.
     /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
     ///
     /// # Errors
@@ -280,12 +276,13 @@ where
     /// ```
     ///
     /// This is the fallible version of [`register`][World::register()] method.
-    pub fn try_register<B>(&mut self, bundle: B) -> Result<Option<B>, C::Err>
+    pub fn try_register<B>(&mut self, bundle: B::Storages) -> Result<Option<B::Storages>, C::Err>
     where
-        B: StorageTryBundle,
+        B: Bundle,
+        B::Storages: StorageTryBundle,
     {
         let Self { components, .. } = self;
-        B::try_register(components, bundle)
+        B::Storages::try_register(components, bundle)
     }
 }
 

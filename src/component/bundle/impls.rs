@@ -4,7 +4,7 @@ use hlist::{Cons, HList, Nil};
 use crate::{
     component::{
         registry::Registry as Components,
-        storage::{Storage, TryStorage},
+        storage::{bundle::GetBundleMut as StorageGetBundleMut, Storage, TryStorage},
         Component,
     },
     entity::Entity,
@@ -17,6 +17,8 @@ impl<T> Bundle for T
 where
     T: Component,
 {
+    type Storages = T::Storage;
+
     fn attach<C>(
         components: &mut C,
         entity: Entity,
@@ -60,6 +62,8 @@ impl<Head> Bundle for Cons<Head, Nil>
 where
     Head: Bundle,
 {
+    type Storages = Cons<Head::Storages, Nil>;
+
     fn attach<C>(
         components: &mut C,
         entity: Entity,
@@ -100,7 +104,10 @@ impl<Head, Tail> Bundle for Cons<Head, Tail>
 where
     Head: Bundle,
     Tail: Bundle + HList,
+    Tail::Storages: HList,
 {
+    type Storages = Cons<Head::Storages, Tail::Storages>;
+
     fn attach<C>(
         components: &mut C,
         entity: Entity,
@@ -203,6 +210,7 @@ impl<Head, Tail> TryBundle for Cons<Head, Tail>
 where
     Head: TryBundle,
     Tail: TryBundle + HList,
+    Tail::Storages: HList,
 {
     type Err = Either<Head::Err, Tail::Err>;
 
@@ -259,7 +267,7 @@ where
         let Some(storage) = components.get::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
-        let component = storage.get(entity);
+        let component = Storage::get(storage, entity);
         Ok(component)
     }
 }
@@ -290,6 +298,7 @@ impl<Head, Tail> GetBundle for Cons<Head, Tail>
 where
     Head: GetBundle,
     Tail: GetBundle + HList,
+    Tail::Storages: HList,
     for<'a> Tail::Ref<'a>: HList,
 {
     type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
@@ -330,7 +339,7 @@ where
         let Some(storage) = components.get_mut::<T>() else {
             return Err(NotRegisteredError::new::<Self>());
         };
-        let component = storage.get_mut(entity);
+        let component = Storage::get_mut(storage, entity);
         Ok(component)
     }
 }
@@ -359,25 +368,90 @@ where
     }
 }
 
+use self::impl_details::GetComponentsMut;
+
 /// More complex implementation for heterogenous list with more than one element.
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
     Tail: GetBundleMut + HList,
+    Tail::Storages: HList,
+    Cons<Head::Storages, Tail::Storages>: StorageGetBundleMut,
     for<'a> Tail::RefMut<'a>: HList,
+    for<'a> <Cons<Head::Storages, Tail::Storages> as StorageGetBundleMut>::RefMut<'a>:
+        GetComponentsMut<'a, Components = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>>,
 {
     type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
     where
         Self: 'a;
 
     fn get_mut<C>(
-        _components: &mut C,
-        _entity: Entity,
+        components: &mut C,
+        entity: Entity,
     ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components,
     {
-        // TODO get multiple storages from the registry, then retrieve a mutable reference from each storage
-        todo!()
+        let _ = Self::is_attached(components, entity)?;
+        let storages = Self::Storages::get_mut(components)
+            .expect("presence of all bundle components was checked earlier");
+        let bundle = storages.get_components_mut(entity);
+        Ok(bundle)
+    }
+}
+
+mod impl_details {
+    use hlist::{Cons, HList, Nil};
+
+    use crate::{component::storage::Storage, entity::Entity, ref_mut::RefMut};
+
+    pub trait GetComponentsMut<'a>: RefMut<'a> {
+        type Components: RefMut<'a>;
+
+        fn get_components_mut(self, entity: Entity) -> Option<Self::Components>;
+    }
+
+    impl<'a, T> GetComponentsMut<'a> for &'a mut T
+    where
+        T: Storage,
+    {
+        type Components = &'a mut T::Item;
+
+        fn get_components_mut(self, entity: Entity) -> Option<Self::Components> {
+            self.get_mut(entity)
+        }
+    }
+
+    impl<'a, Head> GetComponentsMut<'a> for Cons<Head, Nil>
+    where
+        Head: GetComponentsMut<'a>,
+    {
+        type Components = Cons<Head::Components, Nil>;
+
+        fn get_components_mut(self, entity: Entity) -> Option<Self::Components> {
+            let Cons(head, nil) = self;
+            let head = Head::get_components_mut(head, entity)?;
+            let bundle = Cons(head, nil);
+            Some(bundle)
+        }
+    }
+
+    impl<'a, Head, Tail> GetComponentsMut<'a> for Cons<Head, Tail>
+    where
+        Head: GetComponentsMut<'a>,
+        Tail: GetComponentsMut<'a> + HList,
+        Tail::Container: HList,
+        Tail::Components: HList,
+        <Tail::Components as RefMut<'a>>::Container: HList,
+    {
+        type Components = Cons<Head::Components, Tail::Components>;
+
+        fn get_components_mut(self, entity: Entity) -> Option<Self::Components> {
+            let Cons(head, tail) = self;
+            let head = Head::get_components_mut(head, entity)?;
+            let tail = Tail::get_components_mut(tail, entity)?;
+            let bundle = Cons(head, tail);
+            Some(bundle)
+        }
     }
 }

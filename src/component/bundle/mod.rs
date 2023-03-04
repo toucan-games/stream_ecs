@@ -4,7 +4,7 @@ use crate::entity::Entity;
 
 pub use self::error::{NotRegisteredError, TryBundleError};
 
-use super::registry::Registry as Components;
+use super::{registry::Registry as Components, storage::bundle::Bundle as StorageBundle};
 
 mod error;
 mod impls;
@@ -14,6 +14,9 @@ mod impls;
 /// This trait is implemented for all of components since they can be attached and removed trivially.
 /// Also it is implemented for heterogenous lists of components of any size (but not for an empty one).
 pub trait Bundle: Copy + Send + Sync + 'static {
+    /// Storage bundle associated with this component bundle.
+    type Storages: StorageBundle;
+
     /// Attaches provided bundle to the entity.
     ///
     /// Returns previous bundle data attached to the entity earlier.
