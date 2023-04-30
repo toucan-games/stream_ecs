@@ -1,6 +1,6 @@
 use core::any::Any;
 
-use hlist::{Cons, HList, Nil};
+use hlist::{Cons, Nil};
 
 pub trait RefMut<'a> {
     type Container: RefMutContainer<'a, RefMut = Self>;
@@ -23,8 +23,7 @@ where
 impl<'a, Head, Tail> RefMut<'a> for Cons<Head, Tail>
 where
     Head: RefMut<'a>,
-    Tail: RefMut<'a> + HList,
-    Tail::Container: HList,
+    Tail: RefMut<'a>,
 {
     type Container = Cons<Head::Container, Tail::Container>;
 }
@@ -94,8 +93,7 @@ where
 impl<'a, Head, Tail> RefMutContainer<'a> for Cons<Head, Tail>
 where
     Head: RefMutContainer<'a>,
-    Tail: RefMutContainer<'a> + HList,
-    Tail::RefMut: HList,
+    Tail: RefMutContainer<'a>,
 {
     type RefMut = Cons<Head::RefMut, Tail::RefMut>;
 

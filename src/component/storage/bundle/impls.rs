@@ -1,4 +1,4 @@
-use hlist::{Cons, HList, Nil};
+use hlist::{Cons, Nil};
 
 use crate::{
     component::{
@@ -73,7 +73,7 @@ where
 impl<Head, Tail> Bundle for Cons<Head, Tail>
 where
     Head: Bundle,
-    Tail: Bundle + HList,
+    Tail: Bundle,
 {
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
@@ -139,7 +139,7 @@ where
 impl<Head, Tail> TryBundle for Cons<Head, Tail>
 where
     Head: TryBundle,
-    Tail: TryBundle + HList,
+    Tail: TryBundle,
 {
     fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
@@ -197,8 +197,7 @@ where
 impl<Head, Tail> GetBundle for Cons<Head, Tail>
 where
     Head: GetBundle,
-    Tail: GetBundle + HList,
-    for<'a> Tail::Ref<'a>: HList,
+    Tail: GetBundle,
 {
     type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
     where
@@ -255,10 +254,9 @@ where
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
-    Tail: GetBundleMut + HList,
+    Tail: GetBundleMut,
     for<'a> Head::RefMut<'a>: RefMut<'a>,
-    for<'a> Tail::RefMut<'a>: RefMut<'a> + HList,
-    for<'a> <Tail::RefMut<'a> as RefMut<'a>>::Container: HList,
+    for<'a> Tail::RefMut<'a>: RefMut<'a>,
 {
     type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
     where

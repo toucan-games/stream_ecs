@@ -1,5 +1,5 @@
 use either::Either;
-use hlist::{Cons, HList, Nil};
+use hlist::{Cons, Nil};
 
 use crate::{
     component::{
@@ -103,8 +103,7 @@ where
 impl<Head, Tail> Bundle for Cons<Head, Tail>
 where
     Head: Bundle,
-    Tail: Bundle + HList,
-    Tail::Storages: HList,
+    Tail: Bundle,
 {
     type Storages = Cons<Head::Storages, Tail::Storages>;
 
@@ -209,8 +208,7 @@ where
 impl<Head, Tail> TryBundle for Cons<Head, Tail>
 where
     Head: TryBundle,
-    Tail: TryBundle + HList,
-    Tail::Storages: HList,
+    Tail: TryBundle,
 {
     type Err = Either<Head::Err, Tail::Err>;
 
@@ -297,9 +295,7 @@ where
 impl<Head, Tail> GetBundle for Cons<Head, Tail>
 where
     Head: GetBundle,
-    Tail: GetBundle + HList,
-    Tail::Storages: HList,
-    for<'a> Tail::Ref<'a>: HList,
+    Tail: GetBundle,
 {
     type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
     where
@@ -374,10 +370,8 @@ use self::impl_details::GetComponentsMut;
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
-    Tail: GetBundleMut + HList,
-    Tail::Storages: HList,
+    Tail: GetBundleMut,
     Cons<Head::Storages, Tail::Storages>: StorageGetBundleMut,
-    for<'a> Tail::RefMut<'a>: HList,
     for<'a> <Cons<Head::Storages, Tail::Storages> as StorageGetBundleMut>::RefMut<'a>:
         GetComponentsMut<'a, Components = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>>,
 {
@@ -401,7 +395,7 @@ where
 }
 
 mod impl_details {
-    use hlist::{Cons, HList, Nil};
+    use hlist::{Cons, Nil};
 
     use crate::{component::storage::Storage, entity::Entity, ref_mut::RefMut};
 
@@ -439,10 +433,7 @@ mod impl_details {
     impl<'a, Head, Tail> GetComponentsMut<'a> for Cons<Head, Tail>
     where
         Head: GetComponentsMut<'a>,
-        Tail: GetComponentsMut<'a> + HList,
-        Tail::Container: HList,
-        Tail::Components: HList,
-        <Tail::Components as RefMut<'a>>::Container: HList,
+        Tail: GetComponentsMut<'a>,
     {
         type Components = Cons<Head::Components, Tail::Components>;
 
