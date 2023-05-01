@@ -1,6 +1,8 @@
 //! Provides utilities for resource bundles — heterogenous collections of resources.
 
-use super::registry::{Registry as Resources, TryRegistry as TryResources};
+use super::registry::{
+    Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
+};
 
 mod impls;
 
@@ -15,7 +17,7 @@ pub trait Bundle: Sized + Send + Sync + 'static {
     /// Returns [`None`] if there was no bundle inserted in the registry or some of bundle parts are missing.
     fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
     where
-        R: Resources;
+        R: ResourcesMut;
 
     /// Removes resource bundle from the registry.
     ///
@@ -23,7 +25,7 @@ pub trait Bundle: Sized + Send + Sync + 'static {
     /// Returns [`None`] if there was no bundle inserted in the registry or some of bundle parts are missing.
     fn remove<R>(resources: &mut R) -> Option<Self>
     where
-        R: Resources;
+        R: ResourcesMut;
 
     /// Checks if all resources of the bundle are inserted to provided registry.
     fn contains<R>(resources: &R) -> bool
@@ -52,7 +54,7 @@ pub trait TryBundle: Bundle {
     /// This is the fallible version of [`insert`][Bundle::insert()] method.
     fn try_insert<R>(resources: &mut R, bundle: Self) -> Result<Option<Self>, R::Err>
     where
-        R: TryResources;
+        R: TryResourcesMut;
 }
 
 /// Extension of bundle which allows to get a reference to a resource bundle from the registry.

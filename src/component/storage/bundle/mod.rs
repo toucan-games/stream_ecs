@@ -1,6 +1,8 @@
 //! Provides utilities for component storage bundles — heterogenous collections of component storages.
 
-use crate::component::registry::{Registry as Components, TryRegistry as TryComponents};
+use crate::component::registry::{
+    Registry as Components, RegistryMut as ComponentsMut, TryRegistryMut as TryComponentsMut,
+};
 
 mod impls;
 
@@ -15,7 +17,7 @@ pub trait Bundle: Sized + Send + Sync + 'static {
     /// Returns [`None`] if there was no bundle registered or some of bundle parts are missing.
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        C: Components;
+        C: ComponentsMut;
 
     /// Unregisters component bundle from the component registry.
     ///
@@ -23,7 +25,7 @@ pub trait Bundle: Sized + Send + Sync + 'static {
     /// Returns [`None`] if there was no bundle registered or some of bundle parts are missing.
     fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        C: Components;
+        C: ComponentsMut;
 
     /// Checks if all storages of the bundle are registered in provided component registry.
     fn is_registered<C>(components: &C) -> bool
@@ -52,7 +54,7 @@ pub trait TryBundle: Bundle {
     /// This is the fallible version of [`register`][Bundle::register()] method.
     fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        C: TryComponents;
+        C: TryComponentsMut;
 }
 
 /// Extension of bundle which allows to get a reference to a storage bundle from the registry.

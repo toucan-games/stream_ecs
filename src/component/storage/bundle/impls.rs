@@ -2,7 +2,10 @@ use hlist::{Cons, Nil};
 
 use crate::{
     component::{
-        registry::{Registry as Components, TryRegistry as TryComponents},
+        registry::{
+            Registry as Components, RegistryMut as ComponentsMut,
+            TryRegistryMut as TryComponentsMut,
+        },
         storage::Storage,
     },
     ref_mut::{RefMut, RefMutContainer},
@@ -17,14 +20,14 @@ where
 {
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        C: Components,
+        C: ComponentsMut,
     {
         components.register::<T::Item>(bundle)
     }
 
     fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        C: Components,
+        C: ComponentsMut,
     {
         components.unregister::<T::Item>()
     }
@@ -44,7 +47,7 @@ where
 {
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        C: Components,
+        C: ComponentsMut,
     {
         let Cons(head, nil) = bundle;
         let head = Head::register(components, head)?;
@@ -54,7 +57,7 @@ where
 
     fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        C: Components,
+        C: ComponentsMut,
     {
         let head = Head::unregister(components)?;
         let bundle = Cons(head, Nil);
@@ -77,7 +80,7 @@ where
 {
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
-        C: Components,
+        C: ComponentsMut,
     {
         let Cons(head, tail) = bundle;
         let head = Head::register(components, head)?;
@@ -88,7 +91,7 @@ where
 
     fn unregister<C>(components: &mut C) -> Option<Self>
     where
-        C: Components,
+        C: ComponentsMut,
     {
         let head = Head::unregister(components)?;
         let tail = Tail::unregister(components)?;
@@ -111,7 +114,7 @@ where
 {
     fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        C: TryComponents,
+        C: TryComponentsMut,
     {
         components.try_register::<T::Item>(bundle)
     }
@@ -124,7 +127,7 @@ where
 {
     fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        C: TryComponents,
+        C: TryComponentsMut,
     {
         let Cons(head, nil) = bundle;
         let Some(head) = Head::try_register(components, head)? else {
@@ -143,7 +146,7 @@ where
 {
     fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
-        C: TryComponents,
+        C: TryComponentsMut,
     {
         let Cons(head, tail) = bundle;
         let Some(head) = Head::try_register(components, head)? else {

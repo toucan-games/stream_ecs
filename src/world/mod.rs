@@ -5,7 +5,10 @@ pub use self::error::{EntityError, TryAttachError};
 use crate::{
     component::{
         bundle::{Bundle, GetBundle, GetBundleMut, TryBundle},
-        registry::{Registry as Components, TryRegistry as TryComponents},
+        registry::{
+            Registry as Components, RegistryMut as ComponentsMut,
+            TryRegistryMut as TryComponentsMut,
+        },
         storage::bundle::{Bundle as StorageBundle, TryBundle as StorageTryBundle},
     },
     entity::{
@@ -19,7 +22,9 @@ use crate::{
             Bundle as ResourceBundle, GetBundle as ResourceGetBundle,
             GetBundleMut as ResourceGetBundleMut, TryBundle as ResourceTryBundle,
         },
-        registry::{Registry as Resources, TryRegistry as TryResources},
+        registry::{
+            Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
+        },
     },
 };
 
@@ -114,7 +119,8 @@ where
     ///
     /// Newly created entity is empty, so it has no components attached to it.
     pub fn create(&mut self) -> Entity {
-        self.entities.create()
+        let Self { entities, .. } = self;
+        entities.create()
     }
 
     /// Creates an [entry](Entry) for the provided entity.
@@ -155,7 +161,8 @@ where
 
     /// Checks if the world contains provided entity.
     pub fn contains(&self, entity: Entity) -> bool {
-        self.entities.contains(entity)
+        let Self { entities, .. } = self;
+        entities.contains(entity)
     }
 
     /// Destroys entity which was previously created in the world.
@@ -171,7 +178,8 @@ where
     /// todo!()
     /// ```
     pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
-        self.entities.destroy(entity)
+        let Self { entities, .. } = self;
+        entities.destroy(entity)
     }
 }
 
@@ -196,7 +204,8 @@ where
     ///
     /// This is the fallible version of [`create`][World::create()] method.
     pub fn try_create(&mut self) -> Result<Entity, E::Err> {
-        self.entities.try_create()
+        let Self { entities, .. } = self;
+        entities.try_create()
     }
 
     /// Tries to spawn a new entity and return a corresponding [entry](EntryMut).
@@ -227,6 +236,20 @@ impl<E, C, R> World<E, C, R>
 where
     C: Components,
 {
+    /// Checks if the component bundle was previously registered in the current world.
+    pub fn is_registered<B>(&self) -> bool
+    where
+        B: Bundle,
+    {
+        let Self { components, .. } = self;
+        B::Storages::is_registered(components)
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    C: ComponentsMut,
+{
     /// Registers the component bundle in the current world with provided storage bundle.
     /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
     pub fn register<B>(&mut self, bundle: B::Storages) -> Option<B::Storages>
@@ -235,15 +258,6 @@ where
     {
         let Self { components, .. } = self;
         B::Storages::register(components, bundle)
-    }
-
-    /// Checks if the component bundle was previously registered in the current world.
-    pub fn is_registered<B>(&self) -> bool
-    where
-        B: Bundle,
-    {
-        let Self { components, .. } = self;
-        B::Storages::is_registered(components)
     }
 
     /// Unregisters the component bundle from the current world and returns component storage bundle.
@@ -259,7 +273,7 @@ where
 
 impl<E, C, R> World<E, C, R>
 where
-    C: TryComponents,
+    C: TryComponentsMut,
 {
     /// Tries to register the component bundle in the current world with provided component storage bundle.
     /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
@@ -290,16 +304,6 @@ impl<E, C, R> World<E, C, R>
 where
     R: Resources,
 {
-    /// Insert provided resource bundle into the current world.
-    /// Returns previous value of the resource bundle, or [`None`] if the resource bundle was not in the world.
-    pub fn insert_res<B>(&mut self, bundle: B) -> Option<B>
-    where
-        B: ResourceBundle,
-    {
-        let Self { resources, .. } = self;
-        B::insert(resources, bundle)
-    }
-
     /// Checks if the resource bundle was previously inserted in the current world.
     pub fn contains_res<B>(&self) -> bool
     where
@@ -307,16 +311,6 @@ where
     {
         let Self { resources, .. } = self;
         B::contains(resources)
-    }
-
-    /// Removes the resource bundle from the current world and returns value of removed resource bundle.
-    /// Returns [`None`] if the resource bundle was not in the world.
-    pub fn remove_res<B>(&mut self) -> Option<B>
-    where
-        B: ResourceBundle,
-    {
-        let Self { resources, .. } = self;
-        B::remove(resources)
     }
 
     /// Retrieves a reference to the inserted resource bundle.
@@ -342,7 +336,32 @@ where
 
 impl<E, C, R> World<E, C, R>
 where
-    R: TryResources,
+    R: ResourcesMut,
+{
+    /// Insert provided resource bundle into the current world.
+    /// Returns previous value of the resource bundle, or [`None`] if the resource bundle was not in the world.
+    pub fn insert_res<B>(&mut self, bundle: B) -> Option<B>
+    where
+        B: ResourceBundle,
+    {
+        let Self { resources, .. } = self;
+        B::insert(resources, bundle)
+    }
+
+    /// Removes the resource bundle from the current world and returns value of removed resource bundle.
+    /// Returns [`None`] if the resource bundle was not in the world.
+    pub fn remove_res<B>(&mut self) -> Option<B>
+    where
+        B: ResourceBundle,
+    {
+        let Self { resources, .. } = self;
+        B::remove(resources)
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    R: TryResourcesMut,
 {
     /// Tries to insert provided resource bundle into the current world.
     /// Returns previous value of the resource bundle, or [`None`] if the resource bundle was not in the world.
@@ -638,8 +657,8 @@ where
 impl<E, C, R> World<E, C, R>
 where
     E: Entities,
-    C: Components,
-    R: Resources,
+    C: ComponentsMut,
+    R: ResourcesMut,
 {
     /// Checks if the world contains no entities, components or resources.
     pub fn is_empty(&self) -> bool {

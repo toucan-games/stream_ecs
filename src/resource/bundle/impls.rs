@@ -3,7 +3,9 @@ use hlist::{Cons, Nil};
 use crate::{
     ref_mut::{RefMut, RefMutContainer},
     resource::{
-        registry::{Registry as Resources, TryRegistry as TryResources},
+        registry::{
+            Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
+        },
         Resource,
     },
 };
@@ -17,14 +19,14 @@ where
 {
     fn insert<R>(resources: &mut R, resource: Self) -> Option<Self>
     where
-        R: Resources,
+        R: ResourcesMut,
     {
         resources.insert(resource)
     }
 
     fn remove<R>(resources: &mut R) -> Option<Self>
     where
-        R: Resources,
+        R: ResourcesMut,
     {
         resources.remove()
     }
@@ -44,7 +46,7 @@ where
 {
     fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
     where
-        R: Resources,
+        R: ResourcesMut,
     {
         let Cons(head, nil) = bundle;
         let head = Head::insert(resources, head)?;
@@ -54,7 +56,7 @@ where
 
     fn remove<R>(resources: &mut R) -> Option<Self>
     where
-        R: Resources,
+        R: ResourcesMut,
     {
         let head = Head::remove(resources)?;
         let bundle = Cons(head, Nil);
@@ -77,7 +79,7 @@ where
 {
     fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
     where
-        R: Resources,
+        R: ResourcesMut,
     {
         let Cons(head, tail) = bundle;
         let head = Head::insert(resources, head)?;
@@ -88,7 +90,7 @@ where
 
     fn remove<R>(resources: &mut R) -> Option<Self>
     where
-        R: Resources,
+        R: ResourcesMut,
     {
         let head = Head::remove(resources)?;
         let tail = Tail::remove(resources)?;
@@ -111,7 +113,7 @@ where
 {
     fn try_insert<R>(resources: &mut R, resource: Self) -> Result<Option<Self>, R::Err>
     where
-        R: TryResources,
+        R: TryResourcesMut,
     {
         resources.try_insert(resource)
     }
@@ -124,7 +126,7 @@ where
 {
     fn try_insert<R>(resources: &mut R, bundle: Self) -> Result<Option<Self>, R::Err>
     where
-        R: TryResources,
+        R: TryResourcesMut,
     {
         let Cons(head, nil) = bundle;
         let Some(head) = Head::try_insert(resources, head)? else {
@@ -143,7 +145,7 @@ where
 {
     fn try_insert<R>(resources: &mut R, bundle: Self) -> Result<Option<Self>, R::Err>
     where
-        R: TryResources,
+        R: TryResourcesMut,
     {
         let Cons(head, tail) = bundle;
         let Some(head) = Head::try_insert(resources, head)? else {

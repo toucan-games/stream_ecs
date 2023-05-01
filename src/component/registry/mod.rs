@@ -1,5 +1,7 @@
 //! Component registry utilities of ECS.
 
+use hlist::ops::Here;
+
 use crate::entity::Entity;
 
 use super::{storage::ErasedStorage, Component};
@@ -12,33 +14,10 @@ use super::{storage::ErasedStorage, Component};
 ///
 /// [component_storage]: super::Component::Storage
 pub trait Registry: Send + Sync {
-    /// Registers the component in the registry with provided component storage.
-    /// Returns previous value of the storage, or [`None`] if the component was not registered.
-    ///
-    /// Provided storage will be stored in the registry and can be retrieved
-    /// by [`get`][Registry::get()] or [`get_mut`][Registry::get_mut()] methods.
-    fn register<C>(&mut self, storage: C::Storage) -> Option<C::Storage>
-    where
-        C: Component;
-
     /// Checks if the component was previously registered in the registry.
     fn is_registered<C>(&self) -> bool
     where
         C: Component;
-
-    /// Unregisters the component from the registry and returns storage of the component.
-    /// Returns [`None`] if the component was not registered.
-    ///
-    /// Storage provided in [`register`][register] method will be removed
-    /// from the registry and returned to the user.
-    ///
-    /// [register]: Registry::register()
-    fn unregister<C>(&mut self) -> Option<C::Storage>
-    where
-        C: Component;
-
-    /// Clears the registry, removing all component storages in it.
-    fn clear(&mut self);
 
     /// Removes all attached components from the entity which makes the entity empty.
     fn remove_all(&mut self, entity: Entity) {
@@ -93,8 +72,39 @@ pub trait Registry: Send + Sync {
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
+/// Extension of component registry which allows to modify state of the registry at runtime.
+///
+/// Implementations of the trait could register or unregister new components without changing the base type.
+pub trait RegistryMut: Registry {
+    /// Registers the component in the registry with provided component storage.
+    /// Returns previous value of the storage, or [`None`] if the component was not registered.
+    ///
+    /// Provided storage will be stored in the registry and can be retrieved
+    /// by [`get`][get] or [`get_mut`][get_mut] methods.
+    ///
+    /// [get]: Registry::get()
+    /// [get_mut]: Registry::get_mut()
+    fn register<C>(&mut self, storage: C::Storage) -> Option<C::Storage>
+    where
+        C: Component;
+
+    /// Unregisters the component from the registry and returns storage of the component.
+    /// Returns [`None`] if the component was not registered.
+    ///
+    /// Storage provided in [`register`][register] method will be removed
+    /// from the registry and returned to the user.
+    ///
+    /// [register]: RegistryMut::register()
+    fn unregister<C>(&mut self) -> Option<C::Storage>
+    where
+        C: Component;
+
+    /// Clears the registry, removing all component storages in it.
+    fn clear(&mut self);
+}
+
 /// Extension of component registry which allows to implement fallible operations for the registry.
-pub trait TryRegistry: Registry {
+pub trait TryRegistryMut: RegistryMut {
     /// The type of error which can be returned on failure.
     type Err;
 
@@ -112,8 +122,36 @@ pub trait TryRegistry: Registry {
     /// todo!()
     /// ```
     ///
-    /// This is the fallible version of [`register`][Registry::register()] method.
+    /// This is the fallible version of [`register`][register] method.
+    ///
+    /// [register]: RegistryMut::register()
     fn try_register<C>(&mut self, storage: C::Storage) -> Result<Option<C::Storage>, Self::Err>
     where
         C: Component;
+}
+
+/// Extension of component registry which provides strong guarantee that component
+/// provided by generic type parameter is always registered in the container.
+///
+/// Unlike the [`Registry`] trait, this trait provides strong guarantee
+/// that such component is always registered in the implementation.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations.
+pub trait Provider<C, I = Here>: Registry
+where
+    C: Component,
+{
+    /// Retrieves a reference to the storage of provided component.
+    fn provide(&self) -> &C::Storage {
+        self.get::<C>()
+            .expect("component should be registered by trait definition")
+    }
+
+    /// Retrieves a mutable reference to the storage of provided component type.
+    fn provide_mut(&mut self) -> &mut C::Storage {
+        self.get_mut::<C>()
+            .expect("component should be registered by trait definition")
+    }
 }
