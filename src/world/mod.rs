@@ -37,9 +37,12 @@ mod error;
 /// which does not belong to any specific entity.
 #[derive(Debug, Default, Clone)]
 pub struct World<E, C, R> {
-    entities: E,
-    components: C,
-    resources: R,
+    /// Entity registry of the world.
+    pub entities: E,
+    /// Component registry of the world.
+    pub components: C,
+    /// Resource registry of the world.
+    pub resources: R,
 }
 
 impl<E, C, R> World<E, C, R> {
@@ -86,28 +89,6 @@ impl<E, C, R> World<E, C, R> {
     pub fn resources_mut(&mut self) -> &mut R {
         let Self { resources, .. } = self;
         resources
-    }
-
-    /// Retrieves references of the entity, component and resource registries of the current world.
-    pub fn all(&self) -> (&E, &C, &R) {
-        let Self {
-            entities,
-            components,
-            resources,
-        } = self;
-        (entities, components, resources)
-    }
-
-    /// Retrieves mutable references of the entity, component and resource registries of the current world.
-    ///
-    /// This allows to modify entities, components and resources simultaneously.
-    pub fn all_mut(&mut self) -> (&mut E, &mut C, &mut R) {
-        let Self {
-            entities,
-            components,
-            resources,
-        } = self;
-        (entities, components, resources)
     }
 }
 
