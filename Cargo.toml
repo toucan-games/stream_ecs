@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-hlist = { package = "hlist2", version = "0.0.6" }
+hlist = { package = "hlist2", version = "0.0.8" }
 as-any = "0.3"
 arrayvec = { version = "0.7", default-features = false }
 either = { version = "1", default-features = false }

@@ -4,6 +4,8 @@ use hlist::ops::Here;
 
 use super::{ErasedResource, Resource};
 
+mod impls;
+
 /// Resource registry of the world.
 ///
 /// This trait represents type of container for [resources](Resource).
