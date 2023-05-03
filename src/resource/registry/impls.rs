@@ -9,7 +9,6 @@ use self::impl_details::{AsErased, AsErasedMut, Contains, Find, FindMut};
 impl<Head, Tail> Registry for Cons<Head, Tail>
 where
     Head: Resource,
-    Tail: Send + Sync,
     Cons<Head, Tail>: Contains + Find + FindMut + AsErased + AsErasedMut,
 {
     fn contains<R>(&self) -> bool

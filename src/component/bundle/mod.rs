@@ -13,7 +13,7 @@ mod impls;
 ///
 /// This trait is implemented for all of components since they can be attached and removed trivially.
 /// Also it is implemented for heterogenous lists of components of any size (but not for an empty one).
-pub trait Bundle: Copy + Send + Sync + 'static {
+pub trait Bundle: Copy + 'static {
     /// Storage bundle associated with this component bundle.
     type Storages: StorageBundle;
 

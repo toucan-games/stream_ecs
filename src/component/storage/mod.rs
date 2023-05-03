@@ -18,7 +18,7 @@ mod error;
 /// This trait represents container of components attached to some entities.
 /// Furthermore, this trait defines basic operations for such container
 /// (for example, to insert or remove component from the storage).
-pub trait Storage: Send + Sync + 'static {
+pub trait Storage: 'static {
     /// Type of component which is stored in this storage.
     type Item: Component<Storage = Self>;
 
@@ -111,7 +111,7 @@ pub trait TryStorage: Storage {
 ///
 /// Compared to [`Storage`] trait, this trait is guaranteed to be object safe, so it can be used as trait object.
 /// This trait is implemented for all the storages, so it can be used as trait object for any type of storage.
-pub trait ErasedStorage: Send + Sync + AsAny {
+pub trait ErasedStorage: AsAny {
     /// Attaches provided component to the entity
     /// only if type of provided component matches the type of component stored in the storage.
     ///

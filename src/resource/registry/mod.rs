@@ -9,7 +9,7 @@ mod impls;
 /// Resource registry of the world.
 ///
 /// This trait represents type of container for [resources](Resource).
-pub trait Registry: Send + Sync {
+pub trait Registry {
     /// Checks if the resource was previously inserted in the registry.
     fn contains<R>(&self) -> bool
     where

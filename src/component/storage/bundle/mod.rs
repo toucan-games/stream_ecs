@@ -10,7 +10,7 @@ mod impls;
 ///
 /// This trait is implemented for all of storages since they can be registered and unregistered trivially.
 /// Also it is implemented for heterogenous lists of storages of any size (but not for an empty one).
-pub trait Bundle: Sized + Send + Sync + 'static {
+pub trait Bundle: Sized + 'static {
     /// Registers component bundle in the component registry with provided storage bundle.
     ///
     /// Returns previous bundle data of the component bundle registered earlier.

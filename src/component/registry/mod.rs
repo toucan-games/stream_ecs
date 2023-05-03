@@ -13,7 +13,7 @@ use super::{storage::ErasedStorage, Component};
 /// (see [`Component::Storage`][component_storage] associated type).
 ///
 /// [component_storage]: super::Component::Storage
-pub trait Registry: Send + Sync {
+pub trait Registry {
     /// Checks if the component was previously registered in the registry.
     fn is_registered<C>(&self) -> bool
     where

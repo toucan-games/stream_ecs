@@ -505,7 +505,7 @@ where
 impl<T, S, const N: usize> Storage for HashArrayStorage<T, S, N>
 where
     T: Component<Storage = Self>,
-    S: BuildHasher + Send + Sync + 'static,
+    S: BuildHasher + 'static,
 {
     type Item = T;
 
@@ -561,7 +561,7 @@ where
 impl<T, S, const N: usize> TryStorage for HashArrayStorage<T, S, N>
 where
     T: Component<Storage = Self>,
-    S: BuildHasher + Send + Sync + 'static,
+    S: BuildHasher + 'static,
 {
     type Err = ArrayStorageError;
 

@@ -10,7 +10,7 @@ mod impls;
 ///
 /// This trait is implemented for all of resources since they can be inserted and removed trivially.
 /// Also it is implemented for heterogenous lists of resources of any size (but not for an empty one).
-pub trait Bundle: Sized + Send + Sync + 'static {
+pub trait Bundle: Sized + 'static {
     /// Inserts provided resource bundle to the registry.
     ///
     /// Returns previous bundle data inserted in the registry earlier.
