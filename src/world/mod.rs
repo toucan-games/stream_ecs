@@ -487,33 +487,6 @@ where
         Ok(is_attached)
     }
 
-    /// Checks if the entity does not contain any component data attached to it.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if provided entity
-    /// was destroyed earlier or was not created in the world.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn is_entity_empty(&self, entity: Entity) -> Result<bool, NotPresentError> {
-        let Self {
-            entities,
-            components,
-            ..
-        } = self;
-
-        if !entities.contains(entity) {
-            let error = NotPresentError::new(entity);
-            return Err(error);
-        }
-        let is_empty = components.is_entity_empty(entity);
-        Ok(is_empty)
-    }
-
     /// Returns previous bundle data attached to the entity earlier.
     /// Returns [`None`] if there was no bundle attached to the entity or some of bundle components are missing.
     ///
@@ -543,33 +516,6 @@ where
         }
         let bundle = B::remove(components, entity)?;
         Ok(bundle)
-    }
-
-    /// Removes all attached components from the entity which makes the entity empty.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if provided entity
-    /// was destroyed earlier or was not created in the world.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn remove_all(&mut self, entity: Entity) -> Result<(), NotPresentError> {
-        let Self {
-            entities,
-            components,
-            ..
-        } = self;
-
-        if !entities.contains(entity) {
-            let error = NotPresentError::new(entity);
-            return Err(error);
-        }
-        components.remove_all(entity);
-        Ok(())
     }
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.

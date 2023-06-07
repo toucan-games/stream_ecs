@@ -2,8 +2,6 @@
 
 use hlist::ops::Here;
 
-use crate::entity::Entity;
-
 use super::{storage::ErasedStorage, Component};
 
 /// Component registry of the world.
@@ -19,24 +17,12 @@ pub trait Registry {
     where
         C: Component;
 
-    /// Removes all attached components from the entity which makes the entity empty.
-    fn remove_all(&mut self, entity: Entity) {
-        for storage in self.iter_mut() {
-            storage.remove(entity);
-        }
-    }
-
     /// Returns count of component storages which are stored in the registry.
     fn len(&self) -> usize;
 
     /// Checks if the registry is empty, or has no component storages.
     fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    /// Checks if the entity does not contain any component data attached to it.
-    fn is_entity_empty(&self, entity: Entity) -> bool {
-        self.iter().all(|storage| !storage.is_attached(entity))
     }
 
     /// Retrieves a reference to the storage of registered component.
