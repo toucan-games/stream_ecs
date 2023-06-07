@@ -1,23 +1,23 @@
-use darling::FromDeriveInput;
+use deluxe::{extract_attributes, ExtractAttributes};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, Ident, Result};
+use syn::{DeriveInput, Path, Result};
 
 use crate::name::crate_name_token;
 
-#[derive(FromDeriveInput)]
-#[darling(attributes(component), forward_attrs(allow, doc, cfg))]
+#[derive(ExtractAttributes)]
+#[deluxe(attributes(component))]
 struct ComponentOptions {
-    storage: Ident,
+    storage: Path,
 }
 
 pub fn derive<Input>(input: Input) -> Result<TokenStream>
 where
     Input: Into<TokenStream>,
 {
-    let input = syn::parse2(input.into())?;
+    let mut input = syn::parse2(input.into())?;
 
-    let ComponentOptions { storage } = FromDeriveInput::from_derive_input(&input)?;
+    let ComponentOptions { storage } = extract_attributes(&mut input)?;
     let DeriveInput {
         ident, generics, ..
     } = input;

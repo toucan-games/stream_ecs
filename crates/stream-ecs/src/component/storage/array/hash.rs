@@ -767,15 +767,12 @@ mod tests {
 
     use crate::{component::Component, entity::Entity};
 
-    #[derive(Debug, Clone, Copy)]
-    struct Marker;
-
     type HashArrayStorage<T, const N: usize> =
         super::HashArrayStorage<T, BuildHasherDefault<DefaultHasher>, N>;
 
-    impl Component for Marker {
-        type Storage = HashArrayStorage<Self, 10>;
-    }
+    #[derive(Debug, Clone, Copy, Component)]
+    #[component(storage = HashArrayStorage<Self, 10>)]
+    struct Marker;
 
     #[test]
     fn new() {

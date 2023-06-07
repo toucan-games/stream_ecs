@@ -2,6 +2,8 @@
 
 use as_any::AsAny;
 
+pub use stream_ecs_macros::Resource;
+
 pub mod bundle;
 pub mod registry;
 

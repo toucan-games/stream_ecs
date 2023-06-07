@@ -2,6 +2,8 @@
 
 use self::storage::Storage;
 
+pub use stream_ecs_macros::Component;
+
 pub mod bundle;
 pub mod registry;
 pub mod storage;

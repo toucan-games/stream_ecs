@@ -5,6 +5,7 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
+stream-ecs-macros = { version = "0.0.0", path = "../stream-ecs-macros" }
 hlist = { package = "hlist2", version = "0.0.12" }
 as-any = "0.3"
 arrayvec = { version = "0.7", default-features = false }

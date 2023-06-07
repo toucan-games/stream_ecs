@@ -600,12 +600,9 @@ mod tests {
 
     use super::ArrayStorage;
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, Component)]
+    #[component(storage = ArrayStorage<Self, 10>)]
     struct Marker;
-
-    impl Component for Marker {
-        type Storage = ArrayStorage<Self, 10>;
-    }
 
     #[test]
     fn new() {
