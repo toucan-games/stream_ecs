@@ -1,0 +1,11 @@
+[package]
+name = "stream-ecs"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+hlist = { package = "hlist2", version = "0.0.12" }
+as-any = "0.3"
+arrayvec = { version = "0.7", default-features = false }
+either = { version = "1", default-features = false }
