@@ -124,20 +124,27 @@ pub trait TryRegistryMut: RegistryMut {
 /// There is no need to return an [`Option`] from provided trait methods.
 ///
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
-/// Generally it does not need to be used in custom trait implementations.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
 pub trait Provider<C, I = Here>: Registry
 where
     C: Component,
 {
     /// Retrieves a reference to the storage of provided component.
     fn provide(&self) -> &C::Storage {
-        self.get::<C>()
-            .expect("component should be registered by trait definition")
+        let Some(storage) = self.get::<C>() else {
+            let type_name = core::any::type_name::<C>();
+            panic!(r#"component of type "{type_name}" should be registered by trait definition"#)
+        };
+        storage
     }
 
     /// Retrieves a mutable reference to the storage of provided component type.
     fn provide_mut(&mut self) -> &mut C::Storage {
-        self.get_mut::<C>()
-            .expect("component should be registered by trait definition")
+        let Some(storage) = self.get_mut::<C>() else {
+            let type_name = core::any::type_name::<C>();
+            panic!(r#"component of type "{type_name}" should be registered by trait definition"#)
+        };
+        storage
     }
 }

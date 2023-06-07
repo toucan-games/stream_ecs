@@ -118,20 +118,27 @@ pub trait TryRegistryMut: RegistryMut {
 /// There is no need to return an [`Option`] from provided trait methods.
 ///
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
-/// Generally it does not need to be used in custom trait implementations.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
 pub trait Provider<R, I = Here>: Registry
 where
     R: Resource,
 {
     /// Retrieves a reference to the resource of provided type.
     fn provide(&self) -> &R {
-        self.get()
-            .expect("resource should exist by trait definition")
+        let Some(resource) = self.get() else {
+            let type_name = core::any::type_name::<R>();
+            panic!(r#"resource of type "{type_name}" should exist by trait definition"#)
+        };
+        resource
     }
 
     /// Retrieves a mutable reference to the resource of provided type.
     fn provide_mut(&mut self) -> &mut R {
-        self.get_mut()
-            .expect("resource should exist by trait definition")
+        let Some(resource) = self.get_mut() else {
+            let type_name = core::any::type_name::<R>();
+            panic!(r#"resource of type "{type_name}" should exist by trait definition"#)
+        };
+        resource
     }
 }
