@@ -14,10 +14,11 @@ mod name;
 mod resource;
 
 /// Derive macro for `stream_ecs::Component` trait.
-#[proc_macro_derive(Component)]
+#[proc_macro_derive(Component, attributes(component))]
 pub fn component_derive(input: TokenStream) -> TokenStream {
-    let _ = input;
-    TokenStream::new()
+    component::derive(input)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
 }
 
 /// Derive macro for `stream_ecs::Resource` trait.
