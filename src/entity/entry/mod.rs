@@ -29,12 +29,12 @@ where
     /// Returns [`None`] if there was no entity in provided entity registry.
     pub fn new(entity: Entity, entities: &'state E, components: &'state C) -> Option<Self> {
         if entities.contains(entity) {
-            let this = Self {
+            let entry = Self {
                 entity,
                 entities,
                 components,
             };
-            return Some(this);
+            return Some(entry);
         }
         None
     }
@@ -97,16 +97,6 @@ impl<'state, E, C> Entry<'state, E, C> {
     /// Retrieves a reference of the underlying component registry.
     pub fn components(&self) -> &'state C {
         self.components
-    }
-
-    /// Retrieves references of the underlying entity and component registries.
-    pub fn all(&self) -> (&'state E, &'state C) {
-        let &Self {
-            entities,
-            components,
-            ..
-        } = self;
-        (entities, components)
     }
 }
 
@@ -179,12 +169,12 @@ where
     /// Returns [`None`] if there was no entity in provided entity registry.
     pub fn new(entity: Entity, entities: &'state mut E, components: &'state mut C) -> Option<Self> {
         if entities.contains(entity) {
-            let this = Self {
+            let entry = Self {
                 entity,
                 entities,
                 components,
             };
-            return Some(this);
+            return Some(entry);
         }
         None
     }
@@ -255,39 +245,9 @@ impl<'state, E, C> EntryMut<'state, E, C> {
         self.entities
     }
 
-    /// Retrieves a mutable reference of the underlying entity registry.
-    pub fn entities_mut(&mut self) -> &mut E {
-        self.entities
-    }
-
     /// Retrieves a reference of the underlying component registry.
     pub fn components(&self) -> &C {
         self.components
-    }
-
-    /// Retrieves a mutable reference of the underlying component registry.
-    pub fn components_mut(&mut self) -> &mut C {
-        self.components
-    }
-
-    /// Retrieves references of the underlying entity and component registries.
-    pub fn all(&self) -> (&E, &C) {
-        let Self {
-            entities,
-            components,
-            ..
-        } = self;
-        (entities, components)
-    }
-
-    /// Retrieves mutable references of the underlying entity and component registries.
-    pub fn all_mut(&mut self) -> (&mut E, &mut C) {
-        let Self {
-            entities,
-            components,
-            ..
-        } = self;
-        (entities, components)
     }
 }
 
