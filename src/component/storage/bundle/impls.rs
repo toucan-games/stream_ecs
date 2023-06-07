@@ -8,10 +8,11 @@ use crate::{
         },
         storage::Storage,
     },
+    entity::Entity,
     ref_mut::{RefMut, RefMutContainer},
 };
 
-use super::{Bundle, GetBundle, GetBundleMut, TryBundle};
+use super::{Bundle, GetBundle, GetBundleMut, GetItems, GetItemsMut, TryBundle};
 
 /// Trivial implementation for storages, which forwards implementation to the component registry.
 impl<T> Bundle for T
@@ -283,5 +284,105 @@ where
             container.insert_any(any);
         }
         container.into_ref_mut()
+    }
+}
+
+/// Trivial implementation for storages, which forwards implementation to the component registry.
+impl<T> GetItems for T
+where
+    T: Storage,
+{
+    type ItemsRef<'a> = &'a T::Item
+    where
+        Self: 'a;
+
+    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>> {
+        self.get(entity)
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head> GetItems for Cons<Head, Nil>
+where
+    Head: GetItems,
+{
+    type ItemsRef<'a> = Cons<Head::ItemsRef<'a>, Nil>
+    where
+        Self: 'a;
+
+    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>> {
+        let Cons(head, _) = self;
+        let head = head.items(entity)?;
+        let items = Cons(head, Nil);
+        Some(items)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail> GetItems for Cons<Head, Tail>
+where
+    Head: GetItems,
+    Tail: GetItems,
+{
+    type ItemsRef<'a> = Cons<Head::ItemsRef<'a>, Tail::ItemsRef<'a>>
+    where
+        Self: 'a;
+
+    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>> {
+        let Cons(head, tail) = self;
+        let head = head.items(entity)?;
+        let tail = tail.items(entity)?;
+        let items = Cons(head, tail);
+        Some(items)
+    }
+}
+
+/// Trivial implementation for storages, which forwards implementation to the component registry.
+impl<T> GetItemsMut for T
+where
+    T: Storage,
+{
+    type ItemsRefMut<'a> = &'a mut T::Item
+    where
+        Self: 'a;
+
+    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>> {
+        self.get_mut(entity)
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head> GetItemsMut for Cons<Head, Nil>
+where
+    Head: GetItemsMut,
+{
+    type ItemsRefMut<'a> = Cons<Head::ItemsRefMut<'a>, Nil>
+    where
+        Self: 'a;
+
+    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>> {
+        let Cons(head, _) = self;
+        let head = head.items_mut(entity)?;
+        let items = Cons(head, Nil);
+        Some(items)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail> GetItemsMut for Cons<Head, Tail>
+where
+    Head: GetItemsMut,
+    Tail: GetItemsMut,
+{
+    type ItemsRefMut<'a> = Cons<Head::ItemsRefMut<'a>, Tail::ItemsRefMut<'a>>
+    where
+        Self: 'a;
+
+    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>> {
+        let Cons(head, tail) = self;
+        let head = head.items_mut(entity)?;
+        let tail = tail.items_mut(entity)?;
+        let items = Cons(head, tail);
+        Some(items)
     }
 }

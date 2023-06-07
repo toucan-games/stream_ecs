@@ -397,10 +397,10 @@ where
 mod impl_details {
     use hlist::{Cons, Nil};
 
-    use crate::{component::storage::Storage, entity::Entity, ref_mut::RefMut};
+    use crate::{component::storage::Storage, entity::Entity};
 
-    pub trait GetComponentsMut<'a>: RefMut<'a> {
-        type Components: RefMut<'a>;
+    pub trait GetComponentsMut<'a> {
+        type Components: 'a;
 
         fn get_components_mut(self, entity: Entity) -> Option<Self::Components>;
     }

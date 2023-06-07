@@ -1,10 +1,14 @@
 //! Provides utilities for component storage bundles — heterogenous collections of component storages.
 
-use crate::component::{
-    bundle::Bundle as ComponentBundle,
-    registry::{
-        Registry as Components, RegistryMut as ComponentsMut, TryRegistryMut as TryComponentsMut,
+use crate::{
+    component::{
+        bundle::Bundle as ComponentBundle,
+        registry::{
+            Registry as Components, RegistryMut as ComponentsMut,
+            TryRegistryMut as TryComponentsMut,
+        },
     },
+    entity::Entity,
 };
 
 mod impls;
@@ -89,4 +93,28 @@ pub trait GetBundleMut: Bundle {
     fn get_mut<C>(components: &mut C) -> Option<Self::RefMut<'_>>
     where
         C: Components;
+}
+
+/// Extension of bundle which allows to get a reference to the [items](Bundle::Items) of the storage bundle.
+pub trait GetItems: Bundle {
+    /// Type of a reference to the items to retrieve from this bundle.
+    type ItemsRef<'a>
+    where
+        Self: 'a;
+
+    /// Retrieves a reference to the items (component bundle) of the provided entity in the storage bundle.
+    /// Returns [`None`] if the storage bundle does not have some items by provided entity.
+    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>>;
+}
+
+/// Extension of bundle which allows to get a *mutable* reference to the [items](Bundle::Items) of the storage bundle.
+pub trait GetItemsMut: Bundle {
+    /// Type of a mutable reference to the items to retrieve from this bundle.
+    type ItemsRefMut<'a>
+    where
+        Self: 'a;
+
+    /// Retrieves a mutable reference to the items (component bundle) of the provided entity in the storage bundle.
+    /// Returns [`None`] if the storage bundle does not have some items by provided entity.
+    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>>;
 }
