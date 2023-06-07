@@ -1,7 +1,10 @@
 //! Provides utilities for component storage bundles — heterogenous collections of component storages.
 
-use crate::component::registry::{
-    Registry as Components, RegistryMut as ComponentsMut, TryRegistryMut as TryComponentsMut,
+use crate::component::{
+    bundle::Bundle as ComponentBundle,
+    registry::{
+        Registry as Components, RegistryMut as ComponentsMut, TryRegistryMut as TryComponentsMut,
+    },
 };
 
 mod impls;
@@ -11,6 +14,9 @@ mod impls;
 /// This trait is implemented for all of storages since they can be registered and unregistered trivially.
 /// Also it is implemented for heterogenous lists of storages of any size (but not for an empty one).
 pub trait Bundle: Sized + 'static {
+    /// Component bundle associated with this bundle.
+    type Items: ComponentBundle<Storages = Self>;
+
     /// Registers component bundle in the component registry with provided storage bundle.
     ///
     /// Returns previous bundle data of the component bundle registered earlier.

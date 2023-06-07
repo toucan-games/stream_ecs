@@ -18,6 +18,8 @@ impl<T> Bundle for T
 where
     T: Storage,
 {
+    type Items = T::Item;
+
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
         C: ComponentsMut,
@@ -45,6 +47,8 @@ impl<Head> Bundle for Cons<Head, Nil>
 where
     Head: Bundle,
 {
+    type Items = Cons<Head::Items, Nil>;
+
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
         C: ComponentsMut,
@@ -78,6 +82,8 @@ where
     Head: Bundle,
     Tail: Bundle,
 {
+    type Items = Cons<Head::Items, Tail::Items>;
+
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
         C: ComponentsMut,
