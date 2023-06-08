@@ -1,6 +1,6 @@
 //! Provides utilities for entities in ECS.
 
-use core::fmt::Display;
+use derive_more::Display;
 
 use self::builder::EntityBuilder;
 
@@ -12,7 +12,8 @@ pub mod registry;
 ///
 /// Similarly as in arenas, you can store it anywhere
 /// to obtain components attached to the entity.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[display(fmt = "{index}v{generation}")]
 pub struct Entity {
     index: u32,
     generation: u32,
@@ -76,11 +77,5 @@ impl Default for Entity {
     /// Creates default entity key, which is null.
     fn default() -> Self {
         Self::null()
-    }
-}
-
-impl Display for Entity {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}v{}", self.index, self.generation)
     }
 }

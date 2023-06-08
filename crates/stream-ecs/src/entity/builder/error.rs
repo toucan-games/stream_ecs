@@ -1,76 +1,42 @@
 use core::fmt::Display;
 
+use derive_more::{Display, From};
+
 use crate::component::bundle::{NotRegisteredError, TryBundleError};
 
 /// The error type which is returned when trying to build a new entity.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy, From)]
+#[display(bound = "Err: Display")]
 pub enum TryEntityBuildError<Err> {
     /// Component was not registered in the component registry.
     NotRegistered(NotRegisteredError),
     /// Entity registry failed to create new entity.
+    #[from(ignore)]
+    #[display(fmt = "entity registry failed to create new entity: {_0}")]
     Entities(Err),
 }
 
-impl<Err> From<NotRegisteredError> for TryEntityBuildError<Err> {
-    fn from(error: NotRegisteredError) -> Self {
-        Self::NotRegistered(error)
-    }
-}
-
-impl<Err> Display for TryEntityBuildError<Err>
-where
-    Err: Display,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::NotRegistered(error) => error.fmt(f),
-            Self::Entities(error) => {
-                write!(f, "entity registry failed to create new entity: {error}")
-            }
-        }
-    }
-}
-
 /// The error type which is returned when trying to build a new entity.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy, From)]
+#[display(bound = "EntitiesErr: Display, StorageErr: Display")]
 pub enum TryBuildError<EntitiesErr, StorageErr> {
     /// Component was not registered in the world.
     NotRegistered(NotRegisteredError),
     /// Entity registry failed to create new entity.
+    #[from(ignore)]
+    #[display(fmt = "entity registry failed to create new entity: {_0}")]
     Entities(EntitiesErr),
     /// Component storage failed to attach a bundle to the entity.
+    #[from(ignore)]
+    #[display(fmt = "storage failed to attach a component: {_0}")]
     Storage(StorageErr),
 }
 
-impl<EntitiesErr, StorageErr> From<NotRegisteredError> for TryBuildError<EntitiesErr, StorageErr> {
-    fn from(error: NotRegisteredError) -> Self {
-        Self::NotRegistered(error)
-    }
-}
-
-impl<EntitiesErr, StorageErr> From<TryBundleError<StorageErr>>
-    for TryBuildError<EntitiesErr, StorageErr>
-{
-    fn from(error: TryBundleError<StorageErr>) -> Self {
+impl<E, S> From<TryBundleError<S>> for TryBuildError<E, S> {
+    fn from(error: TryBundleError<S>) -> Self {
         match error {
-            TryBundleError::NotRegistered(error) => error.into(),
+            TryBundleError::NotRegistered(error) => Self::NotRegistered(error),
             TryBundleError::Storage(error) => Self::Storage(error),
-        }
-    }
-}
-
-impl<EntitiesErr, StorageErr> Display for TryBuildError<EntitiesErr, StorageErr>
-where
-    EntitiesErr: Display,
-    StorageErr: Display,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::NotRegistered(error) => error.fmt(f),
-            Self::Entities(error) => {
-                write!(f, "entity registry failed to create new entity: {error}")
-            }
-            Self::Storage(error) => write!(f, "storage failed to attach a component: {error}"),
         }
     }
 }

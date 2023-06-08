@@ -1,9 +1,15 @@
-use core::{any::TypeId, fmt::Display};
+use core::{
+    any::{type_name, TypeId},
+    fmt::Display,
+};
+
+use derive_more::{Display, From};
 
 use crate::component::Component;
 
 /// The error type which is returned when component type was not registered in the component registry.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy)]
+#[display(fmt = r#"component of type "{type_name}" was not registered"#)]
 pub struct NotRegisteredError {
     type_name: &'static str,
     type_id: TypeId,
@@ -16,7 +22,7 @@ impl NotRegisteredError {
         T: Component,
     {
         Self {
-            type_name: core::any::type_name::<T>(),
+            type_name: type_name::<T>(),
             type_id: TypeId::of::<T>(),
         }
     }
@@ -27,38 +33,14 @@ impl NotRegisteredError {
     }
 }
 
-impl Display for NotRegisteredError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let type_name = self.type_name;
-        write!(f, "component of type {type_name} was not registered")
-    }
-}
-
 /// The error type which is returned when trying to attach a bundle to the entity.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy, From)]
+#[display(bound = "Err: Display")]
 pub enum TryBundleError<Err> {
     /// Component was not registered in the world.
     NotRegistered(NotRegisteredError),
     /// Component storage failed to attach a bundle to the entity.
+    #[from(ignore)]
+    #[display(fmt = "storage failed to attach a component: {_0}")]
     Storage(Err),
-}
-
-impl<Err> From<NotRegisteredError> for TryBundleError<Err> {
-    fn from(error: NotRegisteredError) -> Self {
-        Self::NotRegistered(error)
-    }
-}
-
-impl<Err> Display for TryBundleError<Err>
-where
-    Err: Display,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::NotRegistered(error) => error.fmt(f),
-            Self::Storage(error) => {
-                write!(f, "storage failed to attach a component: {error}")
-            }
-        }
-    }
 }

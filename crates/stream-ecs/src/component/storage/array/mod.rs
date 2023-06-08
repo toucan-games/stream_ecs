@@ -2,7 +2,7 @@
 //!
 //! Such implementations do not use heap allocation at all, so they could be used in `no_std` environment.
 
-use core::fmt::Display;
+use derive_more::Display;
 
 pub use self::basic::ArrayStorage;
 pub use self::dense::DenseArrayStorage;
@@ -13,11 +13,6 @@ pub mod dense;
 pub mod hash;
 
 /// The error type which is returned when array storage capacity was exceeded.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy)]
+#[display(fmt = "array storage capacity exceeded")]
 pub struct ArrayStorageError;
-
-impl Display for ArrayStorageError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "array storage capacity exceeded")
-    }
-}

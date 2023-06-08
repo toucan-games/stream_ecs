@@ -1,10 +1,11 @@
-use core::fmt::Display;
+use derive_more::Display;
 
 use crate::entity::Entity;
 
 /// The error type which is returned when the entity
 /// does not present in the entity registry.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy)]
+#[display(fmt = "entity {entity} does not present in the registry")]
 pub struct NotPresentError {
     entity: Entity,
 }
@@ -18,12 +19,5 @@ impl NotPresentError {
     /// Returns the entity that was does not present in the entity registry.
     pub fn entity(self) -> Entity {
         self.entity
-    }
-}
-
-impl Display for NotPresentError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let entity = self.entity;
-        write!(f, "entity {entity} does not present in the registry")
     }
 }

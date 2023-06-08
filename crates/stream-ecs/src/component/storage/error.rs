@@ -1,10 +1,15 @@
-use core::any::{Any, TypeId};
+use core::any::{type_name, Any, TypeId};
+
+use derive_more::Display;
 
 use crate::component::Component;
 
 /// The error type which is returned when type of component was mismatched
 /// when trying to attach it to the entity with erased storage.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Display, Clone, Copy)]
+#[display(fmt = r#"type of component in the storage was mismatched: \
+                provided type is "{provided_type_name}", \
+                but storage actually stores components of type "{actual_type_name}""#)]
 pub struct TypeMismatchError {
     provided_type_name: &'static str,
     provided_type_id: TypeId,
@@ -23,7 +28,7 @@ impl TypeMismatchError {
         debug_assert_ne!(provided_type_id, actual_type_id);
 
         let provided_type_name = provided.type_name();
-        let actual_type_name = core::any::type_name::<Actual>();
+        let actual_type_name = type_name::<Actual>();
 
         Self {
             provided_type_name,
@@ -44,15 +49,6 @@ impl TypeMismatchError {
     }
 }
 
-impl core::fmt::Display for TypeMismatchError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let provided = self.provided_type_name;
-        let actual = self.actual_type_name;
-        write!(f, "type of component in the storage was mismatched: \
-                   provided type is {provided}, but storage actually stores components of type {actual}")
-    }
-}
-
 trait TypeName {
     fn type_name(&self) -> &'static str;
 }
@@ -62,6 +58,6 @@ where
     T: ?Sized,
 {
     fn type_name(&self) -> &'static str {
-        core::any::type_name::<T>()
+        type_name::<T>()
     }
 }
