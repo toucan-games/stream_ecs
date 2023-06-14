@@ -110,8 +110,8 @@ pub trait TryRegistryMut: RegistryMut {
         R: Resource;
 }
 
-/// Extension of resource registry which provides strong guarantee that resource
-/// provided by generic type parameter always exists in the container.
+/// Extension of resource registry which provides **strong** guarantee that
+/// resource provided by generic type parameter always exists in the container.
 ///
 /// Unlike the [`Registry`] trait, this trait provides strong guarantee
 /// that such resource always present in the implementation.

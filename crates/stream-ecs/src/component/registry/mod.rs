@@ -4,6 +4,8 @@ use hlist::ops::Here;
 
 use super::{storage::ErasedStorage, Component};
 
+mod impls;
+
 /// Component registry of the world.
 ///
 /// This trait represents type of container for storages.
@@ -116,8 +118,8 @@ pub trait TryRegistryMut: RegistryMut {
         C: Component;
 }
 
-/// Extension of component registry which provides strong guarantee that component
-/// provided by generic type parameter is always registered in the container.
+/// Extension of component registry which provides **strong** guarantee that
+/// component provided by generic type parameter is always registered in the container.
 ///
 /// Unlike the [`Registry`] trait, this trait provides strong guarantee
 /// that such component is always registered in the implementation.
