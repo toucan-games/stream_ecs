@@ -166,7 +166,7 @@ where
         let Some(component) = component.downcast_ref().copied() else {
             return Err(TypeMismatchError::new::<T::Item>(component));
         };
-        Storage::attach(self, entity, component);
+        let _ = Storage::attach(self, entity, component);
         Ok(())
     }
 
@@ -183,7 +183,7 @@ where
     }
 
     fn remove(&mut self, entity: Entity) {
-        Storage::remove(self, entity);
+        let _ = Storage::remove(self, entity);
     }
 
     fn clear(&mut self) {
@@ -192,5 +192,9 @@ where
 
     fn len(&self) -> usize {
         Storage::len(self)
+    }
+
+    fn is_empty(&self) -> bool {
+        Storage::is_empty(self)
     }
 }
