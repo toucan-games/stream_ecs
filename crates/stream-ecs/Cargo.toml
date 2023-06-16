@@ -6,8 +6,8 @@ authors.workspace = true
 
 [dependencies]
 stream-ecs-macros = { version = "0.0.0", path = "../stream-ecs-macros" }
-hlist = { package = "hlist2", version = "0.0.12" }
-as-any = "0.3"
+hlist = { package = "hlist2", version = "0.0.12", default-features = false }
+as-any = { version = "0.3", default-features = false }
 arrayvec = { version = "0.7", default-features = false }
 either = { version = "1", default-features = false }
 derive_more = { version = "0.99", default-features = false, features = ["from", "display"] }

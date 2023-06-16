@@ -11,7 +11,7 @@ pub fn crate_name_token(orig_name: &str) -> TokenStream {
         FoundCrate::Itself => quote! { crate },
         FoundCrate::Name(name) => {
             let ident = Ident::new(&name, Span::call_site());
-            quote! { #ident }
+            quote! { ::#ident }
         }
     }
 }

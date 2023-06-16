@@ -8,7 +8,8 @@ pub fn derive<Input>(input: Input) -> Result<TokenStream>
 where
     Input: Into<TokenStream>,
 {
-    let input = syn::parse2(input.into())?;
+    let input = input.into();
+    let input = syn::parse2(input)?;
 
     let DeriveInput {
         ident, generics, ..

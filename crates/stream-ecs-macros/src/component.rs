@@ -15,7 +15,8 @@ pub fn derive<Input>(input: Input) -> Result<TokenStream>
 where
     Input: Into<TokenStream>,
 {
-    let mut input = syn::parse2(input.into())?;
+    let input = input.into();
+    let mut input = syn::parse2(input)?;
 
     let ComponentOptions { storage } = extract_attributes(&mut input)?;
     let DeriveInput {
