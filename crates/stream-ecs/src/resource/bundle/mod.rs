@@ -1,5 +1,7 @@
 //! Provides utilities for resource bundles — heterogenous collections of resources.
 
+use hlist::ops::Here;
+
 use super::registry::{
     Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
 };
@@ -83,4 +85,50 @@ pub trait GetBundleMut: Bundle {
     fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
     where
         R: Resources;
+}
+
+/// Extension of bundle which allows to get a reference to a resource bundle from the registry
+/// with **strong** guarantee that components of the bundle always exist in the registry.
+///
+/// Unlike the [`GetBundle`] trait, this trait provides strong guarantee
+/// that such bundle always present in the registry.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
+pub trait ProvideBundle<R, I = Here>: Bundle
+where
+    R: Resources,
+{
+    /// Type of a reference to the bundle to retrieve from the resource registry.
+    type Ref<'a>
+    where
+        R: 'a;
+
+    /// Retrieves a reference to the resource bundle which is stored in provided registry.
+    fn provide(resources: &R) -> Self::Ref<'_>;
+}
+
+/// Extension of bundle which allows to get a *mutable* reference to a resource bundle from the registry
+/// with **strong** guarantee that components of the bundle always exist in the registry.
+///
+/// Unlike the [`GetBundleMut`] trait, this trait provides strong guarantee
+/// that such bundle always present in the registry.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
+pub trait ProvideBundleMut<R, I = Here>: Bundle
+where
+    R: Resources,
+{
+    /// Type of a mutable reference to the bundle to retrieve from the resource registry.
+    type RefMut<'a>
+    where
+        R: 'a;
+
+    /// Retrieves a mutable reference to the resource bundle which is stored in provided registry.
+    fn provide_mut(resources: &mut R) -> Self::RefMut<'_>;
 }

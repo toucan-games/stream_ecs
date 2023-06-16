@@ -20,7 +20,8 @@ use crate::{
     resource::{
         bundle::{
             Bundle as ResourceBundle, GetBundle as ResourceGetBundle,
-            GetBundleMut as ResourceGetBundleMut, TryBundle as ResourceTryBundle,
+            GetBundleMut as ResourceGetBundleMut, ProvideBundle as ResourceProvideBundle,
+            ProvideBundleMut as ResourceProvideBundleMut, TryBundle as ResourceTryBundle,
         },
         registry::{
             Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
@@ -312,6 +313,30 @@ where
     {
         let Self { resources, .. } = self;
         B::get_mut(resources)
+    }
+
+    /// Retrieves a reference to the inserted resource bundle.
+    ///
+    /// Unlike other methods, this guarantees that all the components
+    /// of provided bundle always exist in resource registry.
+    pub fn provide_res<B, I>(&self) -> B::Ref<'_>
+    where
+        B: ResourceProvideBundle<R, I>,
+    {
+        let Self { resources, .. } = self;
+        B::provide(resources)
+    }
+
+    /// Retrieves a mutable reference to the inserted resource bundle.
+    ///
+    /// Unlike other methods, this guarantees that all the components
+    /// of provided bundle always exist in resource registry.
+    pub fn provide_res_mut<B, I>(&mut self) -> B::RefMut<'_>
+    where
+        B: ResourceProvideBundleMut<R, I>,
+    {
+        let Self { resources, .. } = self;
+        B::provide_mut(resources)
     }
 }
 

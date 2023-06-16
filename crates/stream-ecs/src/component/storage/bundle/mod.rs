@@ -118,3 +118,7 @@ pub trait GetItemsMut: Bundle {
     /// Returns [`None`] if the storage bundle does not have some items by provided entity.
     fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>>;
 }
+
+// TODO add `ProvideBundle` and `ProvideBundleMut`
+
+// TODO add `ProvideItems` and `ProvideItemsMut`

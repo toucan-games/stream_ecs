@@ -160,3 +160,5 @@ pub trait GetBundleMut: Bundle {
     where
         C: Components;
 }
+
+// TODO add `ProvideBundle` and `ProvideBundleMut`

@@ -4,13 +4,14 @@ use crate::{
     ref_mut::{RefMut, RefMutContainer},
     resource::{
         registry::{
-            Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
+            Provider as ResourcesProvider, Registry as Resources, RegistryMut as ResourcesMut,
+            TryRegistryMut as TryResourcesMut,
         },
         Resource,
     },
 };
 
-use super::{Bundle, GetBundle, GetBundleMut, TryBundle};
+use super::{Bundle, GetBundle, GetBundleMut, ProvideBundle, ProvideBundleMut, TryBundle};
 
 /// Trivial implementation for resources, which forwards implementation to the resource registry.
 impl<T> Bundle for T
@@ -276,5 +277,112 @@ where
             container.insert_any(any);
         }
         container.into_ref_mut()
+    }
+}
+
+/// Trivial implementation for resources, which forwards implementation to the resource registry.
+impl<T, R, I> ProvideBundle<R, I> for T
+where
+    T: Resource,
+    R: ResourcesProvider<T, I>,
+{
+    type Ref<'a> = &'a T
+    where
+        R: 'a;
+
+    fn provide(resources: &R) -> Self::Ref<'_> {
+        resources.provide()
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head, R, I> ProvideBundle<R, I> for Cons<Head, Nil>
+where
+    Head: ProvideBundle<R, I>,
+    R: Resources,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Nil>
+    where
+        R: 'a;
+
+    fn provide(resources: &R) -> Self::Ref<'_> {
+        let head = Head::provide(resources);
+        Cons(head, Nil)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail, R, Index, TailIndex> ProvideBundle<R, (Index, TailIndex)> for Cons<Head, Tail>
+where
+    Head: ProvideBundle<R, Index>,
+    Tail: ProvideBundle<R, TailIndex> + Bundle,
+    R: Resources,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
+    where
+        R: 'a;
+
+    fn provide(resources: &R) -> Self::Ref<'_> {
+        let head = Head::provide(resources);
+        let tail = Tail::provide(resources);
+        Cons(head, tail)
+    }
+}
+
+/// Trivial implementation for resources, which forwards implementation to the resource registry.
+impl<T, R, I> ProvideBundleMut<R, I> for T
+where
+    T: Resource,
+    R: ResourcesProvider<T, I>,
+{
+    type RefMut<'a> = &'a mut T
+    where
+        R: 'a;
+
+    fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
+        resources.provide_mut()
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head, R, I> ProvideBundleMut<R, I> for Cons<Head, Nil>
+where
+    Head: ProvideBundleMut<R, I>,
+    R: Resources,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
+    where
+        R: 'a;
+
+    fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
+        let head = Head::provide_mut(resources);
+        Cons(head, Nil)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail, R, Index, TailIndex> ProvideBundleMut<R, (Index, TailIndex)> for Cons<Head, Tail>
+where
+    Head: ProvideBundleMut<R, Index>,
+    Tail: ProvideBundleMut<R, TailIndex> + Bundle,
+    R: Resources,
+    for<'a> Head::RefMut<'a>: RefMut<'a>,
+    for<'a> Tail::RefMut<'a>: RefMut<'a>,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
+    where
+        R: 'a;
+
+    fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
+        type Container<'a, T> = <T as RefMut<'a>>::Container;
+
+        let mut container: Container<Self::RefMut<'_>> = Default::default();
+        for resource in resources.iter_mut() {
+            let any = resource.as_any_mut();
+            container.insert_any(any);
+        }
+        container
+            .into_ref_mut()
+            .expect("all components of the bundle must be present in the registry")
     }
 }
