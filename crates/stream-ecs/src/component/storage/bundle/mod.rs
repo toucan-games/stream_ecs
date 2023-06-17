@@ -1,5 +1,7 @@
 //! Provides utilities for component storage bundles — heterogenous collections of component storages.
 
+use hlist::ops::Here;
+
 use crate::{
     component::{
         bundle::Bundle as ComponentBundle,
@@ -95,6 +97,52 @@ pub trait GetBundleMut: Bundle {
         C: Components;
 }
 
+/// Extension of bundle which allows to get a reference to a component bundle from the registry
+/// with **strong** guarantee that components of the bundle always exist in the registry.
+///
+/// Unlike the [`GetBundle`] trait, this trait provides strong guarantee
+/// that such bundle always present in the registry.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
+pub trait ProvideBundle<C, I = Here>: Bundle
+where
+    C: Components,
+{
+    /// Type of a reference to the bundle to retrieve from the component registry.
+    type Ref<'a>
+    where
+        C: 'a;
+
+    /// Retrieves a reference to the bundle which is stored in provided component registry.
+    fn provide(components: &C) -> Self::Ref<'_>;
+}
+
+/// Extension of bundle which allows to get a *mutable* reference to a component bundle from the registry
+/// with **strong** guarantee that components of the bundle always exist in the registry.
+///
+/// Unlike the [`GetBundleMut`] trait, this trait provides strong guarantee
+/// that such bundle always present in the registry.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
+pub trait ProvideBundleMut<C, I = Here>: Bundle
+where
+    C: Components,
+{
+    /// Type of a mutable reference to the bundle to retrieve from the component registry.
+    type RefMut<'a>
+    where
+        C: 'a;
+
+    /// Retrieves a mutable reference to the bundle which is stored in provided component registry.
+    fn provide_mut(components: &mut C) -> Self::RefMut<'_>;
+}
+
 /// Extension of bundle which allows to get a reference to the [items](Bundle::Items) of the storage bundle.
 pub trait GetItems: Bundle {
     /// Type of a reference to the items to retrieve from this bundle.
@@ -118,7 +166,3 @@ pub trait GetItemsMut: Bundle {
     /// Returns [`None`] if the storage bundle does not have some items by provided entity.
     fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>>;
 }
-
-// TODO add `ProvideBundle` and `ProvideBundleMut`
-
-// TODO add `ProvideItems` and `ProvideItemsMut`

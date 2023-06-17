@@ -3,7 +3,7 @@ use hlist::{Cons, Nil};
 use crate::{
     component::{
         registry::{
-            Registry as Components, RegistryMut as ComponentsMut,
+            Provider as ComponentsProvider, Registry as Components, RegistryMut as ComponentsMut,
             TryRegistryMut as TryComponentsMut,
         },
         storage::Storage,
@@ -12,7 +12,10 @@ use crate::{
     ref_mut::{RefMut, RefMutContainer},
 };
 
-use super::{Bundle, GetBundle, GetBundleMut, GetItems, GetItemsMut, TryBundle};
+use super::{
+    Bundle, GetBundle, GetBundleMut, GetItems, GetItemsMut, ProvideBundle, ProvideBundleMut,
+    TryBundle,
+};
 
 /// Trivial implementation for storages, which forwards implementation to the component registry.
 impl<T> Bundle for T
@@ -157,11 +160,11 @@ where
     {
         let Cons(head, tail) = bundle;
         let Some(head) = Head::try_register(components, head)? else {
-                return Ok(None);
-            };
+            return Ok(None);
+        };
         let Some(tail) = Tail::try_register(components, tail)? else {
-                return Ok(None);
-            };
+            return Ok(None);
+        };
         let bundle = Cons(head, tail);
         Ok(Some(bundle))
     }
@@ -284,6 +287,113 @@ where
             container.insert_any(any);
         }
         container.into_ref_mut()
+    }
+}
+
+/// Trivial implementation for storages, which forwards implementation to the component registry.
+impl<T, C, I> ProvideBundle<C, I> for T
+where
+    T: Storage,
+    C: ComponentsProvider<T::Item, I>,
+{
+    type Ref<'a> = &'a T
+    where
+        C: 'a;
+
+    fn provide(components: &C) -> Self::Ref<'_> {
+        components.provide()
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head, C, I> ProvideBundle<C, I> for Cons<Head, Nil>
+where
+    Head: ProvideBundle<C, I>,
+    C: Components,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Nil>
+    where
+        C: 'a;
+
+    fn provide(components: &C) -> Self::Ref<'_> {
+        let head = Head::provide(components);
+        Cons(head, Nil)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail, C, Index, TailIndex> ProvideBundle<C, (Index, TailIndex)> for Cons<Head, Tail>
+where
+    Head: ProvideBundle<C, Index>,
+    Tail: ProvideBundle<C, TailIndex> + Bundle,
+    C: Components,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
+    where
+        C: 'a;
+
+    fn provide(components: &C) -> Self::Ref<'_> {
+        let head = Head::provide(components);
+        let tail = Tail::provide(components);
+        Cons(head, tail)
+    }
+}
+
+/// Trivial implementation for storages, which forwards implementation to the component registry.
+impl<T, C, I> ProvideBundleMut<C, I> for T
+where
+    T: Storage,
+    C: ComponentsProvider<T::Item, I>,
+{
+    type RefMut<'a> = &'a mut T
+    where
+        C: 'a;
+
+    fn provide_mut(components: &mut C) -> Self::RefMut<'_> {
+        components.provide_mut()
+    }
+}
+
+/// More complex implementation for heterogenous list with single element.
+impl<Head, C, I> ProvideBundleMut<C, I> for Cons<Head, Nil>
+where
+    Head: ProvideBundleMut<C, I>,
+    C: Components,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
+    where
+        C: 'a;
+
+    fn provide_mut(components: &mut C) -> Self::RefMut<'_> {
+        let head = Head::provide_mut(components);
+        Cons(head, Nil)
+    }
+}
+
+/// More complex implementation for heterogenous list with more than one element.
+impl<Head, Tail, C, Index, TailIndex> ProvideBundleMut<C, (Index, TailIndex)> for Cons<Head, Tail>
+where
+    Head: ProvideBundleMut<C, Index>,
+    Tail: ProvideBundleMut<C, TailIndex> + Bundle,
+    C: Components,
+    for<'a> Head::RefMut<'a>: RefMut<'a>,
+    for<'a> Tail::RefMut<'a>: RefMut<'a>,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
+    where
+        C: 'a;
+
+    fn provide_mut(components: &mut C) -> Self::RefMut<'_> {
+        type Container<'a, T> = <T as RefMut<'a>>::Container;
+
+        let mut container: Container<Self::RefMut<'_>> = Default::default();
+        for storage in components.iter_mut() {
+            let any = storage.as_any_mut();
+            container.insert_any(any);
+        }
+        container
+            .into_ref_mut()
+            .expect("all components of the bundle must be present in the registry")
     }
 }
 
