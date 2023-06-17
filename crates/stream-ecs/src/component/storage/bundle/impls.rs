@@ -1,3 +1,4 @@
+use as_any::AsAny;
 use hlist::{Cons, Nil};
 
 use crate::{
@@ -9,7 +10,7 @@ use crate::{
         storage::Storage,
     },
     entity::Entity,
-    ref_mut::{RefMut, RefMutContainer},
+    ref_mut::{ref_mut, RefMut},
 };
 
 use super::{
@@ -279,14 +280,8 @@ where
     where
         C: Components,
     {
-        type Container<'a, T> = <T as RefMut<'a>>::Container;
-
-        let mut container: Container<Self::RefMut<'_>> = Default::default();
-        for storage in components.iter_mut() {
-            let any = storage.as_any_mut();
-            container.insert_any(any);
-        }
-        container.into_ref_mut()
+        let iter = components.iter_mut().map(AsAny::as_any_mut);
+        ref_mut(iter)
     }
 }
 
@@ -384,16 +379,8 @@ where
         C: 'a;
 
     fn provide_mut(components: &mut C) -> Self::RefMut<'_> {
-        type Container<'a, T> = <T as RefMut<'a>>::Container;
-
-        let mut container: Container<Self::RefMut<'_>> = Default::default();
-        for storage in components.iter_mut() {
-            let any = storage.as_any_mut();
-            container.insert_any(any);
-        }
-        container
-            .into_ref_mut()
-            .expect("all components of the bundle must be present in the registry")
+        let iter = components.iter_mut().map(AsAny::as_any_mut);
+        ref_mut(iter).expect("all components of the bundle must be present in the registry")
     }
 }
 
