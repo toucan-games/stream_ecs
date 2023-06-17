@@ -1,5 +1,7 @@
 //! Provides utilities for bundles — heterogenous collections of components.
 
+use hlist::ops::Here;
+
 use crate::entity::Entity;
 
 pub use self::error::{NotRegisteredError, TryBundleError};
@@ -161,4 +163,50 @@ pub trait GetBundleMut: Bundle {
         C: Components;
 }
 
-// TODO add `ProvideBundle` and `ProvideBundleMut`
+/// Extension of bundle which allows to get a reference to a bundle from the component registry
+/// with **strong** guarantee that components of the storage bundle always exist in the registry.
+///
+/// Unlike the [`GetBundle`] trait, this trait provides strong guarantee
+/// that such bundle always present in the registry.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
+pub trait ProvideBundle<C, I = Here>: Bundle
+where
+    C: Components,
+{
+    /// Type of a reference to the bundle to retrieve from the component registry.
+    type Ref<'a>
+    where
+        C: 'a;
+
+    /// Retrieves a reference to the bundle which components are attached to provided entity.
+    /// Returns [`None`] if provided entity does not have some bundle component.
+    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>>;
+}
+
+/// Extension of bundle which allows to get a **mutable** reference to a bundle from the component registry
+/// with **strong** guarantee that components of the storage bundle always exist in the registry.
+///
+/// Unlike the [`GetBundleMut`] trait, this trait provides strong guarantee
+/// that such bundle always present in the registry.
+/// There is no need to return an [`Option`] from provided trait methods.
+///
+/// Default generic parameter exists here only to work around the lack of specialization in Rust.
+/// Generally it does not need to be used in custom trait implementations,
+/// but definitely should be used in generic bounds to support all possible implementations.
+pub trait ProvideBundleMut<C, I = Here>: Bundle
+where
+    C: Components,
+{
+    /// Type of a mutable reference to the bundle to retrieve from the component registry.
+    type RefMut<'a>
+    where
+        C: 'a;
+
+    /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
+    /// Returns [`None`] if provided entity does not have some bundle component.
+    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>;
+}

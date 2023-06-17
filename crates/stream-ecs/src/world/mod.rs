@@ -4,7 +4,7 @@ pub use self::error::{EntityError, TryAttachError};
 
 use crate::{
     component::{
-        bundle::{Bundle, GetBundle, GetBundleMut, TryBundle},
+        bundle::{Bundle, GetBundle, GetBundleMut, ProvideBundle, ProvideBundleMut, TryBundle},
         registry::{
             Registry as Components, RegistryMut as ComponentsMut,
             TryRegistryMut as TryComponentsMut,
@@ -602,6 +602,75 @@ where
             return Err(error.into());
         }
         let bundle = B::get_mut(components, entity)?;
+        Ok(bundle)
+    }
+
+    /// Retrieves a reference to the bundle which components are attached to provided entity.
+    /// Returns [`None`] if provided entity does not have any of bundle components.
+    ///
+    /// Unlike other methods, this guarantees that all the components
+    /// of provided bundle always exist in component registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn provide<B, I>(&self, entity: Entity) -> Result<Option<B::Ref<'_>>, NotPresentError>
+    where
+        B: ProvideBundle<C, I>,
+    {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error);
+        }
+        let bundle = B::provide(components, entity);
+        Ok(bundle)
+    }
+
+    /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
+    /// Returns [`None`] if provided entity does not have any of bundle components.
+    ///
+    /// Unlike other methods, this guarantees that all the components
+    /// of provided bundle always exist in component registry.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn provide_mut<B, I>(
+        &mut self,
+        entity: Entity,
+    ) -> Result<Option<B::RefMut<'_>>, NotPresentError>
+    where
+        B: ProvideBundleMut<C, I>,
+    {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+
+        if !entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error);
+        }
+        let bundle = B::provide_mut(components, entity);
         Ok(bundle)
     }
 }

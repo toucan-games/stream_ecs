@@ -3,14 +3,22 @@ use hlist::{Cons, Nil};
 
 use crate::{
     component::{
-        registry::Registry as Components,
-        storage::{bundle::GetBundleMut as StorageGetBundleMut, Storage, TryStorage},
+        registry::{Provider, Registry as Components},
+        storage::{
+            bundle::{
+                GetBundleMut as StorageGetBundleMut, ProvideBundleMut as StorageProvideBundleMut,
+            },
+            Storage, TryStorage,
+        },
         Component,
     },
     entity::Entity,
 };
 
-use super::{Bundle, GetBundle, GetBundleMut, NotRegisteredError, TryBundle, TryBundleError};
+use super::{
+    Bundle, GetBundle, GetBundleMut, NotRegisteredError, ProvideBundle, ProvideBundleMut,
+    TryBundle, TryBundleError,
+};
 
 /// Trivial implementation for components, which forwards implementation to the component storage.
 impl<T> Bundle for T
@@ -364,8 +372,6 @@ where
     }
 }
 
-use self::impl_details::GetComponentsMut;
-
 /// More complex implementation for heterogenous list with more than one element.
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
@@ -373,7 +379,7 @@ where
     Tail: GetBundleMut,
     Cons<Head::Storages, Tail::Storages>: StorageGetBundleMut,
     for<'a> <Cons<Head::Storages, Tail::Storages> as StorageGetBundleMut>::RefMut<'a>:
-        GetComponentsMut<'a, Components = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>>,
+        impl_details::GetComponentsMut<'a, Components = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>>,
 {
     type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
     where
@@ -386,11 +392,114 @@ where
     where
         C: Components,
     {
+        use impl_details::GetComponentsMut;
+
         let _ = Self::is_attached(components, entity)?;
-        let storages = Self::Storages::get_mut(components)
+        let storages = <Self::Storages as StorageGetBundleMut>::get_mut(components)
             .expect("presence of all bundle components was checked earlier");
         let bundle = storages.get_components_mut(entity);
         Ok(bundle)
+    }
+}
+
+impl<T, C, I> ProvideBundle<C, I> for T
+where
+    T: Component,
+    C: Provider<T>,
+{
+    type Ref<'a> = &'a T
+    where
+        C: 'a;
+
+    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>> {
+        let storage = components.provide();
+        Storage::get(storage, entity)
+    }
+}
+
+impl<Head, C, I> ProvideBundle<C, I> for Cons<Head, Nil>
+where
+    Head: ProvideBundle<C, I>,
+    C: Components,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Nil>
+    where
+        C: 'a;
+
+    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>> {
+        let head = Head::provide(components, entity)?;
+        let bundle = Cons(head, Nil);
+        Some(bundle)
+    }
+}
+
+impl<Head, Tail, C, Index, TailIndex> ProvideBundle<C, (Index, TailIndex)> for Cons<Head, Tail>
+where
+    Head: ProvideBundle<C, Index>,
+    Tail: ProvideBundle<C, TailIndex> + Bundle,
+    C: Components,
+{
+    type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
+    where
+        C: 'a;
+
+    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>> {
+        let head = Head::provide(components, entity)?;
+        let tail = Tail::provide(components, entity)?;
+        let bundle = Cons(head, tail);
+        Some(bundle)
+    }
+}
+
+impl<T, C, I> ProvideBundleMut<C, I> for T
+where
+    T: Component,
+    C: Provider<T>,
+{
+    type RefMut<'a> = &'a mut T
+    where
+        C: 'a;
+
+    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>> {
+        let storage = components.provide_mut();
+        Storage::get_mut(storage, entity)
+    }
+}
+
+impl<Head, C, I> ProvideBundleMut<C, I> for Cons<Head, Nil>
+where
+    Head: ProvideBundleMut<C, I>,
+    C: Components,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
+    where
+        C: 'a;
+
+    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>> {
+        let head = Head::provide_mut(components, entity)?;
+        let bundle = Cons(head, Nil);
+        Some(bundle)
+    }
+}
+
+impl<Head, Tail, C, Index, TailIndex> ProvideBundleMut<C, (Index, TailIndex)> for Cons<Head, Tail>
+where
+    Head: ProvideBundleMut<C, Index>,
+    Tail: ProvideBundleMut<C, TailIndex> + Bundle,
+    C: Components,
+    Cons<Head::Storages, Tail::Storages>: StorageProvideBundleMut<C, (Index, TailIndex)>,
+    for<'a> <Cons<Head::Storages, Tail::Storages> as StorageProvideBundleMut<C, (Index, TailIndex)>>::RefMut<'a>:
+        impl_details::GetComponentsMut<'a, Components = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>>,
+{
+    type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
+    where
+        C: 'a;
+
+    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>> {
+        use impl_details::GetComponentsMut;
+
+        let storages = <Self::Storages as StorageProvideBundleMut<C, (Index, TailIndex)>>::provide_mut(components);
+        storages.get_components_mut(entity)
     }
 }
 
