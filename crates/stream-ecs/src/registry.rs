@@ -9,16 +9,12 @@ pub trait Contains: Any {
         T: Any;
 }
 
-impl<Head> Contains for Cons<Head, Nil>
-where
-    Head: Any,
-{
+impl Contains for Nil {
     fn contains<T>(&self) -> bool
     where
         T: Any,
     {
-        let Cons(head, _) = self;
-        head.is::<T>()
+        false
     }
 }
 
@@ -46,24 +42,19 @@ pub trait Find: Any {
         T: Any;
 }
 
-impl<Head> Find for Cons<Head, Nil>
-where
-    Head: Any,
-{
+impl Find for Nil {
     fn find<T>(&self) -> Option<&T>
     where
         T: Any,
     {
-        let Cons(head, _) = self;
-        head.downcast_ref()
+        None
     }
 
     fn find_mut<T>(&mut self) -> Option<&mut T>
     where
         T: Any,
     {
-        let Cons(head, _) = self;
-        head.downcast_mut()
+        None
     }
 }
 
