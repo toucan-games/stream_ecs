@@ -770,9 +770,12 @@ mod tests {
     type HashArrayStorage<T, const N: usize> =
         super::HashArrayStorage<T, BuildHasherDefault<DefaultHasher>, N>;
 
-    #[derive(Debug, Clone, Copy, Component)]
-    #[component(storage = HashArrayStorage<Self, 10>)]
+    #[derive(Debug, Clone, Copy)]
     struct Marker;
+
+    impl Component for Marker {
+        type Storage = HashArrayStorage<Self, 10>;
+    }
 
     #[test]
     fn new() {

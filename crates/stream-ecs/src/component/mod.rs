@@ -2,6 +2,7 @@
 
 use self::storage::Storage;
 
+#[cfg(feature = "derive")]
 pub use stream_ecs_macros::Component;
 
 pub mod bundle;

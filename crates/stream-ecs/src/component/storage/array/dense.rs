@@ -594,9 +594,12 @@ mod tests {
 
     use super::DenseArrayStorage;
 
-    #[derive(Debug, Clone, Copy, Component)]
-    #[component(storage = DenseArrayStorage<Self, 10>)]
+    #[derive(Debug, Clone, Copy)]
     struct Marker;
+
+    impl Component for Marker {
+        type Storage = DenseArrayStorage<Self, 10>;
+    }
 
     #[test]
     fn new() {

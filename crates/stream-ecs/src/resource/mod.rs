@@ -2,6 +2,7 @@
 
 use as_any::AsAny;
 
+#[cfg(feature = "derive")]
 pub use stream_ecs_macros::Resource;
 
 pub mod bundle;
