@@ -1,14 +1,17 @@
-use hlist::{ops::Get, Cons};
+use hlist::{ops::Get, Cons, HList};
 
-use crate::component::Component;
+use crate::{
+    component::Component,
+    registry::{Contains, Find},
+};
 
 use super::{Provider, Registry};
 
-use self::impl_details::{AsErased, AsErasedRefIter, AsErasedRefIterMut, Contains, Find, Len};
+use self::impl_details::{AsErased, AsErasedRefIter, AsErasedRefIterMut};
 
 impl<Head, Tail> Registry for Cons<Head, Tail>
 where
-    Self: Len + Contains + Find + AsErased,
+    Self: HList + Contains + Find + AsErased,
     for<'a> <Self as AsErased>::Ref<'a>: AsErasedRefIter<'a>,
     for<'a> <Self as AsErased>::RefMut<'a>: AsErasedRefIterMut<'a>,
 {
@@ -20,7 +23,7 @@ where
     }
 
     fn len(&self) -> usize {
-        Len::len(self)
+        HList::len(self)
     }
 
     fn get<C>(&self) -> Option<&C::Storage>
@@ -71,154 +74,9 @@ where
 }
 
 mod impl_details {
-    use as_any::AsAny;
     use hlist::{iter::Homogenous, Cons, Nil};
 
     use crate::component::storage::{ErasedStorage, Storage};
-
-    pub trait Len {
-        fn len(&self) -> usize;
-    }
-
-    impl<T> Len for T
-    where
-        T: Storage,
-    {
-        fn len(&self) -> usize {
-            1
-        }
-    }
-
-    impl Len for Nil {
-        fn len(&self) -> usize {
-            0
-        }
-    }
-
-    impl<Head, Tail> Len for Cons<Head, Tail>
-    where
-        Head: Len,
-        Tail: Len,
-    {
-        fn len(&self) -> usize {
-            let Cons(head, tail) = self;
-            head.len() + tail.len()
-        }
-    }
-
-    pub trait Contains {
-        fn contains<S>(&self) -> bool
-        where
-            S: Storage;
-    }
-
-    impl<T> Contains for T
-    where
-        T: Storage,
-    {
-        fn contains<S>(&self) -> bool
-        where
-            S: Storage,
-        {
-            self.as_any().is::<S>()
-        }
-    }
-
-    impl Contains for Nil {
-        fn contains<S>(&self) -> bool
-        where
-            S: Storage,
-        {
-            false
-        }
-    }
-
-    impl<Head, Tail> Contains for Cons<Head, Tail>
-    where
-        Head: Contains,
-        Tail: Contains,
-    {
-        fn contains<S>(&self) -> bool
-        where
-            S: Storage,
-        {
-            let Cons(head, tail) = self;
-            head.contains::<S>() || tail.contains::<S>()
-        }
-    }
-
-    pub trait Find {
-        fn find<S>(&self) -> Option<&S>
-        where
-            S: Storage;
-
-        fn find_mut<S>(&mut self) -> Option<&mut S>
-        where
-            S: Storage;
-    }
-
-    impl<T> Find for T
-    where
-        T: Storage,
-    {
-        fn find<S>(&self) -> Option<&S>
-        where
-            S: Storage,
-        {
-            self.as_any().downcast_ref()
-        }
-
-        fn find_mut<S>(&mut self) -> Option<&mut S>
-        where
-            S: Storage,
-        {
-            self.as_any_mut().downcast_mut()
-        }
-    }
-
-    impl Find for Nil {
-        fn find<S>(&self) -> Option<&S>
-        where
-            S: Storage,
-        {
-            None
-        }
-
-        fn find_mut<S>(&mut self) -> Option<&mut S>
-        where
-            S: Storage,
-        {
-            None
-        }
-    }
-
-    impl<Head, Tail> Find for Cons<Head, Tail>
-    where
-        Head: Find,
-        Tail: Find,
-    {
-        fn find<S>(&self) -> Option<&S>
-        where
-            S: Storage,
-        {
-            let Cons(head, tail) = self;
-            match head.find() {
-                Some(head) => Some(head),
-                None => tail.find(),
-            }
-        }
-
-        fn find_mut<S>(&mut self) -> Option<&mut S>
-        where
-            S: Storage,
-        {
-            let Cons(head, tail) = self;
-            match head.find_mut() {
-                Some(head) => Some(head),
-                None => tail.find_mut(),
-            }
-        }
-    }
 
     pub trait AsErased {
         type Ref<'a>

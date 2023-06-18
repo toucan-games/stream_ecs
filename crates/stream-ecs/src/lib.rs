@@ -15,3 +15,4 @@ pub mod resource;
 pub mod world;
 
 mod ref_mut;
+mod registry;
