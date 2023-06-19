@@ -1,8 +1,8 @@
 use hlist::{ops::Get, Cons, HList};
 
 use crate::{
-    registry::{Contains, Find},
     resource::Resource,
+    utils::registry::{Contains, Find},
 };
 
 use super::{Provider, Registry};

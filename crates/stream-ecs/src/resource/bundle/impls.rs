@@ -2,7 +2,6 @@ use as_any::AsAny;
 use hlist::{Cons, Nil};
 
 use crate::{
-    ref_mut::{ref_mut, RefMut},
     resource::{
         registry::{
             Provider as ResourcesProvider, Registry as Resources, RegistryMut as ResourcesMut,
@@ -10,6 +9,7 @@ use crate::{
         },
         Resource,
     },
+    utils::ref_mut::{ref_mut, RefMut},
 };
 
 use super::{Bundle, GetBundle, GetBundleMut, ProvideBundle, ProvideBundleMut, TryBundle};

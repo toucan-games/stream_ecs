@@ -10,7 +10,7 @@ use crate::{
         storage::Storage,
     },
     entity::Entity,
-    ref_mut::{ref_mut, RefMut},
+    utils::ref_mut::{ref_mut, RefMut},
 };
 
 use super::{

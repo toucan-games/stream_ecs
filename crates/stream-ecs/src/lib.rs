@@ -15,5 +15,4 @@ pub mod resource;
 pub mod view;
 pub mod world;
 
-mod ref_mut;
-mod registry;
+mod utils;

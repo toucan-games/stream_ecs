@@ -2,7 +2,7 @@ use hlist::{ops::Get, Cons, HList};
 
 use crate::{
     component::Component,
-    registry::{Contains, Find},
+    utils::registry::{Contains, Find},
 };
 
 use super::{Provider, Registry};
