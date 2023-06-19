@@ -11,8 +11,10 @@ mod entity;
 mod impls;
 mod option;
 
-/// Fetcher of the data defined in [`Item`](Fetch::Item) associated type.
+/// Fetcher of the data retrieved from entity or component registries.
 pub trait Fetch<'a>: 'a {
     /// Type of data which should be fetched.
     type Item: 'a;
+
+    // TODO add methods for the trait
 }
