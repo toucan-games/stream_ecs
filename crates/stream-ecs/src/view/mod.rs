@@ -2,7 +2,5 @@
 
 // TODO view API
 
-pub use self::query::Query;
-
-mod fetch;
-mod query;
+pub mod fetch;
+pub mod query;
