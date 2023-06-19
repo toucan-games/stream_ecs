@@ -3,7 +3,7 @@ use hlist::{Cons, Nil};
 use crate::{
     component::Component,
     entity::Entity,
-    view::fetch::{FetchComponent, FetchEntity, FetchOption},
+    view::fetch::{FetchComponent, FetchComponentMut, FetchEntity, FetchOption},
 };
 
 use super::Query;
@@ -19,6 +19,14 @@ where
 {
     type Item<'a> = &'a C;
     type Fetch<'a> = FetchComponent<'a, C>;
+}
+
+impl<C> Query for &mut C
+where
+    C: Component,
+{
+    type Item<'a> = &'a mut C;
+    type Fetch<'a> = FetchComponentMut<'a, C>;
 }
 
 impl<T> Query for Option<T>

@@ -1,8 +1,12 @@
 //! Utilities for fetches for the queries of ECS.
 
-pub use self::{component::FetchComponent, entity::FetchEntity, option::FetchOption};
+pub use self::{
+    component::FetchComponent, component_mut::FetchComponentMut, entity::FetchEntity,
+    option::FetchOption,
+};
 
 mod component;
+mod component_mut;
 mod entity;
 mod impls;
 mod option;
