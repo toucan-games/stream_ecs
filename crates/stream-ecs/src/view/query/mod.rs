@@ -1,6 +1,6 @@
 //! Utilities for queries of ECS.
 
-use super::fetch::Fetch;
+use crate::entity::Entity;
 
 mod impls;
 
@@ -9,8 +9,11 @@ pub trait Query {
     /// Type of result yielded by the query.
     type Item<'a>;
 
-    /// Type that fetches query item from the container.
-    type Fetch<'a>: Fetch<Item<'a> = Self::Item<'a>> + 'a;
+    /// Type that fetches query item from itself.
+    type Fetch<'a>;
+
+    /// Fetches the data of the entity from the fetcher.
+    fn fetch<'a>(fetch: &'a mut Self::Fetch<'_>, entity: Entity) -> Option<Self::Item<'a>>;
 }
 
 // TODO divide into mutable and immutable queries
