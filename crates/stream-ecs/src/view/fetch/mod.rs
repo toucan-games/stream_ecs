@@ -12,10 +12,11 @@ mod component_mut;
 mod entity;
 mod impls;
 mod option;
+mod unit;
 
 /// Fetcher of the data retrieved from entity or component registries.
 pub trait Fetch {
-    /// Type of data which should be fetched.
+    /// Type of data which is fetched from the fetcher.
     type Item<'a>
     where
         Self: 'a;

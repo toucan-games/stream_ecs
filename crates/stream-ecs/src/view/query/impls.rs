@@ -8,6 +8,11 @@ use crate::{
 
 use super::Query;
 
+impl Query for () {
+    type Item<'a> = ();
+    type Fetch<'a> = ();
+}
+
 impl Query for Entity {
     type Item<'a> = Entity;
     type Fetch<'a> = FetchEntity;
