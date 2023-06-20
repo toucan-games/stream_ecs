@@ -10,7 +10,7 @@ pub trait Query {
     type Item<'a>;
 
     /// Type that fetches query item from the container.
-    type Fetch<'a>: Fetch<'a, Item = Self::Item<'a>>;
+    type Fetch<'a>: Fetch<Item<'a> = Self::Item<'a>> + 'a;
 }
 
 // TODO divide into mutable and immutable queries

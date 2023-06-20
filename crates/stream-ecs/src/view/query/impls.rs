@@ -34,7 +34,7 @@ where
     T: Query,
 {
     type Item<'a> = Option<T::Item<'a>>;
-    type Fetch<'a> = FetchOption<'a, T::Fetch<'a>>;
+    type Fetch<'a> = FetchOption<T::Fetch<'a>>;
 }
 
 impl<Head> Query for Cons<Head, Nil>

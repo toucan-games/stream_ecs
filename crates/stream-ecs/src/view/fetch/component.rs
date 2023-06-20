@@ -1,15 +1,25 @@
-use core::marker::PhantomData;
-
-use crate::component::Component;
+use crate::{
+    component::{storage::Storage, Component},
+    entity::Entity,
+};
 
 use super::Fetch;
 
 /// Fetcher that fetches references of components.
-pub struct FetchComponent<'a, C>(PhantomData<fn() -> &'a C>);
+pub struct FetchComponent<'a, C>(&'a C::Storage)
+where
+    C: Component;
 
-impl<'a, C> Fetch<'a> for FetchComponent<'a, C>
+impl<'_a, C> Fetch for FetchComponent<'_a, C>
 where
     C: Component,
 {
-    type Item = &'a C;
+    type Item<'a> = &'_a C
+    where
+        Self: 'a;
+
+    fn fetch(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
+        let Self(storage) = self;
+        storage.get(entity)
+    }
 }

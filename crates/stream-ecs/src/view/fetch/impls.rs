@@ -1,18 +1,39 @@
 use hlist::{Cons, Nil};
 
+use crate::entity::Entity;
+
 use super::Fetch;
 
-impl<'a, Head> Fetch<'a> for Cons<Head, Nil>
+impl<Head> Fetch for Cons<Head, Nil>
 where
-    Head: Fetch<'a>,
+    Head: Fetch,
 {
-    type Item = Cons<Head::Item, Nil>;
+    type Item<'a> = Cons<Head::Item<'a>, Nil>
+    where
+        Self: 'a;
+
+    fn fetch(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
+        let Cons(head, _) = self;
+        let head = head.fetch(entity)?;
+        let item = Cons(head, Nil);
+        Some(item)
+    }
 }
 
-impl<'a, Head, Tail> Fetch<'a> for Cons<Head, Tail>
+impl<Head, Tail> Fetch for Cons<Head, Tail>
 where
-    Head: Fetch<'a>,
-    Tail: Fetch<'a>,
+    Head: Fetch,
+    Tail: Fetch,
 {
-    type Item = Cons<Head::Item, Tail::Item>;
+    type Item<'a> = Cons<Head::Item<'a>, Tail::Item<'a>>
+    where
+        Self: 'a;
+
+    fn fetch(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
+        let Cons(head, tail) = self;
+        let head = head.fetch(entity)?;
+        let tail = tail.fetch(entity)?;
+        let item = Cons(head, tail);
+        Some(item)
+    }
 }

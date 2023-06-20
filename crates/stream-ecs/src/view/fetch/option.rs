@@ -1,15 +1,23 @@
-use core::marker::PhantomData;
+use crate::entity::Entity;
 
 use super::Fetch;
 
 /// Fetcher that fetches optional data from the underlying fetcher.
-pub struct FetchOption<'a, T>(PhantomData<fn() -> &'a T>)
+pub struct FetchOption<T>(T)
 where
-    T: Fetch<'a>;
+    T: Fetch;
 
-impl<'a, T> Fetch<'a> for FetchOption<'a, T>
+impl<T> Fetch for FetchOption<T>
 where
-    T: Fetch<'a>,
+    T: Fetch,
 {
-    type Item = Option<T::Item>;
+    type Item<'a> = Option<T::Item<'a>>
+    where
+        Self: 'a;
+
+    fn fetch(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
+        let Self(fetch) = self;
+        let item = fetch.fetch(entity);
+        Some(item)
+    }
 }
