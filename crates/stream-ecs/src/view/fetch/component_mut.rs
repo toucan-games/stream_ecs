@@ -6,9 +6,12 @@ use crate::{
 use super::Fetch;
 
 /// Fetcher that fetches mutable references of components.
-pub struct FetchComponentMut<'a, C>(&'a mut C::Storage)
+pub struct FetchComponentMut<'a, C>
 where
-    C: Component;
+    C: Component,
+{
+    storage: &'a mut C::Storage,
+}
 
 impl<C> Fetch for FetchComponentMut<'_, C>
 where
@@ -19,7 +22,7 @@ where
         Self: 'a;
 
     fn fetch(&mut self, entity: Entity) -> Option<Self::Item<'_>> {
-        let Self(storage) = self;
+        let Self { storage } = self;
         storage.get_mut(entity)
     }
 }
