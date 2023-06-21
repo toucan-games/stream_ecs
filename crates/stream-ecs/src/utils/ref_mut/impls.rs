@@ -4,24 +4,24 @@ use hlist::{Cons, Nil};
 
 use super::RefMut;
 
-impl<'a, T> RefMut<'a> for &'a mut T
+impl<'borrow, T> RefMut<'borrow> for &'borrow mut T
 where
     T: Any,
 {
-    type Container = Option<&'a mut T>;
+    type Container = Option<&'borrow mut T>;
 }
 
-impl<'a, Head> RefMut<'a> for Cons<Head, Nil>
+impl<'borrow, Head> RefMut<'borrow> for Cons<Head, Nil>
 where
-    Head: RefMut<'a>,
+    Head: RefMut<'borrow>,
 {
     type Container = Cons<Head::Container, Nil>;
 }
 
-impl<'a, Head, Tail> RefMut<'a> for Cons<Head, Tail>
+impl<'borrow, Head, Tail> RefMut<'borrow> for Cons<Head, Tail>
 where
-    Head: RefMut<'a>,
-    Tail: RefMut<'a>,
+    Head: RefMut<'borrow>,
+    Tail: RefMut<'borrow>,
 {
     type Container = Cons<Head::Container, Tail::Container>;
 }

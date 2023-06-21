@@ -541,17 +541,17 @@ where
         HashArrayStorage::is_empty(self)
     }
 
-    type Iter<'a> = Iter<'a, T>
+    type Iter<'me> = Iter<'me, T>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter(&self) -> Self::Iter<'_> {
         HashArrayStorage::iter(self)
     }
 
-    type IterMut<'a> = IterMut<'a, T>
+    type IterMut<'me> = IterMut<'me, T>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         HashArrayStorage::iter_mut(self)
@@ -574,13 +574,13 @@ where
     }
 }
 
-impl<'a, T, S, const N: usize> IntoIterator for &'a HashArrayStorage<T, S, N>
+impl<'me, T, S, const N: usize> IntoIterator for &'me HashArrayStorage<T, S, N>
 where
     T: Component<Storage = HashArrayStorage<T, S, N>>,
 {
-    type Item = (Entity, &'a T);
+    type Item = (Entity, &'me T);
 
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'me, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.iter();
@@ -588,13 +588,13 @@ where
     }
 }
 
-impl<'a, T, S, const N: usize> IntoIterator for &'a mut HashArrayStorage<T, S, N>
+impl<'me, T, S, const N: usize> IntoIterator for &'me mut HashArrayStorage<T, S, N>
 where
     T: Component<Storage = HashArrayStorage<T, S, N>>,
 {
-    type Item = (Entity, &'a mut T);
+    type Item = (Entity, &'me mut T);
 
-    type IntoIter = IterMut<'a, T>;
+    type IntoIter = IterMut<'me, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.iter_mut();
@@ -619,18 +619,18 @@ where
 /// Iterator of entities with references of components attached to them
 /// in the hash array storage.
 #[derive(Debug, Clone)]
-pub struct Iter<'a, T>
+pub struct Iter<'data, T>
 where
     T: Component,
 {
-    iter: slice::Iter<'a, Bucket<Entity, T>>,
+    iter: slice::Iter<'data, Bucket<Entity, T>>,
 }
 
-impl<'a, T> Iterator for Iter<'a, T>
+impl<'data, T> Iterator for Iter<'data, T>
 where
     T: Component,
 {
-    type Item = (Entity, &'a T);
+    type Item = (Entity, &'data T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &Bucket { key, ref value, .. } = self.iter.next()?;
@@ -666,18 +666,18 @@ impl<T> FusedIterator for Iter<'_, T> where T: Component {}
 /// Iterator of entities with mutable references of components attached to them
 /// in the hash array storage.
 #[derive(Debug)]
-pub struct IterMut<'a, T>
+pub struct IterMut<'data, T>
 where
     T: Component,
 {
-    iter: slice::IterMut<'a, Bucket<Entity, T>>,
+    iter: slice::IterMut<'data, Bucket<Entity, T>>,
 }
 
-impl<'a, T> Iterator for IterMut<'a, T>
+impl<'data, T> Iterator for IterMut<'data, T>
 where
     T: Component,
 {
-    type Item = (Entity, &'a mut T);
+    type Item = (Entity, &'data mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &mut Bucket {

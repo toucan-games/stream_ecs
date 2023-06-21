@@ -2,21 +2,21 @@ use core::any::Any;
 
 use hlist::{Cons, Nil};
 
-pub trait RefMutContainer<'a>: Default {
-    type RefMut: 'a;
+pub trait RefMutContainer<'borrow>: Default {
+    type RefMut: 'borrow;
 
     fn should_insert_any(&self, any: &dyn Any) -> bool;
 
-    fn insert_any(&mut self, any: &'a mut dyn Any);
+    fn insert_any(&mut self, any: &'borrow mut dyn Any);
 
     fn into_ref_mut(self) -> Option<Self::RefMut>;
 }
 
-impl<'a, T> RefMutContainer<'a> for Option<&'a mut T>
+impl<'borrow, T> RefMutContainer<'borrow> for Option<&'borrow mut T>
 where
     T: Any,
 {
-    type RefMut = &'a mut T;
+    type RefMut = &'borrow mut T;
 
     fn should_insert_any(&self, any: &dyn Any) -> bool {
         match self {
@@ -25,7 +25,7 @@ where
         }
     }
 
-    fn insert_any(&mut self, any: &'a mut dyn Any) {
+    fn insert_any(&mut self, any: &'borrow mut dyn Any) {
         if self.is_some() {
             return;
         }
@@ -40,9 +40,9 @@ where
     }
 }
 
-impl<'a, Head> RefMutContainer<'a> for Cons<Head, Nil>
+impl<'borrow, Head> RefMutContainer<'borrow> for Cons<Head, Nil>
 where
-    Head: RefMutContainer<'a>,
+    Head: RefMutContainer<'borrow>,
 {
     type RefMut = Cons<Head::RefMut, Nil>;
 
@@ -51,7 +51,7 @@ where
         head.should_insert_any(any)
     }
 
-    fn insert_any(&mut self, any: &'a mut dyn Any) {
+    fn insert_any(&mut self, any: &'borrow mut dyn Any) {
         let Cons(head, _) = self;
         head.insert_any(any)
     }
@@ -64,10 +64,10 @@ where
     }
 }
 
-impl<'a, Head, Tail> RefMutContainer<'a> for Cons<Head, Tail>
+impl<'borrow, Head, Tail> RefMutContainer<'borrow> for Cons<Head, Tail>
 where
-    Head: RefMutContainer<'a>,
-    Tail: RefMutContainer<'a>,
+    Head: RefMutContainer<'borrow>,
+    Tail: RefMutContainer<'borrow>,
 {
     type RefMut = Cons<Head::RefMut, Tail::RefMut>;
 
@@ -76,7 +76,7 @@ where
         head.should_insert_any(any) || tail.should_insert_any(any)
     }
 
-    fn insert_any(&mut self, any: &'a mut dyn Any) {
+    fn insert_any(&mut self, any: &'borrow mut dyn Any) {
         let Cons(head, tail) = self;
         if head.should_insert_any(any) {
             head.insert_any(any);

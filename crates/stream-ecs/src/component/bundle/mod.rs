@@ -113,9 +113,7 @@ pub trait TryBundle: Bundle {
 /// Extension of bundle which allows to get a reference to a bundle from the component registry.
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the component registry.
-    type Ref<'a>
-    where
-        Self: 'a;
+    type Ref<'components>;
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have some bundle component.
@@ -138,9 +136,7 @@ pub trait GetBundle: Bundle {
 /// Extension of bundle which allows to get a **mutable** reference to a bundle from the component registry.
 pub trait GetBundleMut: Bundle {
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
-    type RefMut<'a>
-    where
-        Self: 'a;
+    type RefMut<'components>;
 
     /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have some bundle component.
@@ -178,9 +174,9 @@ where
     C: Components,
 {
     /// Type of a reference to the bundle to retrieve from the component registry.
-    type Ref<'a>
+    type Ref<'components>
     where
-        C: 'a;
+        C: 'components;
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have some bundle component.
@@ -202,9 +198,9 @@ where
     C: Components,
 {
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
-    type RefMut<'a>
+    type RefMut<'components>
     where
-        C: 'a;
+        C: 'components;
 
     /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have some bundle component.

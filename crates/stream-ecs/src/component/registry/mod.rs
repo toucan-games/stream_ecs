@@ -41,9 +41,9 @@ pub trait Registry {
 
     /// Iterator which returns references of all the storages
     /// for components registered in the registry.
-    type Iter<'a>: Iterator<Item = &'a dyn ErasedStorage>
+    type Iter<'me>: Iterator<Item = &'me dyn ErasedStorage>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator of references of all the storages
     /// for components registered in the registry.
@@ -51,9 +51,9 @@ pub trait Registry {
 
     /// Iterator which returns mutable references of all the storages
     /// for components registered in the registry.
-    type IterMut<'a>: Iterator<Item = &'a mut dyn ErasedStorage>
+    type IterMut<'me>: Iterator<Item = &'me mut dyn ErasedStorage>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator of mutable references of all the storages
     /// for components registered in the registry.

@@ -166,9 +166,7 @@ impl<T> GetBundle for T
 where
     T: Resource,
 {
-    type Ref<'a> = &'a T
-    where
-        Self: 'a;
+    type Ref<'resources> = &'resources T;
 
     fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
     where
@@ -183,9 +181,7 @@ impl<Head> GetBundle for Cons<Head, Nil>
 where
     Head: GetBundle,
 {
-    type Ref<'a> = Cons<Head::Ref<'a>, Nil>
-    where
-        Self: 'a;
+    type Ref<'resources> = Cons<Head::Ref<'resources>, Nil>;
 
     fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
     where
@@ -203,9 +199,7 @@ where
     Head: GetBundle,
     Tail: GetBundle,
 {
-    type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
-    where
-        Self: 'a;
+    type Ref<'resources> = Cons<Head::Ref<'resources>, Tail::Ref<'resources>>;
 
     fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
     where
@@ -223,9 +217,7 @@ impl<T> GetBundleMut for T
 where
     T: Resource,
 {
-    type RefMut<'a> = &'a mut T
-    where
-        Self: 'a;
+    type RefMut<'resources> = &'resources mut T;
 
     fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
     where
@@ -240,9 +232,7 @@ impl<Head> GetBundleMut for Cons<Head, Nil>
 where
     Head: GetBundleMut,
 {
-    type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
-    where
-        Self: 'a;
+    type RefMut<'resources> = Cons<Head::RefMut<'resources>, Nil>;
 
     fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
     where
@@ -259,12 +249,10 @@ impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
     Tail: GetBundleMut,
-    for<'a> Head::RefMut<'a>: RefMut<'a>,
-    for<'a> Tail::RefMut<'a>: RefMut<'a>,
+    for<'any> Head::RefMut<'any>: RefMut<'any>,
+    for<'any> Tail::RefMut<'any>: RefMut<'any>,
 {
-    type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
-    where
-        Self: 'a;
+    type RefMut<'resources> = Cons<Head::RefMut<'resources>, Tail::RefMut<'resources>>;
 
     fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
     where
@@ -281,9 +269,9 @@ where
     T: Resource,
     R: ResourcesProvider<T, I>,
 {
-    type Ref<'a> = &'a T
+    type Ref<'resources> = &'resources T
     where
-        R: 'a;
+        R: 'resources;
 
     fn provide(resources: &R) -> Self::Ref<'_> {
         resources.provide()
@@ -296,9 +284,9 @@ where
     Head: ProvideBundle<R, I>,
     R: Resources,
 {
-    type Ref<'a> = Cons<Head::Ref<'a>, Nil>
+    type Ref<'resources> = Cons<Head::Ref<'resources>, Nil>
     where
-        R: 'a;
+        R: 'resources;
 
     fn provide(resources: &R) -> Self::Ref<'_> {
         let head = Head::provide(resources);
@@ -307,15 +295,15 @@ where
 }
 
 /// More complex implementation for heterogenous list with more than one element.
-impl<Head, Tail, R, Index, TailIndex> ProvideBundle<R, (Index, TailIndex)> for Cons<Head, Tail>
+impl<Head, Tail, R, Index, TailIndex> ProvideBundle<R, Cons<Index, TailIndex>> for Cons<Head, Tail>
 where
     Head: ProvideBundle<R, Index>,
     Tail: ProvideBundle<R, TailIndex> + Bundle,
     R: Resources,
 {
-    type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
+    type Ref<'resources> = Cons<Head::Ref<'resources>, Tail::Ref<'resources>>
     where
-        R: 'a;
+        R: 'resources;
 
     fn provide(resources: &R) -> Self::Ref<'_> {
         let head = Head::provide(resources);
@@ -330,9 +318,9 @@ where
     T: Resource,
     R: ResourcesProvider<T, I>,
 {
-    type RefMut<'a> = &'a mut T
+    type RefMut<'resources> = &'resources mut T
     where
-        R: 'a;
+        R: 'resources;
 
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
         resources.provide_mut()
@@ -345,9 +333,9 @@ where
     Head: ProvideBundleMut<R, I>,
     R: Resources,
 {
-    type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
+    type RefMut<'resources> = Cons<Head::RefMut<'resources>, Nil>
     where
-        R: 'a;
+        R: 'resources;
 
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
         let head = Head::provide_mut(resources);
@@ -356,17 +344,18 @@ where
 }
 
 /// More complex implementation for heterogenous list with more than one element.
-impl<Head, Tail, R, Index, TailIndex> ProvideBundleMut<R, (Index, TailIndex)> for Cons<Head, Tail>
+impl<Head, Tail, R, Index, TailIndex> ProvideBundleMut<R, Cons<Index, TailIndex>>
+    for Cons<Head, Tail>
 where
     Head: ProvideBundleMut<R, Index>,
     Tail: ProvideBundleMut<R, TailIndex> + Bundle,
     R: Resources,
-    for<'a> Head::RefMut<'a>: RefMut<'a>,
-    for<'a> Tail::RefMut<'a>: RefMut<'a>,
+    for<'any> Head::RefMut<'any>: RefMut<'any>,
+    for<'any> Tail::RefMut<'any>: RefMut<'any>,
 {
-    type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
+    type RefMut<'resources> = Cons<Head::RefMut<'resources>, Tail::RefMut<'resources>>
     where
-        R: 'a;
+        R: 'resources;
 
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
         let iter = resources.iter_mut().map(AsAny::as_any_mut);

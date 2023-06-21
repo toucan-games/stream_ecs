@@ -332,9 +332,9 @@ impl<const N: usize> Registry for ArrayRegistry<N> {
         ArrayRegistry::clear(self)
     }
 
-    type Iter<'a> = Iter<'a>
+    type Iter<'me> = Iter<'me>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter(&self) -> Self::Iter<'_> {
         ArrayRegistry::iter(self)
@@ -349,10 +349,10 @@ impl<const N: usize> TryRegistry for ArrayRegistry<N> {
     }
 }
 
-impl<'a, const N: usize> IntoIterator for &'a ArrayRegistry<N> {
+impl<'me, const N: usize> IntoIterator for &'me ArrayRegistry<N> {
     type Item = Entity;
 
-    type IntoIter = Iter<'a>;
+    type IntoIter = Iter<'me>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.slots.iter().enumerate();
@@ -375,8 +375,8 @@ impl<const N: usize> IntoIterator for ArrayRegistry<N> {
 
 /// Iterator over alive entities contained in the array registry.
 #[derive(Debug, Clone)]
-pub struct Iter<'a> {
-    iter: Enumerate<slice::Iter<'a, Slot<()>>>,
+pub struct Iter<'data> {
+    iter: Enumerate<slice::Iter<'data, Slot<()>>>,
     num_left: u32,
 }
 

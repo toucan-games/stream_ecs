@@ -368,17 +368,17 @@ where
         DenseArrayStorage::is_empty(self)
     }
 
-    type Iter<'a> = Iter<'a, T>
+    type Iter<'me> = Iter<'me, T>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter(&self) -> Self::Iter<'_> {
         DenseArrayStorage::iter(self)
     }
 
-    type IterMut<'a> = IterMut<'a, T>
+    type IterMut<'me> = IterMut<'me, T>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         DenseArrayStorage::iter_mut(self)
@@ -400,13 +400,13 @@ where
     }
 }
 
-impl<'a, T, const N: usize> IntoIterator for &'a DenseArrayStorage<T, N>
+impl<'me, T, const N: usize> IntoIterator for &'me DenseArrayStorage<T, N>
 where
     T: Component<Storage = DenseArrayStorage<T, N>>,
 {
-    type Item = (Entity, &'a T);
+    type Item = (Entity, &'me T);
 
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'me, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.iter();
@@ -414,13 +414,13 @@ where
     }
 }
 
-impl<'a, T, const N: usize> IntoIterator for &'a mut DenseArrayStorage<T, N>
+impl<'me, T, const N: usize> IntoIterator for &'me mut DenseArrayStorage<T, N>
 where
     T: Component<Storage = DenseArrayStorage<T, N>>,
 {
-    type Item = (Entity, &'a mut T);
+    type Item = (Entity, &'me mut T);
 
-    type IntoIter = IterMut<'a, T>;
+    type IntoIter = IterMut<'me, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.iter_mut();
@@ -445,18 +445,18 @@ where
 /// Iterator of entities with references of components attached to them
 /// in the dense array storage.
 #[derive(Debug, Clone)]
-pub struct Iter<'a, T>
+pub struct Iter<'data, T>
 where
     T: Component,
 {
-    iter: slice::Iter<'a, Dense<T>>,
+    iter: slice::Iter<'data, Dense<T>>,
 }
 
-impl<'a, T> Iterator for Iter<'a, T>
+impl<'data, T> Iterator for Iter<'data, T>
 where
     T: Component,
 {
-    type Item = (Entity, &'a T);
+    type Item = (Entity, &'data T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &Dense { entity, ref value } = self.iter.next()?;
@@ -492,18 +492,18 @@ impl<T> FusedIterator for Iter<'_, T> where T: Component {}
 /// Iterator of entities with mutable references of components attached to them
 /// in the dense array storage.
 #[derive(Debug)]
-pub struct IterMut<'a, T>
+pub struct IterMut<'data, T>
 where
     T: Component,
 {
-    iter: slice::IterMut<'a, Dense<T>>,
+    iter: slice::IterMut<'data, Dense<T>>,
 }
 
-impl<'a, T> Iterator for IterMut<'a, T>
+impl<'data, T> Iterator for IterMut<'data, T>
 where
     T: Component,
 {
-    type Item = (Entity, &'a mut T);
+    type Item = (Entity, &'data mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &mut Dense {

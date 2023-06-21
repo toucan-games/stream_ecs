@@ -36,17 +36,17 @@ pub trait Registry {
         R: Resource;
 
     /// Iterator which returns references of all the resources contained in the registry.
-    type Iter<'a>: Iterator<Item = &'a dyn ErasedResource>
+    type Iter<'me>: Iterator<Item = &'me dyn ErasedResource>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator of references of all the resources contained in the registry.
     fn iter(&self) -> Self::Iter<'_>;
 
     /// Iterator which returns mutable references of all the resources contained in the registry.
-    type IterMut<'a>: Iterator<Item = &'a mut dyn ErasedResource>
+    type IterMut<'me>: Iterator<Item = &'me mut dyn ErasedResource>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator of mutable references of all the resources contained in the registry.
     fn iter_mut(&mut self) -> Self::IterMut<'_>;

@@ -57,9 +57,9 @@ pub trait Storage: 'static {
 
     /// Iterator which returns entity keys
     /// with references of components attached to them.
-    type Iter<'a>: Iterator<Item = (Entity, &'a Self::Item)>
+    type Iter<'me>: Iterator<Item = (Entity, &'me Self::Item)>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator over entity keys
     /// with references of components attached to them.
@@ -67,9 +67,9 @@ pub trait Storage: 'static {
 
     /// Iterator which returns entity keys
     /// with mutable references of components attached to them.
-    type IterMut<'a>: Iterator<Item = (Entity, &'a mut Self::Item)>
+    type IterMut<'me>: Iterator<Item = (Entity, &'me mut Self::Item)>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator over entity keys
     /// with mutable references of components attached to them.

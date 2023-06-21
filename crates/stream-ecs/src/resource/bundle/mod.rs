@@ -62,9 +62,7 @@ pub trait TryBundle: Bundle {
 /// Extension of bundle which allows to get a reference to a resource bundle from the registry.
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the resource registry.
-    type Ref<'a>
-    where
-        Self: 'a;
+    type Ref<'resources>;
 
     /// Retrieves a reference to the resource bundle which is stored in provided registry.
     /// Returns [`None`] if provided registry does not have some bundle resource.
@@ -76,9 +74,7 @@ pub trait GetBundle: Bundle {
 /// Extension of bundle which allows to get a *mutable* reference to a resource bundle from the registry.
 pub trait GetBundleMut: Bundle {
     /// Type of a mutable reference to the bundle to retrieve from the resource registry.
-    type RefMut<'a>
-    where
-        Self: 'a;
+    type RefMut<'resources>;
 
     /// Retrieves a mutable reference to the resource bundle which is stored in provided registry.
     /// Returns [`None`] if provided registry does not have some bundle resource.
@@ -102,9 +98,9 @@ where
     R: Resources,
 {
     /// Type of a reference to the bundle to retrieve from the resource registry.
-    type Ref<'a>
+    type Ref<'resources>
     where
-        R: 'a;
+        R: 'resources;
 
     /// Retrieves a reference to the resource bundle which is stored in provided registry.
     fn provide(resources: &R) -> Self::Ref<'_>;
@@ -125,9 +121,9 @@ where
     R: Resources,
 {
     /// Type of a mutable reference to the bundle to retrieve from the resource registry.
-    type RefMut<'a>
+    type RefMut<'resources>
     where
-        R: 'a;
+        R: 'resources;
 
     /// Retrieves a mutable reference to the resource bundle which is stored in provided registry.
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_>;

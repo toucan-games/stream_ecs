@@ -12,8 +12,8 @@ use self::impl_details::{AsErased, AsErasedRefIter, AsErasedRefIterMut};
 impl<Head, Tail> Registry for Cons<Head, Tail>
 where
     Self: HList + Contains + Find + AsErased,
-    for<'a> <Self as AsErased>::Ref<'a>: AsErasedRefIter<'a>,
-    for<'a> <Self as AsErased>::RefMut<'a>: AsErasedRefIterMut<'a>,
+    for<'any> <Self as AsErased>::Ref<'any>: AsErasedRefIter<'any>,
+    for<'any> <Self as AsErased>::RefMut<'any>: AsErasedRefIterMut<'any>,
 {
     fn contains<R>(&self) -> bool
     where
@@ -40,18 +40,18 @@ where
         Find::find_mut(self)
     }
 
-    type Iter<'a> = <<Self as AsErased>::Ref<'a> as IntoIterator>::IntoIter
+    type Iter<'me> = <<Self as AsErased>::Ref<'me> as IntoIterator>::IntoIter
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter(&self) -> Self::Iter<'_> {
         let erased = AsErased::as_erased(self);
         erased.into_iter()
     }
 
-    type IterMut<'a> = <<Self as AsErased>::RefMut<'a> as IntoIterator>::IntoIter
+    type IterMut<'me> = <<Self as AsErased>::RefMut<'me> as IntoIterator>::IntoIter
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         let erased = AsErased::as_erased_mut(self);
@@ -79,15 +79,15 @@ mod impl_details {
     use crate::resource::{ErasedResource, Resource};
 
     pub trait AsErased {
-        type Ref<'a>
+        type Ref<'me>
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased(&self) -> Self::Ref<'_>;
 
-        type RefMut<'a>
+        type RefMut<'me>
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased_mut(&mut self) -> Self::RefMut<'_>;
     }
@@ -96,17 +96,17 @@ mod impl_details {
     where
         T: Resource,
     {
-        type Ref<'a> = &'a dyn ErasedResource
+        type Ref<'me> = &'me dyn ErasedResource
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased(&self) -> Self::Ref<'_> {
             self
         }
 
-        type RefMut<'a> = &'a mut dyn ErasedResource
+        type RefMut<'me> = &'me mut dyn ErasedResource
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased_mut(&mut self) -> Self::RefMut<'_> {
             self
@@ -117,9 +117,9 @@ mod impl_details {
     where
         Head: AsErased,
     {
-        type Ref<'a> = Cons<Head::Ref<'a>, Nil>
+        type Ref<'me> = Cons<Head::Ref<'me>, Nil>
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased(&self) -> Self::Ref<'_> {
             let Cons(head, _) = self;
@@ -127,9 +127,9 @@ mod impl_details {
             Cons(head, Nil)
         }
 
-        type RefMut<'a> = Cons<Head::RefMut<'a>, Nil>
+        type RefMut<'me> = Cons<Head::RefMut<'me>, Nil>
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased_mut(&mut self) -> Self::RefMut<'_> {
             let Cons(head, _) = self;
@@ -143,9 +143,9 @@ mod impl_details {
         Head: AsErased,
         Tail: AsErased,
     {
-        type Ref<'a> = Cons<Head::Ref<'a>, Tail::Ref<'a>>
+        type Ref<'me> = Cons<Head::Ref<'me>, Tail::Ref<'me>>
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased(&self) -> Self::Ref<'_> {
             let Cons(head, tail) = self;
@@ -154,9 +154,9 @@ mod impl_details {
             Cons(head, tail)
         }
 
-        type RefMut<'a> = Cons<Head::RefMut<'a>, Tail::RefMut<'a>>
+        type RefMut<'me> = Cons<Head::RefMut<'me>, Tail::RefMut<'me>>
         where
-            Self: 'a;
+            Self: 'me;
 
         fn as_erased_mut(&mut self) -> Self::RefMut<'_> {
             let Cons(head, tail) = self;
@@ -166,17 +166,17 @@ mod impl_details {
         }
     }
 
-    pub trait AsErasedRefIter<'a>: Homogenous<Item = &'a dyn ErasedResource> {}
+    pub trait AsErasedRefIter<'item>: Homogenous<Item = &'item dyn ErasedResource> {}
 
-    impl<'a, Tail> AsErasedRefIter<'a> for Cons<&'a dyn ErasedResource, Tail> where
-        Self: Homogenous<Item = &'a dyn ErasedResource>
+    impl<'item, Tail> AsErasedRefIter<'item> for Cons<&'item dyn ErasedResource, Tail> where
+        Self: Homogenous<Item = &'item dyn ErasedResource>
     {
     }
 
-    pub trait AsErasedRefIterMut<'a>: Homogenous<Item = &'a mut dyn ErasedResource> {}
+    pub trait AsErasedRefIterMut<'item>: Homogenous<Item = &'item mut dyn ErasedResource> {}
 
-    impl<'a, Tail> AsErasedRefIterMut<'a> for Cons<&'a mut dyn ErasedResource, Tail> where
-        Self: Homogenous<Item = &'a mut dyn ErasedResource>
+    impl<'item, Tail> AsErasedRefIterMut<'item> for Cons<&'item mut dyn ErasedResource, Tail> where
+        Self: Homogenous<Item = &'item mut dyn ErasedResource>
     {
     }
 }

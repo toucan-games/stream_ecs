@@ -51,9 +51,9 @@ pub trait Registry {
     fn clear(&mut self);
 
     /// Type of iterator of alive entities created by the registry.
-    type Iter<'a>: Iterator<Item = Entity>
+    type Iter<'me>: Iterator<Item = Entity>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Returns an iterator of alive entities created by the registry.
     fn iter(&self) -> Self::Iter<'_>;

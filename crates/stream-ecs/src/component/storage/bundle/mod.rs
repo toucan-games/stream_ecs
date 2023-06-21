@@ -72,9 +72,7 @@ pub trait TryBundle: Bundle {
 /// Extension of bundle which allows to get a reference to a storage bundle from the registry.
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the component registry.
-    type Ref<'a>
-    where
-        Self: 'a;
+    type Ref<'components>;
 
     /// Retrieves a reference to the storage bundle which is registered in provided component registry.
     /// Returns [`None`] if provided component registry does not have some bundle storage.
@@ -86,9 +84,7 @@ pub trait GetBundle: Bundle {
 /// Extension of bundle which allows to get a *mutable* reference to a storage bundle from the registry.
 pub trait GetBundleMut: Bundle {
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
-    type RefMut<'a>
-    where
-        Self: 'a;
+    type RefMut<'components>;
 
     /// Retrieves a mutable reference to the storage bundle which is registered in provided component registry.
     /// Returns [`None`] if provided component registry does not have some bundle storage.
@@ -112,9 +108,9 @@ where
     C: Components,
 {
     /// Type of a reference to the bundle to retrieve from the component registry.
-    type Ref<'a>
+    type Ref<'components>
     where
-        C: 'a;
+        C: 'components;
 
     /// Retrieves a reference to the bundle which is stored in provided component registry.
     fn provide(components: &C) -> Self::Ref<'_>;
@@ -135,9 +131,9 @@ where
     C: Components,
 {
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
-    type RefMut<'a>
+    type RefMut<'components>
     where
-        C: 'a;
+        C: 'components;
 
     /// Retrieves a mutable reference to the bundle which is stored in provided component registry.
     fn provide_mut(components: &mut C) -> Self::RefMut<'_>;
@@ -146,9 +142,9 @@ where
 /// Extension of bundle which allows to get a reference to the [items](Bundle::Items) of the storage bundle.
 pub trait GetItems: Bundle {
     /// Type of a reference to the items to retrieve from this bundle.
-    type ItemsRef<'a>
+    type ItemsRef<'me>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Retrieves a reference to the items (component bundle) of the provided entity in the storage bundle.
     /// Returns [`None`] if the storage bundle does not have some items by provided entity.
@@ -158,9 +154,9 @@ pub trait GetItems: Bundle {
 /// Extension of bundle which allows to get a *mutable* reference to the [items](Bundle::Items) of the storage bundle.
 pub trait GetItemsMut: Bundle {
     /// Type of a mutable reference to the items to retrieve from this bundle.
-    type ItemsRefMut<'a>
+    type ItemsRefMut<'me>
     where
-        Self: 'a;
+        Self: 'me;
 
     /// Retrieves a mutable reference to the items (component bundle) of the provided entity in the storage bundle.
     /// Returns [`None`] if the storage bundle does not have some items by provided entity.

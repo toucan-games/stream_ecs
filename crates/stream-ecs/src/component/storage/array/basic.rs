@@ -323,17 +323,17 @@ where
         ArrayStorage::is_empty(self)
     }
 
-    type Iter<'a> = Iter<'a, T>
+    type Iter<'me> = Iter<'me, T>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter(&self) -> Self::Iter<'_> {
         ArrayStorage::iter(self)
     }
 
-    type IterMut<'a> = IterMut<'a, T>
+    type IterMut<'me> = IterMut<'me, T>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         ArrayStorage::iter_mut(self)
@@ -355,13 +355,13 @@ where
     }
 }
 
-impl<'a, T, const N: usize> IntoIterator for &'a ArrayStorage<T, N>
+impl<'me, T, const N: usize> IntoIterator for &'me ArrayStorage<T, N>
 where
     T: Component<Storage = ArrayStorage<T, N>>,
 {
-    type Item = (Entity, &'a T);
+    type Item = (Entity, &'me T);
 
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'me, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.slots.iter().enumerate();
@@ -370,13 +370,13 @@ where
     }
 }
 
-impl<'a, T, const N: usize> IntoIterator for &'a mut ArrayStorage<T, N>
+impl<'me, T, const N: usize> IntoIterator for &'me mut ArrayStorage<T, N>
 where
     T: Component<Storage = ArrayStorage<T, N>>,
 {
-    type Item = (Entity, &'a mut T);
+    type Item = (Entity, &'me mut T);
 
-    type IntoIter = IterMut<'a, T>;
+    type IntoIter = IterMut<'me, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.slots.iter_mut().enumerate();
@@ -403,19 +403,19 @@ where
 /// Iterator of entities with references of components attached to them
 /// in the array storage.
 #[derive(Debug, Clone)]
-pub struct Iter<'a, T>
+pub struct Iter<'data, T>
 where
     T: Component,
 {
-    iter: Enumerate<slice::Iter<'a, Slot<T>>>,
+    iter: Enumerate<slice::Iter<'data, Slot<T>>>,
     num_left: u32,
 }
 
-impl<'a, T> Iterator for Iter<'a, T>
+impl<'data, T> Iterator for Iter<'data, T>
 where
     T: Component,
 {
-    type Item = (Entity, &'a T);
+    type Item = (Entity, &'data T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = loop {
@@ -468,19 +468,19 @@ impl<T> FusedIterator for Iter<'_, T> where T: Component {}
 /// Iterator of entities with mutable references of components attached to them
 /// in the array storage.
 #[derive(Debug)]
-pub struct IterMut<'a, T>
+pub struct IterMut<'data, T>
 where
     T: Component,
 {
-    iter: Enumerate<slice::IterMut<'a, Slot<T>>>,
+    iter: Enumerate<slice::IterMut<'data, Slot<T>>>,
     num_left: u32,
 }
 
-impl<'a, T> Iterator for IterMut<'a, T>
+impl<'data, T> Iterator for IterMut<'data, T>
 where
     T: Component,
 {
-    type Item = (Entity, &'a mut T);
+    type Item = (Entity, &'data mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = loop {

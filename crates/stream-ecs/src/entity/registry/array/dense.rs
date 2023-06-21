@@ -351,9 +351,9 @@ impl<const N: usize> Registry for DenseArrayRegistry<N> {
         DenseArrayRegistry::clear(self)
     }
 
-    type Iter<'a> = Iter<'a>
+    type Iter<'me> = Iter<'me>
     where
-        Self: 'a;
+        Self: 'me;
 
     fn iter(&self) -> Self::Iter<'_> {
         DenseArrayRegistry::iter(self)
@@ -368,10 +368,10 @@ impl<const N: usize> TryRegistry for DenseArrayRegistry<N> {
     }
 }
 
-impl<'a, const N: usize> IntoIterator for &'a DenseArrayRegistry<N> {
+impl<'me, const N: usize> IntoIterator for &'me DenseArrayRegistry<N> {
     type Item = Entity;
 
-    type IntoIter = Iter<'a>;
+    type IntoIter = Iter<'me>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.iter();
@@ -392,8 +392,8 @@ impl<const N: usize> IntoIterator for DenseArrayRegistry<N> {
 
 /// Iterator over alive entities contained in the dense array registry.
 #[derive(Debug, Clone)]
-pub struct Iter<'a> {
-    iter: slice::Iter<'a, Entity>,
+pub struct Iter<'data> {
+    iter: slice::Iter<'data, Entity>,
 }
 
 impl Iterator for Iter<'_> {
