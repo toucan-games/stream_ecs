@@ -1,11 +1,21 @@
-use crate::{entity::Entity, view::query::Query};
+use crate::{component::registry::Registry as Components, entity::Entity, view::query::Query};
 
 impl Query for Entity {
-    type Item<'a> = Entity;
+    type Item<'item> = Entity;
 
-    type Fetch<'a> = ();
+    type Fetch<'fetch> = ();
 
-    fn fetch<'a>(_: &'a mut Self::Fetch<'_>, entity: Entity) -> Option<Self::Item<'a>> {
+    fn new_fetch<C>(_: &mut C) -> Option<Self::Fetch<'_>>
+    where
+        C: Components,
+    {
+        Some(())
+    }
+
+    fn fetch<'borrow>(
+        _fetch: &'borrow mut Self::Fetch<'_>,
+        entity: Entity,
+    ) -> Option<Self::Item<'borrow>> {
         Some(entity)
     }
 }

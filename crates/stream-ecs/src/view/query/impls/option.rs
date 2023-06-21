@@ -1,18 +1,29 @@
-use crate::{entity::Entity, view::query::Query};
+use crate::{component::registry::Registry as Components, entity::Entity, view::query::Query};
 
-impl<T> Query for Option<T>
+impl<Q> Query for Option<Q>
 where
-    T: Query,
+    Q: Query,
 {
-    type Item<'a> = Option<T::Item<'a>>;
+    type Item<'item> = Option<Q::Item<'item>>;
 
-    type Fetch<'a> = Option<T::Fetch<'a>>;
+    type Fetch<'fetch> = Option<Q::Fetch<'fetch>>;
 
-    fn fetch<'a>(fetch: &'a mut Self::Fetch<'_>, entity: Entity) -> Option<Self::Item<'a>> {
+    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    where
+        C: Components,
+    {
+        let new_fetch = Q::new_fetch(components);
+        Some(new_fetch)
+    }
+
+    fn fetch<'borrow>(
+        fetch: &'borrow mut Self::Fetch<'_>,
+        entity: Entity,
+    ) -> Option<Self::Item<'borrow>> {
         let Some(fetch) = fetch else {
             return Some(None);
         };
-        let item = T::fetch(fetch, entity);
+        let item = Q::fetch(fetch, entity);
         Some(item)
     }
 }

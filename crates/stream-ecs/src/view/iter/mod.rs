@@ -6,17 +6,31 @@ use polonius_the_crab::prelude::*;
 use crate::{entity::Entity, view::query::Query};
 
 /// Iterator of the view.
-pub struct ViewIter<'a, Q, E>
+pub struct ViewIter<'borrow, 'fetch, Q, E>
 where
     Q: Query,
     E: Iterator<Item = Entity>,
 {
     entities: E,
-    fetch: Q::Fetch<'a>,
+    fetch: &'borrow mut Q::Fetch<'fetch>,
+}
+
+impl<'borrow, 'fetch, Q, E> ViewIter<'borrow, 'fetch, Q, E>
+where
+    Q: Query,
+    E: Iterator<Item = Entity>,
+{
+    pub(super) fn new<I>(entities: I, fetch: &'borrow mut Q::Fetch<'fetch>) -> Self
+    where
+        I: IntoIterator<IntoIter = E>,
+    {
+        let entities = entities.into_iter();
+        Self { entities, fetch }
+    }
 }
 
 #[gat]
-impl<'a, Q, E> LendingIterator for ViewIter<'a, Q, E>
+impl<'borrow, 'fetch, Q, E> LendingIterator for ViewIter<'borrow, 'fetch, Q, E>
 where
     Q: Query,
     E: Iterator<Item = Entity>,

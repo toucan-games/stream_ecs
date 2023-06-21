@@ -1,16 +1,28 @@
 use hlist::{Cons, Nil};
 
-use crate::{entity::Entity, view::query::Query};
+use crate::{component::registry::Registry as Components, entity::Entity, view::query::Query};
 
 impl<Head> Query for Cons<Head, Nil>
 where
     Head: Query,
 {
-    type Item<'a> = Cons<Head::Item<'a>, Nil>;
+    type Item<'item> = Cons<Head::Item<'item>, Nil>;
 
-    type Fetch<'a> = Cons<Head::Fetch<'a>, Nil>;
+    type Fetch<'fetch> = Cons<Head::Fetch<'fetch>, Nil>;
 
-    fn fetch<'a>(fetch: &'a mut Self::Fetch<'_>, entity: Entity) -> Option<Self::Item<'a>> {
+    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    where
+        C: Components,
+    {
+        let head = Head::new_fetch(components)?;
+        let new_fetch = Cons(head, Nil);
+        Some(new_fetch)
+    }
+
+    fn fetch<'borrow>(
+        fetch: &'borrow mut Self::Fetch<'_>,
+        entity: Entity,
+    ) -> Option<Self::Item<'borrow>> {
         let Cons(head, _) = fetch;
         let head = Head::fetch(head, entity)?;
         let item = Cons(head, Nil);
@@ -23,11 +35,22 @@ where
     Head: Query,
     Tail: Query,
 {
-    type Item<'a> = Cons<Head::Item<'a>, Tail::Item<'a>>;
+    type Item<'item> = Cons<Head::Item<'item>, Tail::Item<'item>>;
 
-    type Fetch<'a> = Cons<Head::Fetch<'a>, Tail::Fetch<'a>>;
+    type Fetch<'fetch> = Cons<Head::Fetch<'fetch>, Tail::Fetch<'fetch>>;
 
-    fn fetch<'a>(fetch: &'a mut Self::Fetch<'_>, entity: Entity) -> Option<Self::Item<'a>> {
+    fn new_fetch<C>(_components: &mut C) -> Option<Self::Fetch<'_>>
+    where
+        C: Components,
+    {
+        // TODO collect dependencies, then create fetches from them
+        None
+    }
+
+    fn fetch<'borrow>(
+        fetch: &'borrow mut Self::Fetch<'_>,
+        entity: Entity,
+    ) -> Option<Self::Item<'borrow>> {
         let Cons(head, tail) = fetch;
         let head = Head::fetch(head, entity)?;
         let tail = Tail::fetch(tail, entity)?;

@@ -1,5 +1,5 @@
 use crate::{
-    component::{storage::Storage, Component},
+    component::{registry::Registry as Components, storage::Storage, Component},
     entity::Entity,
     view::query::Query,
 };
@@ -8,11 +8,21 @@ impl<C> Query for &mut C
 where
     C: Component,
 {
-    type Item<'a> = &'a mut C;
+    type Item<'item> = &'item mut C;
 
-    type Fetch<'a> = &'a mut C::Storage;
+    type Fetch<'fetch> = &'fetch mut C::Storage;
 
-    fn fetch<'a>(fetch: &'a mut Self::Fetch<'_>, entity: Entity) -> Option<Self::Item<'a>> {
-        fetch.get_mut(entity)
+    fn new_fetch<_C>(components: &mut _C) -> Option<Self::Fetch<'_>>
+    where
+        _C: Components,
+    {
+        components.get_mut::<C>()
+    }
+
+    fn fetch<'borrow>(
+        fetch: &'borrow mut Self::Fetch<'_>,
+        entity: Entity,
+    ) -> Option<Self::Item<'borrow>> {
+        Storage::get_mut(*fetch, entity)
     }
 }
