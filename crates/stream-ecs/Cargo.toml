@@ -11,6 +11,8 @@ as-any = { version = "0.3", default-features = false }
 arrayvec = { version = "0.7", default-features = false }
 either = { version = "1", default-features = false }
 derive_more = { version = "0.99", default-features = false, features = ["from", "display"] }
+lending-iterator = { version = "0.1", default-features = false }
+polonius-the-crab = { version = "0.3", default-features = false }
 
 [features]
 derive = ["dep:stream-ecs-macros"]
