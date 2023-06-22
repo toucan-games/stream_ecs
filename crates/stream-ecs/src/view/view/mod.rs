@@ -4,7 +4,7 @@ use crate::{component::registry::Registry as Components, entity::Entity};
 
 use super::{
     iter::{ViewIter, ViewIterMut},
-    query::{Query, ReadonlyQuery},
+    query::{IntoReadonly, Query, ReadonlyQuery},
 };
 
 /// View of entities and their components.
@@ -46,6 +46,18 @@ where
     {
         let Self { fetch } = self;
         ViewIterMut::new(entities, fetch)
+    }
+}
+
+impl<'fetch, Q> View<'fetch, Q>
+where
+    Q: IntoReadonly,
+{
+    /// Converts this view into readonly view.
+    pub fn into_readonly(self) -> View<'fetch, Q::Readonly> {
+        let Self { fetch } = self;
+        let fetch = Q::into_readonly(fetch);
+        View::from_fetch(fetch)
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::{
     component::registry::Registry as Components,
     entity::Entity,
-    view::query::{Query, ReadonlyQuery},
+    view::query::{IntoReadonly, Query, ReadonlyQuery},
 };
 
 impl Query for Entity {
@@ -21,6 +21,14 @@ impl Query for Entity {
         entity: Entity,
     ) -> Option<Self::Item<'borrow>> {
         Some(entity)
+    }
+}
+
+impl IntoReadonly for Entity {
+    type Readonly = Self;
+
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+        fetch
     }
 }
 

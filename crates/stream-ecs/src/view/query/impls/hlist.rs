@@ -7,7 +7,7 @@ use crate::{
     component::registry::Registry as Components,
     dependency::{dependency_from_iter, Dependency},
     entity::Entity,
-    view::query::{Query, ReadonlyQuery},
+    view::query::{IntoReadonly, Query, ReadonlyQuery},
 };
 
 impl<Head> Query for Cons<Head, Nil>
@@ -66,6 +66,38 @@ where
         let tail = Tail::fetch(tail, entity)?;
         let item = Cons(head, tail);
         Some(item)
+    }
+}
+
+impl<Head> IntoReadonly for Cons<Head, Nil>
+where
+    Head: IntoReadonly,
+{
+    type Readonly = Cons<Head::Readonly, Nil>;
+
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+        let Cons(head, nil) = fetch;
+        let head = Head::into_readonly(head);
+        Cons(head, nil)
+    }
+}
+
+impl<Head, Tail> IntoReadonly for Cons<Head, Tail>
+where
+    Head: IntoReadonly,
+    Tail: IntoReadonly,
+    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
+{
+    type Readonly = Cons<Head::Readonly, Tail::Readonly>;
+
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+        let Cons(head, tail) = fetch;
+        let head = Head::into_readonly(head);
+        let tail = Tail::into_readonly(tail);
+        Cons(head, tail)
     }
 }
 

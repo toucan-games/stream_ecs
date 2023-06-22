@@ -1,10 +1,10 @@
 use crate::{
     component::{registry::Registry as Components, storage::Storage, Component},
     entity::Entity,
-    view::query::Query,
+    view::query::{IntoReadonly, Query},
 };
 
-impl<'me, C> Query for &'me mut C
+impl<C> Query for &mut C
 where
     C: Component,
 {
@@ -24,5 +24,16 @@ where
         entity: Entity,
     ) -> Option<Self::Item<'borrow>> {
         Storage::get_mut(*fetch, entity)
+    }
+}
+
+impl<'me, C> IntoReadonly for &'me mut C
+where
+    C: Component,
+{
+    type Readonly = &'me C;
+
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+        fetch
     }
 }
