@@ -13,15 +13,27 @@ pub trait Query {
     type Fetch<'fetch>;
 
     /// Creates new fetcher from provided component registry.
-    fn new<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components;
 
-    /// Fetches the data of the entity from the fetcher.
+    /// Fetches data of the entity from the fetcher.
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
         entity: Entity,
     ) -> Option<Self::Item<'borrow>>;
 }
 
-// TODO divide into mutable and immutable queries
+/// Type of query which is readonly, or has no mutable access to data.
+pub trait ReadonlyQuery: Query {
+    /// Creates new fetcher from provided component registry.
+    fn new_readonly_fetch<C>(components: &C) -> Option<Self::Fetch<'_>>
+    where
+        C: Components;
+
+    /// Fetches data of the entity from the fetcher.
+    fn readonly_fetch<'fetch>(
+        fetch: &Self::Fetch<'fetch>,
+        entity: Entity,
+    ) -> Option<Self::Item<'fetch>>;
+}

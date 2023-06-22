@@ -1,21 +1,41 @@
-use crate::{component::registry::Registry as Components, entity::Entity, view::query::Query};
+use crate::{
+    component::registry::Registry as Components,
+    entity::Entity,
+    view::query::{Query, ReadonlyQuery},
+};
 
 impl Query for () {
     type Item<'item> = ();
 
     type Fetch<'fetch> = ();
 
-    fn new<C>(_: &mut C) -> Option<Self::Fetch<'_>>
+    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    where
+        C: Components,
+    {
+        Self::new_readonly_fetch(components)
+    }
+
+    fn fetch<'borrow>(
+        fetch: &'borrow mut Self::Fetch<'_>,
+        entity: Entity,
+    ) -> Option<Self::Item<'borrow>> {
+        Self::readonly_fetch(fetch, entity)
+    }
+}
+
+impl ReadonlyQuery for () {
+    fn new_readonly_fetch<C>(_: &C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {
         Some(())
     }
 
-    fn fetch<'borrow>(
-        _fetch: &'borrow mut Self::Fetch<'_>,
+    fn readonly_fetch<'fetch>(
+        _fetch: &Self::Fetch<'fetch>,
         _entity: Entity,
-    ) -> Option<Self::Item<'borrow>> {
+    ) -> Option<Self::Item<'fetch>> {
         Some(())
     }
 }

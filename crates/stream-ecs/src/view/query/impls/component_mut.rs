@@ -4,7 +4,7 @@ use crate::{
     view::query::Query,
 };
 
-impl<C> Query for &mut C
+impl<'me, C> Query for &'me mut C
 where
     C: Component,
 {
@@ -12,11 +12,11 @@ where
 
     type Fetch<'fetch> = &'fetch mut C::Storage;
 
-    fn new<Cs>(components: &mut Cs) -> Option<Self::Fetch<'_>>
+    fn new_fetch<Cs>(components: &mut Cs) -> Option<Self::Fetch<'_>>
     where
         Cs: Components,
     {
-        components.get_mut::<C>()
+        Components::get_mut::<C>(components)
     }
 
     fn fetch<'borrow>(

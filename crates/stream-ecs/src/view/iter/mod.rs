@@ -3,10 +3,13 @@
 use lending_iterator::prelude::*;
 use polonius_the_crab::prelude::*;
 
-use crate::{entity::Entity, view::query::Query};
+use crate::{
+    entity::Entity,
+    view::query::{Query, ReadonlyQuery},
+};
 
 /// Iterator of the view.
-pub struct ViewIter<'borrow, 'fetch, Q, E>
+pub struct ViewIterMut<'borrow, 'fetch, Q, E>
 where
     Q: Query,
     E: Iterator<Item = Entity>,
@@ -15,7 +18,7 @@ where
     fetch: &'borrow mut Q::Fetch<'fetch>,
 }
 
-impl<'borrow, 'fetch, Q, E> ViewIter<'borrow, 'fetch, Q, E>
+impl<'borrow, 'fetch, Q, E> ViewIterMut<'borrow, 'fetch, Q, E>
 where
     Q: Query,
     E: Iterator<Item = Entity>,
@@ -30,7 +33,7 @@ where
 }
 
 #[gat]
-impl<'borrow, 'fetch, Q, E> LendingIterator for ViewIter<'borrow, 'fetch, Q, E>
+impl<'borrow, 'fetch, Q, E> LendingIterator for ViewIterMut<'borrow, 'fetch, Q, E>
 where
     Q: Query,
     E: Iterator<Item = Entity>,
@@ -51,6 +54,50 @@ where
                 polonius_break_dependent!(item);
             }
         });
+        Some(item)
+    }
+}
+
+/// Iterator of the readonly view.
+pub struct ViewIter<'borrow, 'fetch, Q, E>
+where
+    Q: ReadonlyQuery,
+    E: Iterator<Item = Entity>,
+{
+    entities: E,
+    fetch: &'borrow Q::Fetch<'fetch>,
+}
+
+impl<'borrow, 'fetch, Q, E> ViewIter<'borrow, 'fetch, Q, E>
+where
+    Q: ReadonlyQuery,
+    E: Iterator<Item = Entity>,
+{
+    pub(super) fn new<I>(entities: I, fetch: &'borrow Q::Fetch<'fetch>) -> Self
+    where
+        I: IntoIterator<IntoIter = E>,
+    {
+        let entities = entities.into_iter();
+        Self { entities, fetch }
+    }
+}
+
+impl<'borrow, 'fetch, Q, E> Iterator for ViewIter<'borrow, 'fetch, Q, E>
+where
+    Q: ReadonlyQuery,
+    E: Iterator<Item = Entity>,
+{
+    type Item = Q::Item<'fetch>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Self { entities, fetch } = self;
+        let item = loop {
+            let entity = entities.next()?;
+            let item = Q::readonly_fetch(fetch, entity);
+            if let Some(item) = item {
+                break item;
+            }
+        };
         Some(item)
     }
 }
