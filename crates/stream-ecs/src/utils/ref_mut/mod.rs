@@ -1,10 +1,15 @@
-use self::container::Container;
-
-mod container;
 mod impls;
 
 pub trait Dependency<Input> {
     type Container: Container<Input, Output = Self>;
+}
+
+pub trait Container<Input>: Default {
+    type Output;
+
+    fn insert(&mut self, input: Input) -> Result<(), Input>;
+
+    fn flush(self) -> Option<Self::Output>;
 }
 
 pub fn dependency_from_iter<D, I>(iter: I) -> Option<D>

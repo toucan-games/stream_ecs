@@ -1,38 +1,9 @@
-use core::any::Any;
-
 use hlist::{Cons, Nil};
 
-pub trait Container<Input>: Default {
-    type Output;
+use crate::utils::ref_mut::{Container, Dependency};
 
-    fn insert(&mut self, input: Input) -> Result<(), Input>;
-
-    fn flush(self) -> Option<Self::Output>;
-}
-
-impl<'me, T> Container<&'me mut dyn Any> for Option<&'me mut T>
-where
-    T: Any,
-{
-    type Output = &'me mut T;
-
-    fn insert(&mut self, input: &'me mut dyn Any) -> Result<(), &'me mut dyn Any> {
-        if self.is_some() {
-            return Err(input);
-        }
-        if !input.is::<T>() {
-            return Err(input);
-        }
-        let ref_mut = input
-            .downcast_mut()
-            .expect("cast should be successful because type was checked earlier");
-        *self = Some(ref_mut);
-        Ok(())
-    }
-
-    fn flush(self) -> Option<Self::Output> {
-        self
-    }
+impl<Input> Dependency<Input> for Nil {
+    type Container = Self;
 }
 
 impl<Input> Container<Input> for Nil {
@@ -45,6 +16,14 @@ impl<Input> Container<Input> for Nil {
     fn flush(self) -> Option<Self::Output> {
         Some(self)
     }
+}
+
+impl<Input, Head, Tail> Dependency<Input> for Cons<Head, Tail>
+where
+    Head: Dependency<Input>,
+    Tail: Dependency<Input>,
+{
+    type Container = Cons<Head::Container, Tail::Container>;
 }
 
 impl<Input, Head, Tail> Container<Input> for Cons<Head, Tail>
