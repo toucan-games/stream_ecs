@@ -21,7 +21,7 @@ where
     where
         C: Components,
     {
-        let fetch = Q::new_fetch(components)?;
+        let fetch = Q::new(components)?;
         Some(Self::from_fetch(fetch))
     }
 

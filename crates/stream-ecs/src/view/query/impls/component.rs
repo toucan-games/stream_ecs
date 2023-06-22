@@ -12,9 +12,9 @@ where
 
     type Fetch<'fetch> = &'fetch C::Storage;
 
-    fn new_fetch<_C>(components: &mut _C) -> Option<Self::Fetch<'_>>
+    fn new<Cs>(components: &mut Cs) -> Option<Self::Fetch<'_>>
     where
-        _C: Components,
+        Cs: Components,
     {
         components.get::<C>()
     }

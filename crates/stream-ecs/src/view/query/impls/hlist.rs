@@ -18,11 +18,11 @@ where
 
     type Fetch<'fetch> = Cons<Head::Fetch<'fetch>, Nil>;
 
-    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    fn new<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {
-        let head = Head::new_fetch(components)?;
+        let head = Head::new(components)?;
         let new_fetch = Cons(head, Nil);
         Some(new_fetch)
     }
@@ -49,7 +49,7 @@ where
 
     type Fetch<'fetch> = Cons<Head::Fetch<'fetch>, Tail::Fetch<'fetch>>;
 
-    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    fn new<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {

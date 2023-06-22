@@ -13,7 +13,7 @@ pub trait Query {
     type Fetch<'fetch>;
 
     /// Creates new fetcher from provided component registry.
-    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    fn new<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components;
 

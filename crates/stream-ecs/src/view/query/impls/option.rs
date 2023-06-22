@@ -8,12 +8,12 @@ where
 
     type Fetch<'fetch> = Option<Q::Fetch<'fetch>>;
 
-    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
+    fn new<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {
-        let new_fetch = Q::new_fetch(components);
-        Some(new_fetch)
+        let fetch = Q::new(components);
+        Some(fetch)
     }
 
     fn fetch<'borrow>(

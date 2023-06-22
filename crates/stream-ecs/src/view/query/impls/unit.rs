@@ -5,7 +5,7 @@ impl Query for () {
 
     type Fetch<'fetch> = ();
 
-    fn new_fetch<C>(_: &mut C) -> Option<Self::Fetch<'_>>
+    fn new<C>(_: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {
