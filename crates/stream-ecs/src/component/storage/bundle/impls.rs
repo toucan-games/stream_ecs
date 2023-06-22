@@ -11,8 +11,8 @@ use crate::{
         },
         storage::Storage,
     },
+    dependency::{dependency_from_iter, Dependency},
     entity::Entity,
-    utils::ref_mut::{dependency_from_iter, Dependency},
 };
 
 use super::{

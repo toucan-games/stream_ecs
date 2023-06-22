@@ -1,6 +1,14 @@
+use core::any::Any;
+
+use as_any::AsAny;
 use hlist::{Cons, Nil};
 
-use crate::{component::registry::Registry as Components, entity::Entity, view::query::Query};
+use crate::{
+    component::registry::Registry as Components,
+    dependency::{dependency_from_iter, Dependency},
+    entity::Entity,
+    view::query::Query,
+};
 
 impl<Head> Query for Cons<Head, Nil>
 where
@@ -34,17 +42,19 @@ impl<Head, Tail> Query for Cons<Head, Tail>
 where
     Head: Query,
     Tail: Query,
+    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
 {
     type Item<'item> = Cons<Head::Item<'item>, Tail::Item<'item>>;
 
     type Fetch<'fetch> = Cons<Head::Fetch<'fetch>, Tail::Fetch<'fetch>>;
 
-    fn new_fetch<C>(_components: &mut C) -> Option<Self::Fetch<'_>>
+    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {
-        // TODO collect dependencies, then create fetches from them
-        None
+        let iter = components.iter_mut().map(AsAny::as_any_mut);
+        dependency_from_iter(iter)
     }
 
     fn fetch<'borrow>(

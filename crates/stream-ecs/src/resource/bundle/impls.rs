@@ -4,6 +4,7 @@ use as_any::AsAny;
 use hlist::{Cons, Nil};
 
 use crate::{
+    dependency::{dependency_from_iter, Dependency},
     resource::{
         registry::{
             Provider as ResourcesProvider, Registry as Resources, RegistryMut as ResourcesMut,
@@ -11,7 +12,6 @@ use crate::{
         },
         Resource,
     },
-    utils::ref_mut::{dependency_from_iter, Dependency},
 };
 
 use super::{Bundle, GetBundle, GetBundleMut, ProvideBundle, ProvideBundleMut, TryBundle};

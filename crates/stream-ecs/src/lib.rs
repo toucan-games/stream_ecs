@@ -10,6 +10,7 @@
 pub use ::hlist;
 
 pub mod component;
+pub mod dependency;
 pub mod entity;
 pub mod resource;
 pub mod view;

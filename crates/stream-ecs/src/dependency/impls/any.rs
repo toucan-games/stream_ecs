@@ -1,6 +1,6 @@
 use core::any::Any;
 
-use crate::utils::ref_mut::{Container, Dependency};
+use crate::dependency::{Container, Dependency};
 
 impl<'me, T> Dependency<&'me dyn Any> for &'me T
 where

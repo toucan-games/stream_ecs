@@ -1,6 +1,6 @@
 use hlist::{Cons, Nil};
 
-use crate::utils::ref_mut::{Container, Dependency};
+use crate::dependency::{Container, Dependency};
 
 impl<Input> Dependency<Input> for Nil {
     type Container = Self;

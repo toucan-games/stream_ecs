@@ -1,4 +1,4 @@
-use crate::utils::ref_mut::{Container, Dependency};
+use crate::dependency::{Container, Dependency};
 
 impl<Input> Dependency<Input> for () {
     type Container = Self;
