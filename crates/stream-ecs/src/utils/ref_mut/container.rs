@@ -2,94 +2,68 @@ use core::any::Any;
 
 use hlist::{Cons, Nil};
 
-pub trait RefMutContainer<'borrow>: Default {
-    type RefMut: 'borrow;
+pub trait Container<Input>: Default {
+    type Output;
 
-    fn should_insert_any(&self, any: &dyn Any) -> bool;
+    fn insert(&mut self, input: Input) -> Result<(), Input>;
 
-    fn insert_any(&mut self, any: &'borrow mut dyn Any);
-
-    fn into_ref_mut(self) -> Option<Self::RefMut>;
+    fn flush(self) -> Option<Self::Output>;
 }
 
-impl<'borrow, T> RefMutContainer<'borrow> for Option<&'borrow mut T>
+impl<'me, T> Container<&'me mut dyn Any> for Option<&'me mut T>
 where
     T: Any,
 {
-    type RefMut = &'borrow mut T;
+    type Output = &'me mut T;
 
-    fn should_insert_any(&self, any: &dyn Any) -> bool {
-        match self {
-            Some(_) => false,
-            None => any.is::<T>(),
-        }
-    }
-
-    fn insert_any(&mut self, any: &'borrow mut dyn Any) {
+    fn insert(&mut self, input: &'me mut dyn Any) -> Result<(), &'me mut dyn Any> {
         if self.is_some() {
-            return;
+            return Err(input);
         }
-        let Some(ref_mut) = any.downcast_mut() else {
-                return;
-            };
+        if !input.is::<T>() {
+            return Err(input);
+        }
+        let ref_mut = input
+            .downcast_mut()
+            .expect("cast should be successful because type was checked earlier");
         *self = Some(ref_mut);
+        Ok(())
     }
 
-    fn into_ref_mut(self) -> Option<Self::RefMut> {
+    fn flush(self) -> Option<Self::Output> {
         self
     }
 }
 
-impl<'borrow, Head> RefMutContainer<'borrow> for Cons<Head, Nil>
-where
-    Head: RefMutContainer<'borrow>,
-{
-    type RefMut = Cons<Head::RefMut, Nil>;
+impl<Input> Container<Input> for Nil {
+    type Output = Self;
 
-    fn should_insert_any(&self, any: &dyn Any) -> bool {
-        let Cons(head, _) = self;
-        head.should_insert_any(any)
+    fn insert(&mut self, input: Input) -> Result<(), Input> {
+        Err(input)
     }
 
-    fn insert_any(&mut self, any: &'borrow mut dyn Any) {
-        let Cons(head, _) = self;
-        head.insert_any(any)
-    }
-
-    fn into_ref_mut(self) -> Option<Self::RefMut> {
-        let Cons(head, nil) = self;
-        let head = head.into_ref_mut()?;
-        let ref_mut = Cons(head, nil);
-        Some(ref_mut)
+    fn flush(self) -> Option<Self::Output> {
+        Some(self)
     }
 }
 
-impl<'borrow, Head, Tail> RefMutContainer<'borrow> for Cons<Head, Tail>
+impl<Input, Head, Tail> Container<Input> for Cons<Head, Tail>
 where
-    Head: RefMutContainer<'borrow>,
-    Tail: RefMutContainer<'borrow>,
+    Head: Container<Input>,
+    Tail: Container<Input>,
 {
-    type RefMut = Cons<Head::RefMut, Tail::RefMut>;
+    type Output = Cons<Head::Output, Tail::Output>;
 
-    fn should_insert_any(&self, any: &dyn Any) -> bool {
+    fn insert(&mut self, input: Input) -> Result<(), Input> {
         let Cons(head, tail) = self;
-        head.should_insert_any(any) || tail.should_insert_any(any)
+        head.insert(input).or_else(|input| tail.insert(input))
     }
 
-    fn insert_any(&mut self, any: &'borrow mut dyn Any) {
+    fn flush(self) -> Option<Self::Output> {
         let Cons(head, tail) = self;
-        if head.should_insert_any(any) {
-            head.insert_any(any);
-            return;
-        }
-        tail.insert_any(any)
-    }
-
-    fn into_ref_mut(self) -> Option<Self::RefMut> {
-        let Cons(head, tail) = self;
-        let head = head.into_ref_mut()?;
-        let tail = tail.into_ref_mut()?;
-        let ref_mut = Cons(head, tail);
-        Some(ref_mut)
+        let head = head.flush()?;
+        let tail = tail.flush()?;
+        let output = Cons(head, tail);
+        Some(output)
     }
 }

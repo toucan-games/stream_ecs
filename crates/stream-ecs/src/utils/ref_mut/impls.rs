@@ -2,26 +2,23 @@ use core::any::Any;
 
 use hlist::{Cons, Nil};
 
-use super::RefMut;
+use super::Dependency;
 
-impl<'borrow, T> RefMut<'borrow> for &'borrow mut T
+impl<'me, T> Dependency<&'me mut dyn Any> for &'me mut T
 where
     T: Any,
 {
-    type Container = Option<&'borrow mut T>;
+    type Container = Option<&'me mut T>;
 }
 
-impl<'borrow, Head> RefMut<'borrow> for Cons<Head, Nil>
-where
-    Head: RefMut<'borrow>,
-{
-    type Container = Cons<Head::Container, Nil>;
+impl<Input> Dependency<Input> for Nil {
+    type Container = Self;
 }
 
-impl<'borrow, Head, Tail> RefMut<'borrow> for Cons<Head, Tail>
+impl<Input, Head, Tail> Dependency<Input> for Cons<Head, Tail>
 where
-    Head: RefMut<'borrow>,
-    Tail: RefMut<'borrow>,
+    Head: Dependency<Input>,
+    Tail: Dependency<Input>,
 {
     type Container = Cons<Head::Container, Tail::Container>;
 }

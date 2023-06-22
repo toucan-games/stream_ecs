@@ -1,20 +1,20 @@
-use self::container::RefMutContainer;
+use self::container::Container;
 
 mod container;
 mod impls;
 
-pub trait RefMut<'borrow> {
-    type Container: RefMutContainer<'borrow, RefMut = Self>;
+pub trait Dependency<Input> {
+    type Container: Container<Input, Output = Self>;
 }
 
-pub fn ref_mut<'borrow, R, I>(iter: I) -> Option<R>
+pub fn dependency_from_iter<D, I>(iter: I) -> Option<D>
 where
-    R: RefMut<'borrow>,
-    I: IntoIterator<Item = &'borrow mut dyn core::any::Any>,
+    I: IntoIterator,
+    D: Dependency<I::Item>,
 {
-    let mut container = R::Container::default();
-    for any in iter {
-        container.insert_any(any);
+    let mut container = D::Container::default();
+    for item in iter {
+        let _ = container.insert(item);
     }
-    container.into_ref_mut()
+    container.flush()
 }

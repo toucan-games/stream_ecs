@@ -1,3 +1,5 @@
+use core::any::Any;
+
 use as_any::AsAny;
 use hlist::{Cons, Nil};
 
@@ -9,7 +11,7 @@ use crate::{
         },
         Resource,
     },
-    utils::ref_mut::{ref_mut, RefMut},
+    utils::ref_mut::{dependency_from_iter, Dependency},
 };
 
 use super::{Bundle, GetBundle, GetBundleMut, ProvideBundle, ProvideBundleMut, TryBundle};
@@ -249,8 +251,8 @@ impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
     Tail: GetBundleMut,
-    for<'any> Head::RefMut<'any>: RefMut<'any>,
-    for<'any> Tail::RefMut<'any>: RefMut<'any>,
+    for<'any> Head::RefMut<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Tail::RefMut<'any>: Dependency<&'any mut dyn Any>,
 {
     type RefMut<'resources> = Cons<Head::RefMut<'resources>, Tail::RefMut<'resources>>;
 
@@ -259,7 +261,7 @@ where
         R: Resources,
     {
         let iter = resources.iter_mut().map(AsAny::as_any_mut);
-        ref_mut(iter)
+        dependency_from_iter(iter)
     }
 }
 
@@ -350,8 +352,8 @@ where
     Head: ProvideBundleMut<R, Index>,
     Tail: ProvideBundleMut<R, TailIndex> + Bundle,
     R: Resources,
-    for<'any> Head::RefMut<'any>: RefMut<'any>,
-    for<'any> Tail::RefMut<'any>: RefMut<'any>,
+    for<'any> Head::RefMut<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Tail::RefMut<'any>: Dependency<&'any mut dyn Any>,
 {
     type RefMut<'resources> = Cons<Head::RefMut<'resources>, Tail::RefMut<'resources>>
     where
@@ -359,6 +361,7 @@ where
 
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
         let iter = resources.iter_mut().map(AsAny::as_any_mut);
-        ref_mut(iter).expect("all components of the bundle must be present in the registry")
+        dependency_from_iter(iter)
+            .expect("all components of the bundle must be present in the registry")
     }
 }
