@@ -42,15 +42,15 @@ where
     fn next(&mut self) -> Option<Self::Item<'_>> {
         let Self { entities, fetch } = self;
         let mut fetch = fetch;
-        polonius_loop!(|fetch| -> Option<Q::Item<'polonius>> {
+        let item = polonius_loop!(|fetch| -> _, break: Q::Item<'polonius> {
             let Some(entity) = entities.next() else {
                 polonius_return!(None);
             };
             let item = Q::fetch(fetch, entity);
             if let Some(item) = item {
-                polonius_return!(Some(item));
+                polonius_break_dependent!(item);
             }
         });
-        None
+        Some(item)
     }
 }
