@@ -25,9 +25,13 @@ use crate::{
             Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
         },
     },
+    view::query::{Query, ReadonlyQuery},
 };
 
-use super::error::{EntityError, TryAttachError};
+use super::{
+    error::{EntityError, TryAttachError},
+    view::View,
+};
 
 /// ECS world — storage of [entities](Entity)
 /// and all the [data](crate::component::Component) attached to them.
@@ -670,6 +674,32 @@ where
         }
         let bundle = B::provide_mut(components, entity);
         Ok(bundle)
+    }
+
+    /// Creates new view by provided readonly query.
+    pub fn view<Q>(&self) -> Option<View<'_, Q, E>>
+    where
+        Q: ReadonlyQuery,
+    {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+        View::new_readonly(entities, components)
+    }
+
+    /// Creates new mutable view by provided query.
+    pub fn view_mut<Q>(&mut self) -> Option<View<'_, Q, E>>
+    where
+        Q: Query,
+    {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+        View::new(entities, components)
     }
 }
 

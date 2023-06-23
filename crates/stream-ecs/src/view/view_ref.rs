@@ -13,17 +13,6 @@ where
     fetch: Q::ReadonlyRef<'fetch>,
 }
 
-impl<'fetch, Q> Clone for ViewRef<'fetch, Q>
-where
-    Q: AsReadonly,
-{
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<'fetch, Q> Copy for ViewRef<'fetch, Q> where Q: AsReadonly {}
-
 impl<'fetch, Q> ViewRef<'fetch, Q>
 where
     Q: AsReadonly,
@@ -47,3 +36,14 @@ where
         ViewRefIter::new(entities, fetch)
     }
 }
+
+impl<'fetch, Q> Clone for ViewRef<'fetch, Q>
+where
+    Q: AsReadonly,
+{
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'fetch, Q> Copy for ViewRef<'fetch, Q> where Q: AsReadonly {}
