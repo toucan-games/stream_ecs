@@ -10,7 +10,6 @@ use crate::{
         storage::bundle::{Bundle as StorageBundle, TryBundle as StorageTryBundle},
     },
     entity::{
-        builder::StateEntityBuilder,
         entry::{Entry, EntryMut},
         registry::{NotPresentError, Registry as Entities, TryRegistry as TryEntities},
         Entity,
@@ -29,6 +28,7 @@ use crate::{
 };
 
 use super::{
+    builder::EntityBuilder,
     error::{EntityError, TryAttachError},
     view::View,
 };
@@ -400,14 +400,14 @@ where
     E: Entities,
     C: Components,
 {
-    /// Creates an empty [entity builder](StateEntityBuilder), which allows to create new entity *lazily*.
-    pub fn builder(&mut self) -> StateEntityBuilder<'_, E, C> {
+    /// Creates an empty [entity builder](EntityBuilder), which allows to create new entity *lazily*.
+    pub fn builder(&mut self) -> EntityBuilder<'_, E, C> {
         let Self {
             entities,
             components,
             ..
         } = self;
-        StateEntityBuilder::new(entities, components)
+        EntityBuilder::new(entities, components)
     }
 
     /// Attaches provided bundle to the entity in the world.

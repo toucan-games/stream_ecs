@@ -1,7 +1,7 @@
 //! Provides a builder pattern implementation for entities.
 
 pub use self::{
-    builder::{EntityBuilder, StateEntityBuilder},
+    builder::EntityBuilder,
     error::{TryBuildError, TryEntityBuildError},
 };
 
