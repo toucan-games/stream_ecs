@@ -1,7 +1,7 @@
 use crate::{
     component::registry::Registry as Components,
     entity::Entity,
-    view::query::{IntoReadonly, Query, ReadonlyQuery},
+    view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 
 impl Query for Entity {
@@ -9,18 +9,18 @@ impl Query for Entity {
 
     type Fetch<'fetch> = ();
 
-    fn new_fetch<C>(_: &mut C) -> Option<Self::Fetch<'_>>
+    fn new_fetch<C>(components: &mut C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
     {
-        Some(())
+        Self::new_readonly_fetch(components)
     }
 
     fn fetch<'borrow>(
-        _fetch: &'borrow mut Self::Fetch<'_>,
+        fetch: &'borrow mut Self::Fetch<'_>,
         entity: Entity,
     ) -> Option<Self::Item<'borrow>> {
-        Some(entity)
+        Self::readonly_fetch(fetch, entity)
     }
 }
 
@@ -29,6 +29,21 @@ impl IntoReadonly for Entity {
 
     fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
         fetch
+    }
+}
+
+impl AsReadonly for Entity {
+    type ReadonlyRef<'borrow> = ();
+
+    fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow> {
+        *fetch
+    }
+
+    fn readonly_ref_fetch(
+        _fetch: Self::ReadonlyRef<'_>,
+        entity: Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        Some(entity)
     }
 }
 

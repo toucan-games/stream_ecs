@@ -7,7 +7,7 @@ use crate::{
     component::registry::Registry as Components,
     dependency::{dependency_from_iter, Dependency},
     entity::Entity,
-    view::query::{IntoReadonly, Query, ReadonlyQuery},
+    view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 
 impl<Head> Query for Cons<Head, Nil>
@@ -98,6 +98,59 @@ where
         let head = Head::into_readonly(head);
         let tail = Tail::into_readonly(tail);
         Cons(head, tail)
+    }
+}
+
+impl<Head> AsReadonly for Cons<Head, Nil>
+where
+    Head: AsReadonly,
+{
+    type ReadonlyRef<'borrow> = Cons<Head::ReadonlyRef<'borrow>, Nil>;
+
+    fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow> {
+        let Cons(head, _) = fetch;
+        let head = Head::as_readonly(head);
+        Cons(head, Nil)
+    }
+
+    fn readonly_ref_fetch(
+        fetch: Self::ReadonlyRef<'_>,
+        entity: Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        let Cons(head, _) = fetch;
+        let head = Head::readonly_ref_fetch(head, entity)?;
+        let item = Cons(head, Nil);
+        Some(item)
+    }
+}
+
+impl<Head, Tail> AsReadonly for Cons<Head, Tail>
+where
+    Head: AsReadonly,
+    Tail: AsReadonly,
+    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
+{
+    type ReadonlyRef<'borrow> = Cons<Head::ReadonlyRef<'borrow>, Tail::ReadonlyRef<'borrow>>;
+
+    fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow> {
+        let Cons(head, tail) = fetch;
+        let head = Head::as_readonly(head);
+        let tail = Tail::as_readonly(tail);
+        Cons(head, tail)
+    }
+
+    fn readonly_ref_fetch(
+        fetch: Self::ReadonlyRef<'_>,
+        entity: Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        let Cons(head, tail) = fetch;
+        let head = Head::readonly_ref_fetch(head, entity)?;
+        let tail = Tail::readonly_ref_fetch(tail, entity)?;
+        let item = Cons(head, tail);
+        Some(item)
     }
 }
 

@@ -2,7 +2,7 @@
 
 // TODO view API
 
-pub use self::view::View;
+pub use self::view::{View, ViewRef};
 
 pub mod iter;
 pub mod query;

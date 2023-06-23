@@ -25,7 +25,7 @@ pub trait Query {
 }
 
 /// Type of query which is readonly, or has no mutable access to data.
-pub trait ReadonlyQuery: IntoReadonly<Readonly = Self> {
+pub trait ReadonlyQuery: AsReadonly<Readonly = Self> {
     /// Creates new fetcher from provided component registry.
     fn new_readonly_fetch<C>(components: &C) -> Option<Self::Fetch<'_>>
     where
@@ -43,6 +43,21 @@ pub trait IntoReadonly: Query {
     /// Readonly variant of this query.
     type Readonly: ReadonlyQuery;
 
-    /// Converts this fetcher into a readonly fetcher.
+    /// Converts the fetcher of this query into a readonly fetcher.
     fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_>;
+}
+
+/// Extension of query which allows to borrow this query as readonly query.
+pub trait AsReadonly: IntoReadonly {
+    /// Borrow of the fetch of this query.
+    type ReadonlyRef<'borrow>: Copy;
+
+    /// Borrows the fetcher of this query as a readonly fetcher.
+    fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow>;
+
+    /// Fetches data of the entity from the borrow of the fetcher.
+    fn readonly_ref_fetch(
+        fetch: Self::ReadonlyRef<'_>,
+        entity: Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>>;
 }

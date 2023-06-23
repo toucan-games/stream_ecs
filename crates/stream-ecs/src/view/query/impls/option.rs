@@ -1,7 +1,7 @@
 use crate::{
     component::registry::Registry as Components,
     entity::Entity,
-    view::query::{IntoReadonly, Query, ReadonlyQuery},
+    view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 
 impl<Q> Query for Option<Q>
@@ -40,6 +40,28 @@ where
 
     fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
         fetch.map(Q::into_readonly)
+    }
+}
+
+impl<Q> AsReadonly for Option<Q>
+where
+    Q: AsReadonly,
+{
+    type ReadonlyRef<'borrow> = Option<Q::ReadonlyRef<'borrow>>;
+
+    fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow> {
+        fetch.as_ref().map(Q::as_readonly)
+    }
+
+    fn readonly_ref_fetch(
+        fetch: Self::ReadonlyRef<'_>,
+        entity: Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        let Some(fetch) = fetch else {
+            return Some(None);
+        };
+        let item = Q::readonly_ref_fetch(fetch, entity);
+        Some(item)
     }
 }
 
