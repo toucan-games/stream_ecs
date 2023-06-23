@@ -149,7 +149,7 @@ impl<const N: usize> ArrayRegistry<N> {
             if self.slots.try_push(slot).is_err() {
                 return Err(ArrayRegistryError);
             }
-            self.free_head = entity.index + 1;
+            self.free_head = entity.index() + 1;
             entity
         };
         self.len = new_len;
@@ -171,7 +171,7 @@ impl<const N: usize> ArrayRegistry<N> {
     /// assert!(!registry.contains(entity))
     /// ```
     pub fn contains(&self, entity: Entity) -> bool {
-        let Ok(index) = usize::try_from(entity.index) else {
+        let Ok(index) = usize::try_from(entity.index()) else {
             return false;
         };
         let Some(slot) = self.slots.get(index) else {
@@ -184,7 +184,7 @@ impl<const N: usize> ArrayRegistry<N> {
         if let SlotEntry::Free { .. } = entry {
             return false;
         }
-        generation == entity.generation
+        generation == entity.generation()
     }
 
     /// Destroys provided entity which was previously created in the array registry.
@@ -209,7 +209,7 @@ impl<const N: usize> ArrayRegistry<N> {
     /// assert!(result.is_err());
     /// ```
     pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
-        let Ok(index) = usize::try_from(entity.index) else {
+        let Ok(index) = usize::try_from(entity.index()) else {
             return Err(NotPresentError::new(entity));
         };
         let Some(slot) = self.slots.get_mut(index) else {
@@ -218,14 +218,14 @@ impl<const N: usize> ArrayRegistry<N> {
         let SlotEntry::Occupied { value } = slot.entry else {
             return Err(NotPresentError::new(entity));
         };
-        if slot.generation != entity.generation {
+        if slot.generation != entity.generation() {
             return Err(NotPresentError::new(entity));
         }
         slot.entry = SlotEntry::Free {
             next_free: self.free_head,
         };
         slot.generation += 1;
-        self.free_head = entity.index;
+        self.free_head = entity.index();
         self.len -= 1;
         Ok(value)
     }

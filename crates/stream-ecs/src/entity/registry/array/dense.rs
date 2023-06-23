@@ -176,7 +176,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// assert!(!registry.contains(entity))
     /// ```
     pub fn contains(&self, entity: Entity) -> bool {
-        let Ok(index) = usize::try_from(entity.index) else {
+        let Ok(index) = usize::try_from(entity.index()) else {
             return false;
         };
         let Some(slot) = self.sparse.get(index) else {
@@ -188,7 +188,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
         let Some(_) = self.dense.get(dense_index as usize) else {
             return false;
         };
-        slot.generation == entity.generation
+        slot.generation == entity.generation()
     }
 
     /// Destroys provided entity which was previously created in the dense array registry.
@@ -213,7 +213,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// assert!(result.is_err());
     /// ```
     pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
-        let Ok(index) = usize::try_from(entity.index) else {
+        let Ok(index) = usize::try_from(entity.index()) else {
             return Err(NotPresentError::new(entity));
         };
         let Some(slot) = self.sparse.get_mut(index) else {
@@ -225,19 +225,19 @@ impl<const N: usize> DenseArrayRegistry<N> {
         let Some(_) = self.dense.get(dense_index as usize) else {
             return Err(NotPresentError::new(entity));
         };
-        if slot.generation != entity.generation {
+        if slot.generation != entity.generation() {
             return Err(NotPresentError::new(entity));
         }
         slot.entry = SlotEntry::Free {
             next_free: self.free_head,
         };
         slot.generation += 1;
-        self.free_head = entity.index;
+        self.free_head = entity.index();
         self.dense.swap_remove(dense_index as usize);
         if let Some(entity) = self.dense.get(dense_index as usize) {
             let slot = self
                 .sparse
-                .get_mut(entity.index as usize)
+                .get_mut(entity.index() as usize)
                 .expect("index should point to the valid slot");
             slot.entry = match slot.entry {
                 SlotEntry::Occupied { .. } => SlotEntry::Occupied { dense_index },
