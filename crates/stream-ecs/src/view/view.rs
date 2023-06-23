@@ -20,7 +20,7 @@ impl<'fetch, Q> View<'fetch, Q>
 where
     Q: Query,
 {
-    /// Creates new view of entities from provided component registry.
+    /// Creates new view of entities from provided mutable component registry.
     pub fn new<C>(components: &'fetch mut C) -> Option<Self>
     where
         C: Components,
@@ -78,6 +78,15 @@ impl<'fetch, Q> View<'fetch, Q>
 where
     Q: ReadonlyQuery,
 {
+    /// Creates new view of entities from provided component registry.
+    pub fn new_readonly<C>(components: &'fetch C) -> Option<Self>
+    where
+        C: Components,
+    {
+        let fetch = Q::new_readonly_fetch(components)?;
+        Some(Self::from_fetch(fetch))
+    }
+
     /// Get items of the query by provided entity.
     pub fn get(&self, entity: Entity) -> Option<Q::Item<'fetch>> {
         let Self { fetch } = self;
