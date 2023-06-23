@@ -1,7 +1,6 @@
 //! Provides a builder pattern implementation for entities.
 
-use either::Either;
-use hlist::{ops::Append, Cons, Nil};
+use hlist::{ops::Append, Nil};
 
 pub use self::error::{TryBuildError, TryEntityBuildError};
 
@@ -74,7 +73,7 @@ where
 
 impl<T> EntityBuilder<T>
 where
-    T: Bundles,
+    T: Bundle,
 {
     /// Builds new entity from the builder.
     ///
@@ -103,11 +102,13 @@ where
         E: Entities,
         C: Components,
     {
-        let Self(bundles) = self;
-        T::check_all(components)?;
+        let Self(bundle) = self;
 
         let entity = entities.create();
-        bundles.attach_all(components, entity)?;
+        if let Err(err) = T::attach(components, entity, bundle) {
+            let _ = entities.destroy(entity);
+            return Err(err);
+        }
         Ok(entity)
     }
 
@@ -140,21 +141,23 @@ where
         E: TryEntities,
         C: Components,
     {
-        let Self(bundles) = self;
-        T::check_all(components)?;
+        let Self(bundle) = self;
 
         let entity = match entities.try_create() {
             Ok(entity) => entity,
             Err(err) => return Err(TryEntityBuildError::Entities(err)),
         };
-        bundles.attach_all(components, entity)?;
+        if let Err(err) = T::attach(components, entity, bundle) {
+            let _ = entities.destroy(entity);
+            return Err(err.into());
+        }
         Ok(entity)
     }
 }
 
 impl<T> EntityBuilder<T>
 where
-    T: TryBundles,
+    T: TryBundle,
 {
     /// Tries to build new entity from the builder.
     ///
@@ -186,11 +189,13 @@ where
         E: Entities,
         C: Components,
     {
-        let Self(bundles) = self;
-        T::check_all(components)?;
+        let Self(bundle) = self;
 
         let entity = entities.create();
-        bundles.try_attach_all(components, entity)?;
+        if let Err(err) = T::try_attach(components, entity, bundle) {
+            let _ = entities.destroy(entity);
+            return Err(err);
+        }
         Ok(entity)
     }
 
@@ -225,14 +230,13 @@ where
         E: TryEntities,
         C: Components,
     {
-        let Self(bundles) = self;
-        T::check_all(components)?;
+        let Self(bundle) = self;
 
-        let entity = match entities.try_create() {
-            Ok(entity) => entity,
-            Err(err) => return Err(TryBuildError::Entities(err)),
-        };
-        bundles.try_attach_all(components, entity)?;
+        let entity = entities.create();
+        if let Err(err) = T::try_attach(components, entity, bundle) {
+            let _ = entities.destroy(entity);
+            return Err(err.into());
+        }
         Ok(entity)
     }
 }
@@ -295,7 +299,7 @@ where
 
 impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
 where
-    T: Bundles,
+    T: Bundle,
     E: Entities,
     C: Components,
 {
@@ -326,7 +330,7 @@ where
 
 impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
 where
-    T: Bundles,
+    T: Bundle,
     E: TryEntities,
     C: Components,
 {
@@ -359,7 +363,7 @@ where
 
 impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
 where
-    T: TryBundles,
+    T: TryBundle,
     E: Entities,
     C: Components,
 {
@@ -393,7 +397,7 @@ where
 
 impl<'state, E, C, T> StateEntityBuilder<'state, E, C, T>
 where
-    T: TryBundles,
+    T: TryBundle,
     E: TryEntities,
     C: Components,
 {
@@ -430,119 +434,5 @@ impl<'state, E, C, T> From<StateEntityBuilder<'state, E, C, T>> for EntityBuilde
     fn from(builder: StateEntityBuilder<'state, E, C, T>) -> Self {
         let StateEntityBuilder { builder, .. } = builder;
         builder
-    }
-}
-
-#[doc(hidden)]
-pub trait Bundles: Append {
-    fn check_all<C>(components: &mut C) -> Result<(), NotRegisteredError>
-    where
-        C: Components;
-
-    fn attach_all<C>(self, components: &mut C, entity: Entity) -> Result<(), NotRegisteredError>
-    where
-        C: Components;
-}
-
-impl Bundles for Nil {
-    fn check_all<C>(_: &mut C) -> Result<(), NotRegisteredError>
-    where
-        C: Components,
-    {
-        Ok(())
-    }
-
-    fn attach_all<C>(self, _: &mut C, _: Entity) -> Result<(), NotRegisteredError>
-    where
-        C: Components,
-    {
-        Ok(())
-    }
-}
-
-impl<Head, Tail> Bundles for Cons<Head, Tail>
-where
-    Head: Bundle,
-    Tail: Bundles,
-{
-    fn check_all<C>(components: &mut C) -> Result<(), NotRegisteredError>
-    where
-        C: Components,
-    {
-        Head::is_attached(components, Entity::null())?;
-        Tail::check_all(components)
-    }
-
-    fn attach_all<C>(self, components: &mut C, entity: Entity) -> Result<(), NotRegisteredError>
-    where
-        C: Components,
-    {
-        let Cons(head, tail) = self;
-        Head::attach(components, entity, head)?;
-        tail.attach_all(components, entity)
-    }
-}
-
-#[doc(hidden)]
-pub trait TryBundles: Bundles {
-    type Err;
-
-    fn try_attach_all<C>(
-        self,
-        components: &mut C,
-        entity: Entity,
-    ) -> Result<(), TryBundleError<Self::Err>>
-    where
-        C: Components;
-}
-
-impl TryBundles for Nil {
-    type Err = core::convert::Infallible;
-
-    fn try_attach_all<C>(self, _: &mut C, _: Entity) -> Result<(), TryBundleError<Self::Err>>
-    where
-        C: Components,
-    {
-        Ok(())
-    }
-}
-
-impl<Head, Tail> TryBundles for Cons<Head, Tail>
-where
-    Head: TryBundle,
-    Tail: TryBundles,
-{
-    type Err = Either<Head::Err, Tail::Err>;
-
-    fn try_attach_all<C>(
-        self,
-        components: &mut C,
-        entity: Entity,
-    ) -> Result<(), TryBundleError<Self::Err>>
-    where
-        C: Components,
-    {
-        let Cons(head, tail) = self;
-        match Head::try_attach(components, entity, head) {
-            Ok(_) => (),
-            Err(error) => match error {
-                TryBundleError::NotRegistered(error) => return Err(error.into()),
-                TryBundleError::Storage(error) => {
-                    let error = Either::Left(error);
-                    return Err(TryBundleError::Storage(error));
-                }
-            },
-        }
-        match tail.try_attach_all(components, entity) {
-            Ok(_) => (),
-            Err(error) => match error {
-                TryBundleError::NotRegistered(error) => return Err(error.into()),
-                TryBundleError::Storage(error) => {
-                    let error = Either::Right(error);
-                    return Err(TryBundleError::Storage(error));
-                }
-            },
-        }
-        Ok(())
     }
 }
