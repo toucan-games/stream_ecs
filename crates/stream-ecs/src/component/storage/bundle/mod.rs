@@ -23,6 +23,17 @@ pub trait Bundle: Sized + 'static {
     /// Component bundle associated with this bundle.
     type Items: ComponentBundle<Storages = Self>;
 
+    /// Type of the registry with this storage bundle.
+    type With<C>
+    where
+        C: Components;
+
+    /// Inserts provided storage bundle into the registry,
+    /// resulting in a registry with a new type.
+    fn with<C>(components: C, bundle: Self) -> Self::With<C>
+    where
+        C: Components;
+
     /// Registers component bundle in the component registry with provided storage bundle.
     ///
     /// Returns previous bundle data of the component bundle registered earlier.

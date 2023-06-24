@@ -220,6 +220,24 @@ impl<E, C, R> World<E, C, R>
 where
     C: Components,
 {
+    /// Inserts storages of provided component bundle into the world,
+    /// resulting in a world with a new type of the component registry.
+    pub fn with_components<B>(
+        self,
+        bundle: B::Storages,
+    ) -> World<E, <B::Storages as StorageBundle>::With<C>, R>
+    where
+        B: Bundle,
+    {
+        let Self {
+            entities,
+            components,
+            resources,
+        } = self;
+        let components = <B::Storages as StorageBundle>::with(components, bundle);
+        World::with(entities, components, resources)
+    }
+
     /// Checks if the component bundle was previously registered in the current world.
     pub fn is_registered<B>(&self) -> bool
     where

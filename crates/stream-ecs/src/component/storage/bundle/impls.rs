@@ -27,6 +27,17 @@ where
 {
     type Items = T::Item;
 
+    type With<C> = C::With<T::Item>
+    where
+        C: Components;
+
+    fn with<C>(components: C, bundle: Self) -> Self::With<C>
+    where
+        C: Components,
+    {
+        components.with(bundle)
+    }
+
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
         C: ComponentsMut,
@@ -55,6 +66,19 @@ where
     Head: Bundle,
 {
     type Items = Cons<Head::Items, Nil>;
+
+    type With<C> = Cons<Head::With<C>, Nil>
+    where
+        C: Components;
+
+    fn with<C>(components: C, bundle: Self) -> Self::With<C>
+    where
+        C: Components,
+    {
+        let Cons(head, nil) = bundle;
+        let head = Head::with(components, head);
+        Cons(head, nil)
+    }
 
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where
@@ -90,6 +114,19 @@ where
     Tail: Bundle,
 {
     type Items = Cons<Head::Items, Tail::Items>;
+
+    type With<C> = Cons<Head::With<C>, Tail>
+    where
+        C: Components;
+
+    fn with<C>(components: C, bundle: Self) -> Self::With<C>
+    where
+        C: Components,
+    {
+        let Cons(head, tail) = bundle;
+        let head = Head::with(components, head);
+        Cons(head, tail)
+    }
 
     fn register<C>(components: &mut C, bundle: Self) -> Option<Self>
     where

@@ -14,6 +14,17 @@ mod impls;
 ///
 /// [component_storage]: super::Component::Storage
 pub trait Registry {
+    /// Type of the registry with provided type of component.
+    type With<C>
+    where
+        C: Component;
+
+    /// Inserts provided component storage into the registry,
+    /// resulting in a registry with a new type.
+    fn with<C>(self, storage: C::Storage) -> Self::With<C>
+    where
+        C: Component;
+
     /// Checks if the component was previously registered in the registry.
     fn is_registered<C>(&self) -> bool
     where

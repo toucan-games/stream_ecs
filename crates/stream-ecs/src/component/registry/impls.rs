@@ -1,4 +1,7 @@
-use hlist::{ops::Get, Cons, HList};
+use hlist::{
+    ops::{Get, Prepend},
+    Cons, HList,
+};
 
 use crate::{
     component::Component,
@@ -11,10 +14,21 @@ use self::impl_details::{AsErased, AsErasedRefIter, AsErasedRefIterMut};
 
 impl<Head, Tail> Registry for Cons<Head, Tail>
 where
-    Self: HList + Contains + Find + AsErased,
+    Self: Prepend + Contains + Find + AsErased,
     for<'any> <Self as AsErased>::Ref<'any>: AsErasedRefIter<'any>,
     for<'any> <Self as AsErased>::RefMut<'any>: AsErasedRefIterMut<'any>,
 {
+    type With<C> = <Self as Prepend>::Output<C::Storage>
+    where
+        C: Component;
+
+    fn with<C>(self, storage: C::Storage) -> Self::With<C>
+    where
+        C: Component,
+    {
+        Prepend::prepend(self, storage)
+    }
+
     fn is_registered<C>(&self) -> bool
     where
         C: Component,
