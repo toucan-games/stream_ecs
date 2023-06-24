@@ -13,7 +13,18 @@ mod impls;
 /// This trait is implemented for all of resources since they can be inserted and removed trivially.
 /// Also it is implemented for heterogenous lists of resources of any size (but not for an empty one).
 pub trait Bundle: Sized + 'static {
-    /// Inserts provided resource bundle to the registry.
+    /// Type of the registry with this resource bundle.
+    type With<R>
+    where
+        R: Resources;
+
+    /// Inserts provided resource bundle into the registry,
+    /// resulting in a registry with a new type.
+    fn with<R>(resources: R, bundle: Self) -> Self::With<R>
+    where
+        R: Resources;
+
+    /// Inserts provided resource bundle into the registry.
     ///
     /// Returns previous bundle data inserted in the registry earlier.
     /// Returns [`None`] if there was no bundle inserted in the registry or some of bundle parts are missing.

@@ -10,6 +10,17 @@ mod impls;
 ///
 /// This trait represents type of container for [resources](Resource).
 pub trait Registry {
+    /// Type of the registry with provided type of resource.
+    type With<R>
+    where
+        R: Resource;
+
+    /// Inserts provided resource into the registry,
+    /// resulting in a registry with a new type.
+    fn with<R>(self, resource: R) -> Self::With<R>
+    where
+        R: Resource;
+
     /// Checks if the resource was previously inserted in the registry.
     fn contains<R>(&self) -> bool
     where
@@ -56,7 +67,7 @@ pub trait Registry {
 ///
 /// Implementations of the trait could insert or remove new resources without changing the base type.
 pub trait RegistryMut: Registry {
-    /// Inserts provided resource to the registry.
+    /// Inserts provided resource into the registry.
     /// Returns previous value of the resource, or [`None`] if the resource was not in the registry.
     ///
     /// Provided resource will be stored in the registry and can be retrieved

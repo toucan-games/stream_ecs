@@ -288,6 +288,21 @@ impl<E, C, R> World<E, C, R>
 where
     R: Resources,
 {
+    /// Inserts provided resource bundle into the world,
+    /// resulting in a world with a new type of the resource registry.
+    pub fn with_res<B>(self, bundle: B) -> World<E, C, B::With<R>>
+    where
+        B: ResourceBundle,
+    {
+        let Self {
+            entities,
+            components,
+            resources,
+        } = self;
+        let resources = B::with(resources, bundle);
+        World::with(entities, components, resources)
+    }
+
     /// Checks if the resource bundle was previously inserted in the current world.
     pub fn contains_res<B>(&self) -> bool
     where

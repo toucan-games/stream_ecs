@@ -21,6 +21,17 @@ impl<T> Bundle for T
 where
     T: Resource,
 {
+    type With<R> = R::With<T>
+    where
+        R: Resources;
+
+    fn with<R>(resources: R, bundle: Self) -> Self::With<R>
+    where
+        R: Resources,
+    {
+        resources.with(bundle)
+    }
+
     fn insert<R>(resources: &mut R, resource: Self) -> Option<Self>
     where
         R: ResourcesMut,
@@ -48,6 +59,19 @@ impl<Head> Bundle for Cons<Head, Nil>
 where
     Head: Bundle,
 {
+    type With<R> = Cons<Head::With<R>, Nil>
+    where
+        R: Resources;
+
+    fn with<R>(resources: R, bundle: Self) -> Self::With<R>
+    where
+        R: Resources,
+    {
+        let Cons(head, nil) = bundle;
+        let head = Head::with(resources, head);
+        Cons(head, nil)
+    }
+
     fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
     where
         R: ResourcesMut,
@@ -81,6 +105,19 @@ where
     Head: Bundle,
     Tail: Bundle,
 {
+    type With<R> = Cons<Head::With<R>, Tail>
+    where
+        R: Resources;
+
+    fn with<R>(resources: R, bundle: Self) -> Self::With<R>
+    where
+        R: Resources,
+    {
+        let Cons(head, tail) = bundle;
+        let head = Head::with(resources, head);
+        Cons(head, tail)
+    }
+
     fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
     where
         R: ResourcesMut,
