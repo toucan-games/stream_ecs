@@ -1,7 +1,7 @@
 use core::any::Any;
 
-use as_any::AsAny;
 use hlist::{Cons, Nil};
+use ref_kind::RefKind;
 
 use crate::{
     component::registry::Registry as Components,
@@ -47,8 +47,8 @@ impl<Head, Tail> Query for Cons<Head, Tail>
 where
     Head: Query,
     Tail: Query,
-    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
     type Item<'item> = Cons<Head::Item<'item>, Tail::Item<'item>>;
 
@@ -58,7 +58,9 @@ where
     where
         C: Components,
     {
-        let iter = components.iter_mut().map(AsAny::as_any_mut);
+        let iter = components
+            .iter_mut()
+            .map(|storage| Some(RefKind::from(storage.as_any_mut())));
         dependency_from_iter(iter)
     }
 
@@ -96,10 +98,10 @@ impl<Head, Tail> IntoReadonly for Cons<Head, Tail>
 where
     Head: IntoReadonly,
     Tail: IntoReadonly,
-    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
     type Readonly = Cons<Head::Readonly, Tail::Readonly>;
 
@@ -143,10 +145,10 @@ impl<Head, Tail> AsReadonly for Cons<Head, Tail>
 where
     Head: AsReadonly,
     Tail: AsReadonly,
-    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
     type ReadonlyRef<'borrow> = Cons<Head::ReadonlyRef<'borrow>, Tail::ReadonlyRef<'borrow>>;
 
@@ -202,8 +204,8 @@ impl<Head, Tail> ReadonlyQuery for Cons<Head, Tail>
 where
     Head: ReadonlyQuery,
     Tail: ReadonlyQuery,
-    for<'any> Head::Fetch<'any>: Dependency<&'any mut dyn Any>,
-    for<'any> Tail::Fetch<'any>: Dependency<&'any mut dyn Any>,
+    for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
     fn new_readonly_fetch<C>(components: &C) -> Option<Self::Fetch<'_>>
     where

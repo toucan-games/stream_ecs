@@ -22,10 +22,10 @@ where
         if !input.is::<T>() {
             return Err(input);
         }
-        let ref_mut = input
+        let downcast = input
             .downcast_ref()
             .expect("cast should be successful because type was checked earlier");
-        *self = Some(ref_mut);
+        *self = Some(downcast);
         Ok(())
     }
 
@@ -54,10 +54,10 @@ where
         if !input.is::<T>() {
             return Err(input);
         }
-        let ref_mut = input
+        let downcast = input
             .downcast_mut()
             .expect("cast should be successful because type was checked earlier");
-        *self = Some(ref_mut);
+        *self = Some(downcast);
         Ok(())
     }
 

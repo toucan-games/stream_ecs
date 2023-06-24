@@ -7,7 +7,7 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(test), no_std)]
 
-pub use ::hlist;
+pub use ::{hlist, ref_kind};
 
 pub mod component;
 pub mod dependency;
