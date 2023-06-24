@@ -30,6 +30,13 @@ where
         let item = Q::fetch(fetch, entity);
         Some(item)
     }
+
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+        let Some(fetch) = fetch else {
+            return true;
+        };
+        Q::satisfies(fetch, entity)
+    }
 }
 
 impl<Q> IntoReadonly for Option<Q>
@@ -62,6 +69,13 @@ where
         };
         let item = Q::readonly_ref_fetch(fetch, entity);
         Some(item)
+    }
+
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+        let Some(fetch) = fetch else {
+            return true;
+        };
+        Q::readonly_ref_satisfies(fetch, entity)
     }
 }
 

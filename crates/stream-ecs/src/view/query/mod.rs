@@ -22,6 +22,9 @@ pub trait Query {
         fetch: &'borrow mut Self::Fetch<'_>,
         entity: Entity,
     ) -> Option<Self::Item<'borrow>>;
+
+    /// Checks if provided entity satisfies this query.
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool;
 }
 
 /// Type of query which is readonly, or has no mutable access to data.
@@ -60,4 +63,7 @@ pub trait AsReadonly: IntoReadonly {
         fetch: Self::ReadonlyRef<'_>,
         entity: Entity,
     ) -> Option<<Self::Readonly as Query>::Item<'_>>;
+
+    /// Checks if provided entity satisfies readonly variant of this query.
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool;
 }

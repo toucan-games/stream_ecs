@@ -10,7 +10,7 @@ use crate::{
     },
 };
 
-/// Stateful borrow of the view.
+/// Stateful readonly borrow of the view.
 pub struct ViewRef<'state, Q, E>
 where
     Q: AsReadonly,
@@ -27,6 +27,27 @@ where
 {
     pub(super) fn new(entities: &'state E, view_ref: view::ViewRef<'state, Q>) -> Self {
         Self { entities, view_ref }
+    }
+
+    /// Checks if provided entity satisfies this query.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn satisfies(&self, entity: Entity) -> Result<bool, NotPresentError> {
+        let Self { entities, view_ref } = self;
+
+        if !entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error);
+        }
+        Ok(view_ref.satisfies(entity))
     }
 
     /// Get items of the query by provided entity.

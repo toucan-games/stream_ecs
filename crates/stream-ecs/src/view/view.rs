@@ -34,6 +34,12 @@ where
         Self { fetch }
     }
 
+    /// Checks if provided entity satisfies this query.
+    pub fn satisfies(&self, entity: Entity) -> bool {
+        let Self { fetch } = self;
+        Q::satisfies(fetch, entity)
+    }
+
     /// Get mutable items of the query by provided entity.
     pub fn get_mut(&mut self, entity: Entity) -> Option<Q::Item<'_>> {
         let Self { fetch } = self;

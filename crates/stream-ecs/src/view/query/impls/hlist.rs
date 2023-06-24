@@ -36,6 +36,11 @@ where
         let item = Cons(head, Nil);
         Some(item)
     }
+
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+        let Cons(head, _) = fetch;
+        Head::satisfies(head, entity)
+    }
 }
 
 impl<Head, Tail> Query for Cons<Head, Tail>
@@ -66,6 +71,11 @@ where
         let tail = Tail::fetch(tail, entity)?;
         let item = Cons(head, tail);
         Some(item)
+    }
+
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+        let Cons(head, tail) = fetch;
+        Head::satisfies(head, entity) && Tail::satisfies(tail, entity)
     }
 }
 
@@ -122,6 +132,11 @@ where
         let item = Cons(head, Nil);
         Some(item)
     }
+
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+        let Cons(head, _) = fetch;
+        Head::readonly_ref_satisfies(head, entity)
+    }
 }
 
 impl<Head, Tail> AsReadonly for Cons<Head, Tail>
@@ -151,6 +166,11 @@ where
         let tail = Tail::readonly_ref_fetch(tail, entity)?;
         let item = Cons(head, tail);
         Some(item)
+    }
+
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+        let Cons(head, tail) = fetch;
+        Head::readonly_ref_satisfies(head, entity) && Tail::readonly_ref_satisfies(tail, entity)
     }
 }
 

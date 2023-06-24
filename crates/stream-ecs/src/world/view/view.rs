@@ -50,6 +50,27 @@ where
         Self { entities, view }
     }
 
+    /// Checks if provided entity satisfies this query.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if provided entity does not present in the entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn satisfies(&self, entity: Entity) -> Result<bool, NotPresentError> {
+        let Self { entities, view } = self;
+
+        if !entities.contains(entity) {
+            let error = NotPresentError::new(entity);
+            return Err(error);
+        }
+        Ok(view.satisfies(entity))
+    }
+
     /// Get mutable items of the query by provided entity.
     ///
     /// # Errors

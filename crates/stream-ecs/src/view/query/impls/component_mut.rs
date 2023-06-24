@@ -25,6 +25,10 @@ where
     ) -> Option<Self::Item<'borrow>> {
         Storage::get_mut(*fetch, entity)
     }
+
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+        Self::readonly_ref_satisfies(fetch, entity)
+    }
 }
 
 impl<'me, C> IntoReadonly for &'me mut C
@@ -53,5 +57,9 @@ where
         entity: Entity,
     ) -> Option<<Self::Readonly as Query>::Item<'_>> {
         Storage::get(fetch, entity)
+    }
+
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+        Storage::is_attached(fetch, entity)
     }
 }

@@ -22,6 +22,10 @@ impl Query for () {
     ) -> Option<Self::Item<'borrow>> {
         Self::readonly_fetch(fetch, entity)
     }
+
+    fn satisfies(_fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+        Self::readonly_ref_satisfies((), entity)
+    }
 }
 
 impl IntoReadonly for () {
@@ -44,6 +48,10 @@ impl AsReadonly for () {
         _entity: Entity,
     ) -> Option<<Self::Readonly as Query>::Item<'_>> {
         Some(())
+    }
+
+    fn readonly_ref_satisfies(_: Self::ReadonlyRef<'_>, _: Entity) -> bool {
+        true
     }
 }
 

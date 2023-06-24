@@ -5,7 +5,7 @@ use super::{
     query::{AsReadonly, Query},
 };
 
-/// Borrow of the view.
+/// Readonly borrow of the view.
 pub struct ViewRef<'fetch, Q>
 where
     Q: AsReadonly,
@@ -19,6 +19,12 @@ where
 {
     pub(super) fn new(fetch: Q::ReadonlyRef<'fetch>) -> Self {
         Self { fetch }
+    }
+
+    /// Checks if provided entity satisfies this query.
+    pub fn satisfies(&self, entity: Entity) -> bool {
+        let Self { fetch } = *self;
+        Q::readonly_ref_satisfies(fetch, entity)
     }
 
     /// Get items of the query by provided entity.
