@@ -17,7 +17,7 @@ pub fn component_derive(input: TokenStream) -> TokenStream {
         .into()
 }
 
-#[proc_macro_derive(Resource)]
+#[proc_macro_derive(Resource, attributes(resource))]
 pub fn resource_derive(input: TokenStream) -> TokenStream {
     resource::derive(input)
         .unwrap_or_else(Error::into_compile_error)

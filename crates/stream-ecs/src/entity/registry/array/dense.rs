@@ -44,7 +44,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// # Examples
     ///
     /// ```
-    /// use stream_ecs::entity::registry::{Registry, array::DenseArrayRegistry};
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
     ///
     /// let registry = DenseArrayRegistry::<10>::new();
     /// assert!(registry.is_empty());

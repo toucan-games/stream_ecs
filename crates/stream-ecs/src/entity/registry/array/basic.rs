@@ -40,7 +40,7 @@ impl<const N: usize> ArrayRegistry<N> {
     /// # Examples
     ///
     /// ```
-    /// use stream_ecs::entity::registry::{Registry, array::ArrayRegistry};
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
     ///
     /// let registry = ArrayRegistry::<10>::new();
     /// assert!(registry.is_empty());

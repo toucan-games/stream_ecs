@@ -16,5 +16,5 @@ lending-iterator = { version = "0.1", default-features = false }
 polonius-the-crab = { version = "0.3", default-features = false }
 
 [features]
-default = []
+default = ["derive"]
 derive = ["dep:stream-ecs-macros"]
