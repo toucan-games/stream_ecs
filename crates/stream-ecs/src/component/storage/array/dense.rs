@@ -19,13 +19,14 @@ struct Dense<T>
 where
     T: Component,
 {
-    entity: Entity,
+    index: usize,
+    generation: u32,
     value: T,
 }
 
 #[derive(Debug, Clone)]
 enum Slot {
-    Occupied { dense_index: u32, generation: u32 },
+    Occupied { dense_index: usize, generation: u32 },
     Free,
 }
 
@@ -134,23 +135,25 @@ where
                 }
                 let dense = self
                     .dense
-                    .get_mut(dense_index as usize)
+                    .get_mut(dense_index)
                     .expect("dense index should point to the valid item");
+                dense.index = entity.index().try_into().map_err(|_| ArrayStorageError)?;
+                dense.generation = entity.generation();
                 let component = mem::replace(&mut dense.value, component);
-                dense.entity = entity;
                 *generation = entity.generation();
                 Ok(Some(component))
             }
             Slot::Free => {
                 let dense = Dense {
-                    entity,
+                    index: entity.index().try_into().map_err(|_| ArrayStorageError)?,
+                    generation: entity.generation(),
                     value: component,
                 };
                 if self.dense.try_push(dense).is_err() {
                     return Err(ArrayStorageError);
                 }
                 *slot = Slot::Occupied {
-                    dense_index: self.dense.len() as u32 - 1,
+                    dense_index: self.dense.len() - 1,
                     generation: entity.generation(),
                 };
                 Ok(None)
@@ -175,7 +178,7 @@ where
         let &Slot::Occupied { dense_index, generation } = slot else {
             return false;
         };
-        let Some(_) = self.dense.get(dense_index as usize) else {
+        let Some(_) = self.dense.get(dense_index) else {
             return false;
         };
         generation == entity.generation()
@@ -198,7 +201,7 @@ where
         if generation != entity.generation() {
             return None;
         }
-        let Dense { value, .. } = self.dense.get(dense_index as usize)?;
+        let Dense { value, .. } = self.dense.get(dense_index)?;
         Some(value)
     }
 
@@ -219,7 +222,7 @@ where
         if generation != entity.generation() {
             return None;
         }
-        let Dense { value, .. } = self.dense.get_mut(dense_index as usize)?;
+        let Dense { value, .. } = self.dense.get_mut(dense_index)?;
         Some(value)
     }
 
@@ -246,12 +249,12 @@ where
         }
         let Dense { value, .. } = self
             .dense
-            .swap_pop(dense_index as usize)
+            .swap_pop(dense_index)
             .expect("dense index should point to the valid item");
-        if let Some(Dense { entity, .. }) = self.dense.get(dense_index as usize) {
+        if let Some(&Dense { index, .. }) = self.dense.get(dense_index) {
             let slot = self
                 .sparse
-                .get_mut(entity.index() as usize)
+                .get_mut(index)
                 .expect("index should point to the valid slot");
             *slot = match slot {
                 Slot::Occupied { .. } => Slot::Occupied {
@@ -459,7 +462,13 @@ where
     type Item = (Entity, &'data T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let &Dense { entity, ref value } = self.iter.next()?;
+        let &Dense {
+            index,
+            generation,
+            ref value,
+        } = self.iter.next()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
         Some((entity, value))
     }
 
@@ -473,7 +482,13 @@ where
     T: Component,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let &Dense { entity, ref value } = self.iter.next_back()?;
+        let &Dense {
+            index,
+            generation,
+            ref value,
+        } = self.iter.next_back()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
         Some((entity, value))
     }
 }
@@ -507,9 +522,12 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let &mut Dense {
-            entity,
+            index,
+            generation,
             ref mut value,
         } = self.iter.next()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
         Some((entity, value))
     }
 
@@ -524,9 +542,12 @@ where
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let &mut Dense {
-            entity,
+            index,
+            generation,
             ref mut value,
         } = self.iter.next_back()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
         Some((entity, value))
     }
 }
@@ -558,7 +579,13 @@ where
     type Item = (Entity, T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Dense { entity, value } = self.iter.next()?;
+        let Dense {
+            index,
+            generation,
+            value,
+        } = self.iter.next()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
         Some((entity, value))
     }
 
@@ -572,7 +599,13 @@ where
     T: Component,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let Dense { entity, value } = self.iter.next_back()?;
+        let Dense {
+            index,
+            generation,
+            value,
+        } = self.iter.next_back()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
         Some((entity, value))
     }
 }

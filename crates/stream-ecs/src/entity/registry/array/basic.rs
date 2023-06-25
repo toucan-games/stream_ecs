@@ -16,7 +16,7 @@ use super::ArrayRegistryError;
 
 #[derive(Debug, Clone)]
 enum SlotEntry<T> {
-    Free { next_free: u32 },
+    Free { next_free: usize },
     Occupied { value: T },
 }
 
@@ -30,8 +30,8 @@ struct Slot<T> {
 #[derive(Debug, Clone, Default)]
 pub struct ArrayRegistry<const N: usize> {
     slots: ArrayVec<Slot<()>, N>,
-    free_head: u32,
-    len: u32,
+    free_head: usize,
+    len: usize,
 }
 
 impl<const N: usize> ArrayRegistry<N> {
@@ -125,14 +125,10 @@ impl<const N: usize> ArrayRegistry<N> {
     ///
     /// This is the fallible version of [`create`][Self::create()] method.
     pub fn try_create(&mut self) -> Result<Entity, ArrayRegistryError> {
-        let new_len = self.len + 1;
-        if usize::try_from(new_len).is_err() || new_len == u32::MAX {
-            return Err(ArrayRegistryError);
-        }
-
-        let entity = if let Some(slot) = self.slots.get_mut(self.free_head as usize) {
+        let entity = if let Some(slot) = self.slots.get_mut(self.free_head) {
             if let SlotEntry::Free { next_free } = slot.entry {
-                let entity = Entity::new(self.free_head, slot.generation);
+                let index = self.free_head.try_into().map_err(|_| ArrayRegistryError)?;
+                let entity = Entity::new(index, slot.generation);
                 self.free_head = next_free;
                 slot.entry = SlotEntry::Occupied { value: () };
                 entity
@@ -140,8 +136,9 @@ impl<const N: usize> ArrayRegistry<N> {
                 unreachable!("free head must not point to the occupied entry")
             }
         } else {
+            let index = self.len.try_into().map_err(|_| ArrayRegistryError)?;
             let generation = 0;
-            let entity = Entity::new(self.len, generation);
+            let entity = Entity::new(index, generation);
             let slot = Slot {
                 entry: SlotEntry::Occupied { value: () },
                 generation,
@@ -149,10 +146,10 @@ impl<const N: usize> ArrayRegistry<N> {
             if self.slots.try_push(slot).is_err() {
                 return Err(ArrayRegistryError);
             }
-            self.free_head = entity.index() + 1;
+            self.free_head = self.len + 1;
             entity
         };
-        self.len = new_len;
+        self.len += 1;
         Ok(entity)
     }
 
@@ -225,7 +222,7 @@ impl<const N: usize> ArrayRegistry<N> {
             next_free: self.free_head,
         };
         slot.generation += 1;
-        self.free_head = entity.index();
+        self.free_head = index;
         self.len -= 1;
         Ok(value)
     }
@@ -243,7 +240,7 @@ impl<const N: usize> ArrayRegistry<N> {
     /// assert_eq!(registry.len(), 2);
     /// ```
     pub const fn len(&self) -> usize {
-        self.len as usize
+        self.len
     }
 
     /// Checks if the array registry contains no alive entities.
@@ -377,7 +374,7 @@ impl<const N: usize> IntoIterator for ArrayRegistry<N> {
 #[derive(Debug, Clone)]
 pub struct Iter<'data> {
     iter: Enumerate<slice::Iter<'data, Slot<()>>>,
-    num_left: u32,
+    num_left: usize,
 }
 
 impl Iterator for Iter<'_> {
@@ -386,6 +383,7 @@ impl Iterator for Iter<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next()?;
+            let index = index.try_into().ok()?;
             let &Slot {
                 ref entry,
                 generation,
@@ -394,13 +392,13 @@ impl Iterator for Iter<'_> {
                 continue;
             }
             self.num_left -= 1;
-            break Entity::new(index as u32, generation);
+            break Entity::new(index, generation);
         };
         Some(entity)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.num_left as usize;
+        let len = self.num_left;
         (len, Some(len))
     }
 }
@@ -409,6 +407,7 @@ impl DoubleEndedIterator for Iter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next_back()?;
+            let index = index.try_into().ok()?;
             let &Slot {
                 ref entry,
                 generation,
@@ -417,7 +416,7 @@ impl DoubleEndedIterator for Iter<'_> {
                 continue;
             }
             self.num_left -= 1;
-            break Entity::new(index as u32, generation);
+            break Entity::new(index, generation);
         };
         Some(entity)
     }
@@ -425,7 +424,7 @@ impl DoubleEndedIterator for Iter<'_> {
 
 impl ExactSizeIterator for Iter<'_> {
     fn len(&self) -> usize {
-        self.num_left as usize
+        self.num_left
     }
 }
 
@@ -435,7 +434,7 @@ impl FusedIterator for Iter<'_> {}
 #[derive(Debug, Clone)]
 pub struct IntoIter<const N: usize> {
     iter: Enumerate<arrayvec::IntoIter<Slot<()>, N>>,
-    num_left: u32,
+    num_left: usize,
 }
 
 impl<const N: usize> Iterator for IntoIter<N> {
@@ -444,18 +443,19 @@ impl<const N: usize> Iterator for IntoIter<N> {
     fn next(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next()?;
+            let index = index.try_into().ok()?;
             let Slot { entry, generation } = slot;
             if let SlotEntry::Free { .. } = entry {
                 continue;
             }
             self.num_left -= 1;
-            break Entity::new(index as u32, generation);
+            break Entity::new(index, generation);
         };
         Some(entity)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.num_left as usize;
+        let len = self.num_left;
         (len, Some(len))
     }
 }
@@ -464,12 +464,13 @@ impl<const N: usize> DoubleEndedIterator for IntoIter<N> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let entity = loop {
             let (index, slot) = self.iter.next_back()?;
+            let index = index.try_into().ok()?;
             let Slot { entry, generation } = slot;
             if let SlotEntry::Free { .. } = entry {
                 continue;
             }
             self.num_left -= 1;
-            break Entity::new(index as u32, generation);
+            break Entity::new(index, generation);
         };
         Some(entity)
     }
@@ -477,7 +478,7 @@ impl<const N: usize> DoubleEndedIterator for IntoIter<N> {
 
 impl<const N: usize> ExactSizeIterator for IntoIter<N> {
     fn len(&self) -> usize {
-        self.num_left as usize
+        self.num_left
     }
 }
 

@@ -29,7 +29,7 @@ where
     T: Component<Storage = Self>,
 {
     slots: [Slot<T>; N],
-    len: u32,
+    len: usize,
 }
 
 impl<T, const N: usize> ArrayStorage<T, N>
@@ -239,7 +239,7 @@ where
     /// todo!()
     /// ```
     pub const fn len(&self) -> usize {
-        self.len as usize
+        self.len
     }
 
     /// Checks if the array storage is empty, or has no components.
@@ -408,7 +408,7 @@ where
     T: Component,
 {
     iter: Enumerate<slice::Iter<'data, Slot<T>>>,
-    num_left: u32,
+    num_left: usize,
 }
 
 impl<'data, T> Iterator for Iter<'data, T>
@@ -423,7 +423,8 @@ where
             let &Slot::Occupied { ref value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, generation);
+            let index = index.try_into().ok()?;
+            let entity = Entity::new(index, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -431,7 +432,7 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.num_left as usize;
+        let len = self.len();
         (len, Some(len))
     }
 }
@@ -446,7 +447,8 @@ where
             let &Slot::Occupied { ref value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, generation);
+            let index = index.try_into().ok()?;
+            let entity = Entity::new(index, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -459,7 +461,7 @@ where
     T: Component,
 {
     fn len(&self) -> usize {
-        self.num_left as usize
+        self.num_left
     }
 }
 
@@ -473,7 +475,7 @@ where
     T: Component,
 {
     iter: Enumerate<slice::IterMut<'data, Slot<T>>>,
-    num_left: u32,
+    num_left: usize,
 }
 
 impl<'data, T> Iterator for IterMut<'data, T>
@@ -488,7 +490,8 @@ where
             let &mut Slot::Occupied { ref mut value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, generation);
+            let index = index.try_into().ok()?;
+            let entity = Entity::new(index, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -496,7 +499,7 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.num_left as usize;
+        let len = self.len();
         (len, Some(len))
     }
 }
@@ -511,7 +514,8 @@ where
             let &mut Slot::Occupied { ref mut value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, generation);
+            let index = index.try_into().ok()?;
+            let entity = Entity::new(index, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -524,7 +528,7 @@ where
     T: Component,
 {
     fn len(&self) -> usize {
-        self.num_left as usize
+        self.num_left
     }
 }
 
@@ -537,7 +541,7 @@ where
     T: Component,
 {
     iter: Enumerate<array::IntoIter<Slot<T>, N>>,
-    num_left: u32,
+    num_left: usize,
 }
 
 impl<T, const N: usize> Iterator for IntoIter<T, N>
@@ -552,7 +556,8 @@ where
             let Slot::Occupied { value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, generation);
+            let index = index.try_into().ok()?;
+            let entity = Entity::new(index, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -560,7 +565,7 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.num_left as usize;
+        let len = self.len();
         (len, Some(len))
     }
 }
@@ -575,7 +580,8 @@ where
             let Slot::Occupied { value, generation } = slot else {
                 continue;
             };
-            let entity = Entity::new(index as u32, generation);
+            let index = index.try_into().ok()?;
+            let entity = Entity::new(index, generation);
             self.num_left -= 1;
             break (entity, value);
         };
@@ -588,7 +594,7 @@ where
     T: Component,
 {
     fn len(&self) -> usize {
-        self.num_left as usize
+        self.num_left
     }
 }
 

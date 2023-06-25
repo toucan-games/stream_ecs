@@ -56,7 +56,7 @@ struct Bucket<K, V> {
 #[derive(Debug, Clone, Copy)]
 enum HashIndex {
     Free,
-    Occupied { hash: HashValue, index: u32 },
+    Occupied { hash: HashValue, index: usize },
 }
 
 /// Hash implementation of the component storage backed by an array.
@@ -190,8 +190,8 @@ where
 
 #[derive(Debug, Clone, Copy)]
 struct FindBucket {
-    hash_index: u32,
-    bucket_index: u32,
+    hash_index: usize,
+    bucket_index: usize,
 }
 
 impl<T, S, const N: usize> HashArrayStorage<T, S, N>
@@ -204,8 +204,8 @@ where
             return None;
         }
         let entity_hash = HashValue::new(&entity.index(), &self.build_hasher);
-        let probe_len = self.capacity() as u64;
-        let desired_index = entity_hash.desired_index(probe_len) as usize;
+        let probe_len = self.capacity().try_into().ok()?;
+        let desired_index = entity_hash.desired_index(probe_len).try_into().ok()?;
 
         let mut skip = desired_index;
         let mut distances = 0..;
@@ -218,7 +218,7 @@ where
                 let &HashIndex::Occupied { hash, index } = hash_index else {
                     continue;
                 };
-                let probe_distance = hash.probe_distance(probe_len, current as u64);
+                let probe_distance = hash.probe_distance(probe_len, current.try_into().ok()?);
                 if distance > probe_distance {
                     break 'outer None;
                 }
@@ -227,13 +227,13 @@ where
                 }
                 let &Bucket { key, .. } = self
                     .buckets
-                    .get(index as usize)
+                    .get(index)
                     .expect("index should point to the valid bucket");
                 if entity != key {
                     continue;
                 }
                 let find_bucket = FindBucket {
-                    hash_index: current as u32,
+                    hash_index: current,
                     bucket_index: index,
                 };
                 break 'outer Some(find_bucket);
@@ -296,8 +296,11 @@ where
         }
 
         let entity_hash = HashValue::new(&entity.index(), &self.build_hasher);
-        let probe_len = self.capacity() as u64;
-        let desired_index = entity_hash.desired_index(probe_len) as usize;
+        let probe_len = self.capacity().try_into().map_err(|_| ArrayStorageError)?;
+        let desired_index = entity_hash
+            .desired_index(probe_len)
+            .try_into()
+            .map_err(|_| ArrayStorageError)?;
 
         let mut skip = desired_index;
         let mut distances = 0..;
@@ -310,7 +313,10 @@ where
                 let &mut HashIndex::Occupied { hash, index } = hash_index else {
                     break 'outer AttachOperation::Replace { hash_index };
                 };
-                let probe_distance = hash.probe_distance(probe_len, current as u64);
+                let probe_distance = hash.probe_distance(
+                    probe_len,
+                    current.try_into().map_err(|_| ArrayStorageError)?,
+                );
                 if distance > probe_distance {
                     break 'outer AttachOperation::TakeFromRich {
                         start_index: current,
@@ -321,7 +327,7 @@ where
                 }
                 let &Bucket { key, .. } = self
                     .buckets
-                    .get(index as usize)
+                    .get(index)
                     .expect("index should point to the valid bucket");
                 if entity.index() != key.index() || entity.generation() < key.generation() {
                     continue;
@@ -343,14 +349,14 @@ where
                     }
                     *hash_index = HashIndex::Occupied {
                         hash: entity_hash,
-                        index: self.buckets.len() as u32 - 1,
+                        index: self.buckets.len() - 1,
                     };
                     return Ok(None);
                 }
                 &mut HashIndex::Occupied { index, .. } => {
                     let Bucket { value, .. } = self
                         .buckets
-                        .get_mut(index as usize)
+                        .get_mut(index)
                         .expect("index should point to the valid bucket");
                     let component = mem::replace(value, component);
                     return Ok(Some(component));
@@ -361,7 +367,7 @@ where
 
         let mut hash_index = HashIndex::Occupied {
             hash: entity_hash,
-            index: self.buckets.len() as u32,
+            index: self.buckets.len(),
         };
         skip = start_index;
         loop {
@@ -408,7 +414,7 @@ where
         let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
         let Bucket { value, .. } = self
             .buckets
-            .get(bucket_index as usize)
+            .get(bucket_index)
             .expect("index should point to the valid bucket");
         Some(value)
     }
@@ -425,7 +431,7 @@ where
         let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
         let Bucket { value, .. } = self
             .buckets
-            .get_mut(bucket_index as usize)
+            .get_mut(bucket_index)
             .expect("index should point to the valid bucket");
         Some(value)
     }
@@ -447,26 +453,26 @@ where
         {
             let hash_index = self
                 .indices
-                .get_mut(hash_index as usize)
+                .get_mut(hash_index)
                 .expect("index should point to the valid hash index");
             *hash_index = Self::EMPTY_INDEX;
         }
 
         let bucket = self
             .buckets
-            .swap_pop(bucket_index as usize)
+            .swap_pop(bucket_index)
             .expect("index should point to the valid bucket");
-        if let Some(bucket) = self.buckets.get(bucket_index as usize) {
+        if let Some(bucket) = self.buckets.get(bucket_index) {
             let &Bucket { hash, .. } = bucket;
-            let probe_len = self.capacity() as u64;
-            let desired_index = hash.desired_index(probe_len) as usize;
+            let probe_len = self.capacity().try_into().ok()?;
+            let desired_index = hash.desired_index(probe_len).try_into().ok()?;
             let mut skip = desired_index;
             'outer: loop {
                 for hash_index in self.indices.iter_mut().skip(skip) {
                     let &mut HashIndex::Occupied { index, .. } = hash_index else {
                         continue;
                     };
-                    if (index as usize) < self.buckets.len() {
+                    if index < self.buckets.len() {
                         continue;
                     }
                     *hash_index = HashIndex::Occupied {
@@ -479,15 +485,16 @@ where
             }
         }
 
-        let mut last_current = hash_index as usize;
-        let probe_len = self.capacity() as u64;
+        let mut last_current = hash_index;
+        let probe_len = self.capacity();
         let mut skip = last_current + 1;
         'outer: loop {
-            for current in skip..probe_len as usize {
+            for current in skip..probe_len {
                 let HashIndex::Occupied { hash, .. } = self.indices[current] else {
                     break 'outer;
                 };
-                let probe_distance = hash.probe_distance(probe_len, current as u64);
+                let probe_len = probe_len.try_into().ok()?;
+                let probe_distance = hash.probe_distance(probe_len, current.try_into().ok()?);
                 if probe_distance == 0 {
                     break 'outer;
                 }
@@ -796,7 +803,7 @@ mod tests {
     #[test]
     fn attach_many() {
         let mut storage = HashArrayStorage::new();
-        for index in 0..storage.capacity() as u32 {
+        for index in 0..storage.capacity().try_into().unwrap() {
             let entity = Entity::new(index, 0);
             storage.attach(entity, Marker);
             assert!(storage.is_attached(entity));

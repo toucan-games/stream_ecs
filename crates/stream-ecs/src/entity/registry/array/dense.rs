@@ -13,8 +13,8 @@ use super::ArrayRegistryError;
 
 #[derive(Debug, Clone)]
 enum SlotEntry {
-    Occupied { dense_index: u32 },
-    Free { next_free: u32 },
+    Occupied { dense_index: usize },
+    Free { next_free: usize },
 }
 
 #[derive(Debug, Clone)]
@@ -23,13 +23,19 @@ struct Slot {
     generation: u32,
 }
 
+#[derive(Debug, Clone)]
+struct Dense {
+    index: usize,
+    generation: u32,
+}
+
 /// Implementation of the entity registry backed by an array
 /// which stores entities in a dense array.
 #[derive(Debug, Clone, Default)]
 pub struct DenseArrayRegistry<const N: usize> {
-    dense: ArrayVec<Entity, N>,
+    dense: ArrayVec<Dense, N>,
     sparse: ArrayVec<Slot, N>,
-    free_head: u32,
+    free_head: usize,
 }
 
 impl<const N: usize> DenseArrayRegistry<N> {
@@ -122,40 +128,45 @@ impl<const N: usize> DenseArrayRegistry<N> {
     ///
     /// This is the fallible version of [`create`][Self::create()] method.
     pub fn try_create(&mut self) -> Result<Entity, ArrayRegistryError> {
-        if self.len() == self.capacity() {
-            return Err(ArrayRegistryError);
-        }
-
-        let entity = if let Some(slot) = self.sparse.get_mut(self.free_head as usize) {
+        let entity = if let Some(slot) = self.sparse.get_mut(self.free_head) {
             if let SlotEntry::Free { next_free } = slot.entry {
-                let entity = Entity::new(self.free_head, slot.generation);
-                if self.dense.try_push(entity).is_err() {
+                let index = self.free_head;
+                let dense = Dense {
+                    index,
+                    generation: slot.generation,
+                };
+                let index = index.try_into().map_err(|_| ArrayRegistryError)?;
+                let entity = Entity::new(index, dense.generation);
+                if self.dense.try_push(dense).is_err() {
                     return Err(ArrayRegistryError);
                 }
                 self.free_head = next_free;
                 slot.entry = SlotEntry::Occupied {
-                    dense_index: self.dense.len() as u32 - 1,
+                    dense_index: self.dense.len() - 1,
                 };
                 entity
             } else {
                 unreachable!("free head must not point to the occupied entry")
             }
         } else {
+            let index = self.free_head;
             let generation = 0;
-            let entity = Entity::new(self.free_head, generation);
+            let dense = Dense { index, generation };
+            let index = index.try_into().map_err(|_| ArrayRegistryError)?;
+            let entity = Entity::new(index, dense.generation);
             let slot = Slot {
                 entry: SlotEntry::Occupied {
-                    dense_index: self.dense.len() as u32,
+                    dense_index: self.dense.len(),
                 },
                 generation,
             };
-            if self.dense.try_push(entity).is_err() {
+            if self.dense.try_push(dense).is_err() {
                 return Err(ArrayRegistryError);
             }
             if self.sparse.try_push(slot).is_err() {
                 return Err(ArrayRegistryError);
             }
-            self.free_head = self.sparse.len() as u32;
+            self.free_head = self.sparse.len();
             entity
         };
         Ok(entity)
@@ -185,7 +196,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
         let SlotEntry::Occupied { dense_index } = slot.entry else {
             return false;
         };
-        let Some(_) = self.dense.get(dense_index as usize) else {
+        let Some(_) = self.dense.get(dense_index) else {
             return false;
         };
         slot.generation == entity.generation()
@@ -222,7 +233,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
         let SlotEntry::Occupied { dense_index } = slot.entry else {
             return Err(NotPresentError::new(entity));
         };
-        let Some(_) = self.dense.get(dense_index as usize) else {
+        let Some(_) = self.dense.get(dense_index) else {
             return Err(NotPresentError::new(entity));
         };
         if slot.generation != entity.generation() {
@@ -232,12 +243,12 @@ impl<const N: usize> DenseArrayRegistry<N> {
             next_free: self.free_head,
         };
         slot.generation += 1;
-        self.free_head = entity.index();
-        self.dense.swap_remove(dense_index as usize);
-        if let Some(entity) = self.dense.get(dense_index as usize) {
+        self.free_head = index;
+        self.dense.swap_remove(dense_index);
+        if let Some(dense) = self.dense.get(dense_index) {
             let slot = self
                 .sparse
-                .get_mut(entity.index() as usize)
+                .get_mut(dense.index)
                 .expect("index should point to the valid slot");
             slot.entry = match slot.entry {
                 SlotEntry::Occupied { .. } => SlotEntry::Occupied { dense_index },
@@ -393,14 +404,17 @@ impl<const N: usize> IntoIterator for DenseArrayRegistry<N> {
 /// Iterator over alive entities contained in the dense array registry.
 #[derive(Debug, Clone)]
 pub struct Iter<'data> {
-    iter: slice::Iter<'data, Entity>,
+    iter: slice::Iter<'data, Dense>,
 }
 
 impl Iterator for Iter<'_> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().copied()
+        let Dense { index, generation } = self.iter.next().cloned()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
+        Some(entity)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -410,7 +424,10 @@ impl Iterator for Iter<'_> {
 
 impl DoubleEndedIterator for Iter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back().copied()
+        let Dense { index, generation } = self.iter.next_back().cloned()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
+        Some(entity)
     }
 }
 
@@ -425,14 +442,17 @@ impl FusedIterator for Iter<'_> {}
 /// Type of iterator in which dense array registry can be converted.
 #[derive(Debug, Clone)]
 pub struct IntoIter<const N: usize> {
-    iter: arrayvec::IntoIter<Entity, N>,
+    iter: arrayvec::IntoIter<Dense, N>,
 }
 
 impl<const N: usize> Iterator for IntoIter<N> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        let Dense { index, generation } = self.iter.next()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
+        Some(entity)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -442,7 +462,10 @@ impl<const N: usize> Iterator for IntoIter<N> {
 
 impl<const N: usize> DoubleEndedIterator for IntoIter<N> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back()
+        let Dense { index, generation } = self.iter.next_back()?;
+        let index = index.try_into().ok()?;
+        let entity = Entity::new(index, generation);
+        Some(entity)
     }
 }
 
