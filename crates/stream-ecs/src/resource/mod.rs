@@ -2,6 +2,7 @@
 
 use as_any::AsAny;
 
+/// Derive macro for [`Resource`] trait.
 #[cfg(feature = "derive")]
 pub use stream_ecs_macros::Resource;
 

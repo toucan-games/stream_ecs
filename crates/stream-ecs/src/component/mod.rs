@@ -2,6 +2,7 @@
 
 use self::storage::Storage;
 
+/// Derive macro for [`Component`] trait.
 #[cfg(feature = "derive")]
 pub use stream_ecs_macros::Component;
 
