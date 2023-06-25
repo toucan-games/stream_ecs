@@ -35,6 +35,7 @@ enum Slot {
 /// This storage stores entities and their components inline, one component after another,
 /// compared to [default implementation], which can have holes in it.
 /// This feature of dense storage allows to iterate over data *really* fast, as fast as with slice.
+/// But it has the cost: additional space required to track indices of dense array in separate sparse array.
 ///
 /// As the [default implementation] of array storage,
 /// it can store exactly `N` components of specified type `T`.

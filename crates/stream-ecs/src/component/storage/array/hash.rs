@@ -60,6 +60,56 @@ enum HashIndex {
 }
 
 /// Hash implementation of the component storage backed by an array.
+///
+/// Main feature of this implementation is hashing of input entities,
+/// which allows to store entities with indices which can be *way* bigger
+/// than actual capacity of this hash array storage storage.
+///
+/// As the [dense implementation], all the data is stored inline, one component after another.
+/// Iteration is as fast, so the cost is the same.
+///
+/// As the [default implementation] of array storage,
+/// it can store exactly `N` components of specified type `T`.
+///
+/// [dense implementation]: super::dense::DenseArrayStorage
+/// [default implementation]: super::basic::ArrayStorage
+///
+/// Consider we have component which represents position of an object:
+///
+/// ```
+/// use std::collections::hash_map::RandomState;
+///
+/// use stream_ecs::component::{storage::array::HashArrayStorage, Component};
+///
+/// #[derive(Debug, Clone, Copy, PartialEq, Component)]
+/// #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+/// # #[component(crate = stream_ecs)]
+/// struct Position {
+///     x: f32,
+///     y: f32,
+/// }
+/// ```
+///
+/// Then we can store components of this type in a dense array storage:
+///
+/// ```
+/// # use std::collections::hash_map::RandomState;
+/// # use stream_ecs::component::{storage::array::HashArrayStorage, Component};
+/// use stream_ecs::entity::Entity;
+/// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+/// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+/// # #[component(crate = stream_ecs)]
+/// # struct Position {
+/// #     x: f32,
+/// #     y: f32,
+/// # }
+///
+/// let mut storage = HashArrayStorage::new();
+/// let entity = Entity::new(5, 0);
+///
+/// storage.attach(entity, Position { x: 0.0, y: 0.0 });
+/// assert!(storage.is_attached(entity));
+/// ```
 #[derive(Debug, Clone)]
 pub struct HashArrayStorage<T, S, const N: usize>
 where
