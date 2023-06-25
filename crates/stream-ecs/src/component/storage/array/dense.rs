@@ -31,6 +31,49 @@ enum Slot {
 }
 
 /// Dense implementation of the component storage backed by an array.
+///
+/// This storage stores entities and their components inline, one component after another,
+/// compared to [default implementation], which can have holes in it.
+/// This feature of dense storage allows to iterate over data *really* fast, as fast as with slice.
+///
+/// As the [default implementation] of array storage,
+/// it can store exactly `N` components of specified type `T`.
+///
+/// [default implementation]: super::basic::ArrayStorage
+///
+/// Consider we have component which represents position of an object:
+///
+/// ```
+/// use stream_ecs::component::{storage::array::DenseArrayStorage, Component};
+///
+/// #[derive(Debug, Clone, Copy, PartialEq, Component)]
+/// #[component(storage = DenseArrayStorage<Self, 10>)]
+/// # #[component(crate = stream_ecs)]
+/// struct Position {
+///     x: f32,
+///     y: f32,
+/// }
+/// ```
+///
+/// Then we can store components of this type in a dense array storage:
+///
+/// ```
+/// # use stream_ecs::component::{storage::array::DenseArrayStorage, Component};
+/// use stream_ecs::entity::Entity;
+/// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+/// # #[component(storage = DenseArrayStorage<Self, 10>)]
+/// # #[component(crate = stream_ecs)]
+/// # struct Position {
+/// #     x: f32,
+/// #     y: f32,
+/// # }
+///
+/// let mut storage = DenseArrayStorage::new();
+/// let entity = Entity::new(5, 0);
+///
+/// storage.attach(entity, Position { x: 0.0, y: 0.0 });
+/// assert!(storage.is_attached(entity));
+/// ```
 #[derive(Debug, Clone)]
 pub struct DenseArrayStorage<T, const N: usize>
 where
@@ -52,7 +95,32 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::component::storage::array::DenseArrayStorage;
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let storage = DenseArrayStorage::<Position, 10>::new();
+    /// assert!(storage.is_empty());
+    /// ```
+    ///
+    /// It also can be used to create globally accessible dense component storage of fixed size:
+    ///
+    /// ```
+    /// # use stream_ecs::component::{storage::array::DenseArrayStorage, Component};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    /// const STORAGE: DenseArrayStorage<Position, 10> = DenseArrayStorage::new();
     /// ```
     pub const fn new() -> Self {
         Self {
@@ -66,7 +134,18 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::component::storage::array::DenseArrayStorage;
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let storage = DenseArrayStorage::<Position, 10>::new();
+    /// assert_eq!(storage.capacity(), 10);
     /// ```
     pub const fn capacity(&self) -> usize {
         self.dense.capacity()
@@ -80,8 +159,7 @@ where
     ///
     /// # Panics
     ///
-    /// This function will panic if the count of components attached to some entities
-    /// is the same as the capacity of the storage.
+    /// This function will panic if provided entity index is larger than capacity of the storage.
     ///
     /// If you wish to handle an error rather than panicking,
     /// you should use [`try_attach`][Self::try_attach()] method.
@@ -89,7 +167,25 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    ///
+    /// let entity = Entity::new(0, 0);
+    /// let component = storage.attach(entity, Position { x: 10.0, y: 12.0 });
+    /// assert_eq!(component, None);
+    ///
+    /// let entity = Entity::new(0, 1);
+    /// let component = storage.attach(entity, Position { x: 0.0, y: 0.0 });
+    /// assert_eq!(component, Some(Position { x: 10.0, y: 12.0 }));
     /// ```
     #[track_caller]
     pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
@@ -104,13 +200,26 @@ where
     ///
     /// # Errors
     ///
-    /// This function will return an error if the count of components attached to some entities
-    /// is the same as the capacity of the storage.
+    /// This function will return an error if provided entity index is larger than capacity of the storage.
     ///
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    ///
+    /// let entity = Entity::new(11, 0);
+    /// let result = storage.try_attach(entity, Position { x: 0.0, y: 0.0 });
+    /// assert!(result.is_err());
     /// ```
     ///
     /// This is the fallible version of [`attach`][Self::attach()] method.
@@ -166,7 +275,24 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// let entity = Entity::new(0, 0);
+    ///
+    /// storage.attach(entity, Position { x: 0.0, y: 0.0 });
+    /// assert!(storage.is_attached(entity));
+    ///
+    /// storage.remove(entity);
+    /// assert!(!storage.is_attached(entity));
     /// ```
     pub fn is_attached(&self, entity: Entity) -> bool {
         let Ok(index) = usize::try_from(entity.index()) else {
@@ -190,7 +316,24 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// let entity = Entity::new(9, 12);
+    ///
+    /// storage.attach(entity, Position { x: 1.0, y: -1.0 });
+    /// assert_eq!(storage.get(entity), Some(&Position { x: 1.0, y: -1.0 }));
+    ///
+    /// storage.remove(entity);
+    /// assert_eq!(storage.get(entity), None);
     /// ```
     pub fn get(&self, entity: Entity) -> Option<&T> {
         let index = usize::try_from(entity.index()).ok()?;
@@ -211,7 +354,25 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// let entity = Entity::new(9, 12);
+    ///
+    /// storage.attach(entity, Position { x: 1.0, y: -1.0 });
+    /// *storage.get_mut(entity).unwrap() = Position { x: 0.0, y: 2.0 };
+    /// assert_eq!(storage.get_mut(entity), Some(&mut Position { x: 0.0, y: 2.0 }));
+    ///
+    /// storage.remove(entity);
+    /// assert_eq!(storage.get_mut(entity), None);
     /// ```
     pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
         let index = usize::try_from(entity.index()).ok()?;
@@ -232,7 +393,25 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// let entity = Entity::new(0, 0);
+    ///
+    /// let component = storage.remove(entity);
+    /// assert_eq!(component, None);
+    ///
+    /// storage.attach(entity, Position { x: 0.0, y: -10.0 });
+    /// let component = storage.remove(entity);
+    /// assert_eq!(component, Some(Position { x: 0.0, y: -10.0 }));
     /// ```
     pub fn remove(&mut self, entity: Entity) -> Option<T> {
         let index = usize::try_from(entity.index()).ok()?;
@@ -272,7 +451,24 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    ///
+    /// storage.attach(Entity::new(5, 1), Position { x: 0.0, y: 0.0 });
+    /// storage.attach(Entity::new(9, 6), Position { x: 10.0, y: -10.0 });
+    /// assert!(!storage.is_empty());
+    ///
+    /// storage.clear();
+    /// assert!(storage.is_empty());
     /// ```
     pub fn clear(&mut self) {
         self.dense.clear();
@@ -284,7 +480,21 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    ///
+    /// storage.attach(Entity::new(5, 1), Position { x: 0.0, y: 0.0 });
+    /// storage.attach(Entity::new(9, 6), Position { x: 10.0, y: -10.0 });
+    /// assert_eq!(storage.len(), 2);
     /// ```
     pub const fn len(&self) -> usize {
         self.dense.len()
@@ -295,7 +505,21 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// assert!(storage.is_empty());
+    ///
+    /// storage.attach(Entity::new(0, 0), Position { x: 0.0, y: 0.0 });
+    /// assert!(!storage.is_empty());
     /// ```
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
@@ -306,7 +530,26 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// storage.attach(Entity::new(1, 0), Position { x: 0.0, y: -10.0 });
+    /// storage.attach(Entity::new(7, 15), Position { x: 10.0, y: 0.0 });
+    /// storage.attach(Entity::new(9, 10), Position { x: 1.0, y: 23.0 });
+    ///
+    /// let mut iter = storage.iter();
+    /// assert_eq!(iter.next(), Some((Entity::new(1, 0), &Position { x: 0.0, y: -10.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(7, 15), &Position { x: 10.0, y: 0.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &Position { x: 1.0, y: 23.0 })));
+    /// assert_eq!(iter.next(), None);
     /// ```
     pub fn iter(&self) -> Iter<'_, T> {
         self.into_iter()
@@ -317,7 +560,26 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// use stream_ecs::{component::storage::array::DenseArrayStorage, entity::Entity};
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = DenseArrayStorage<Self, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = DenseArrayStorage::new();
+    /// storage.attach(Entity::new(1, 0), Position { x: 0.0, y: -10.0 });
+    /// storage.attach(Entity::new(7, 15), Position { x: 10.0, y: 0.0 });
+    /// storage.attach(Entity::new(9, 10), Position { x: 1.0, y: 23.0 });
+    ///
+    /// let mut iter = storage.iter_mut();
+    /// assert_eq!(iter.next(), Some((Entity::new(1, 0), &mut Position { x: 0.0, y: -10.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(7, 15), &mut Position { x: 10.0, y: 0.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &mut Position { x: 1.0, y: 23.0 })));
+    /// assert_eq!(iter.next(), None);
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.into_iter()

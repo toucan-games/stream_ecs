@@ -40,7 +40,7 @@ enum Slot<T> {
 /// }
 /// ```
 ///
-/// Then we can store components of this type in the array storage:
+/// Then we can store components of this type in a array storage:
 ///
 /// ```
 /// # use stream_ecs::component::{storage::array::ArrayStorage, Component};
