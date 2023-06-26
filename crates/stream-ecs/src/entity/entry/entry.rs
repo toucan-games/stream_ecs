@@ -28,6 +28,12 @@ where
 {
     /// Creates new entry of the specific entity.
     /// Returns [`None`] if there was no entity in provided entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new(entity: Entity, entities: &'state E, components: &'state C) -> Option<Self> {
         if entities.contains(entity) {
             let entry = Self {
@@ -43,6 +49,12 @@ where
     /// Creates new entity and an entry for it.
     ///
     /// New entity will be created by provided entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn spawn(entities: &'state mut E, components: &'state C) -> Self {
         let entity = entities.create();
         Self {
@@ -86,16 +98,34 @@ where
 
 impl<'state, E, C> Entry<'state, E, C> {
     /// Returns unique handle of the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entity(&self) -> Entity {
         self.entity
     }
 
     /// Retrieves a reference of the underlying entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entities(&self) -> &'state E {
         self.entities
     }
 
     /// Retrieves a reference of the underlying component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn components(&self) -> &'state C {
         self.components
     }

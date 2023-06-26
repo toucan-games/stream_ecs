@@ -18,9 +18,21 @@ pub trait Registry {
     ///
     /// This method can reuse indices from destroyed entities,
     /// but resulting key should be unique.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn create(&mut self) -> Entity;
 
     /// Checks if the registry contains provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn contains(&self, entity: Entity) -> bool;
 
     /// Destroys previously created entity.
@@ -40,14 +52,32 @@ pub trait Registry {
     fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError>;
 
     /// Returns count of currently alive entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn len(&self) -> usize;
 
     /// Checks if the registry contains no alive entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Clears the registry, destroying all the entities in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn clear(&mut self);
 
     /// Type of iterator of alive entities created by the registry.
@@ -56,6 +86,12 @@ pub trait Registry {
         Self: 'me;
 
     /// Returns an iterator of alive entities created by the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter(&self) -> Self::Iter<'_>;
 }
 

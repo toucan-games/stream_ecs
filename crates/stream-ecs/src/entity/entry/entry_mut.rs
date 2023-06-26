@@ -26,6 +26,12 @@ where
 {
     /// Creates new mutable entry of the specific entity.
     /// Returns [`None`] if there was no entity in provided entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new(entity: Entity, entities: &'state mut E, components: &'state mut C) -> Option<Self> {
         if entities.contains(entity) {
             let entry = Self {
@@ -41,6 +47,12 @@ where
     /// Creates new entity and a mutable entry for it.
     ///
     /// New entity will be created by provided entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn spawn(entities: &'state mut E, components: &'state mut C) -> Self {
         let entity = entities.create();
         Self {
@@ -51,6 +63,12 @@ where
     }
 
     /// Destroys the underlying entity, returning its handle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn destroy(self) -> Entity {
         let Self {
             entity, entities, ..
@@ -95,16 +113,34 @@ where
 
 impl<'state, E, C> EntryMut<'state, E, C> {
     /// Returns unique handle of the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entity(&self) -> Entity {
         self.entity
     }
 
     /// Retrieves a reference of the underlying entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entities(&self) -> &E {
         self.entities
     }
 
     /// Retrieves a reference of the underlying component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn components(&self) -> &C {
         self.components
     }

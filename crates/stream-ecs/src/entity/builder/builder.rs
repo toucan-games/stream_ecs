@@ -24,13 +24,19 @@ use crate::{
 ///
 /// [build]: EntityBuilder::build()
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityBuilder<T = Nil>(T);
 
 impl EntityBuilder {
     /// Creates an empty entity builder.
     ///
     /// Returns new builder without any components attached to it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub const fn empty() -> Self {
         EntityBuilder(Nil)
     }
@@ -44,6 +50,12 @@ where
     ///
     /// Contents of inserted bundles will be attached to the entity
     /// in the order of their insertion.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn with<B>(self, bundle: B) -> EntityBuilder<T::Output<B>>
     where
         B: Bundle,
