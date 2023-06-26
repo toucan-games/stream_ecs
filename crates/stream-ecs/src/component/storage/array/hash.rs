@@ -63,7 +63,7 @@ enum HashIndex {
 ///
 /// Main feature of this implementation is hashing of input entities,
 /// which allows to store entities with indices which can be *way* bigger
-/// than actual capacity of this hash array storage storage.
+/// than actual capacity of this hash array storage.
 ///
 /// As the [dense implementation], all the data is stored inline, one component after another.
 /// Iteration is as fast, so the cost is the same.
@@ -130,7 +130,19 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// use stream_ecs::component::storage::array::HashArrayStorage;
+    /// # use stream_ecs::component::Component;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::<Position, _, 10>::new();
+    /// assert!(storage.is_empty());
     /// ```
     pub fn new() -> Self {
         let build_hasher = S::default();
@@ -149,8 +161,72 @@ where
     ///
     /// # Examples
     ///
+    /// Suppose we have component for velocity with custom hasher builder:
+    ///
     /// ```
-    /// todo!()
+    /// use core::hash::BuildHasher;
+    /// use std::collections::hash_map::DefaultHasher;
+    ///
+    /// use stream_ecs::component::{storage::array::HashArrayStorage, Component};
+    ///
+    /// struct MyBuildHasher;
+    ///
+    /// impl BuildHasher for MyBuildHasher {
+    ///     type Hasher = DefaultHasher;
+    ///     fn build_hasher(&self) -> Self::Hasher { DefaultHasher::new() }
+    /// }
+    ///
+    /// #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// #[component(storage = HashArrayStorage<Self, MyBuildHasher, 42>)]
+    /// # #[component(crate = stream_ecs)]
+    /// struct Velocity {
+    ///     dx: f32,
+    ///     dy: f32,
+    /// }
+    /// ```
+    ///
+    /// Then we can create hash component storage with provided hasher builder:
+    ///
+    /// ```
+    /// # use core::hash::BuildHasher;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::{storage::array::HashArrayStorage, Component};
+    /// # struct MyBuildHasher;
+    /// # impl BuildHasher for MyBuildHasher {
+    /// #     type Hasher = DefaultHasher;
+    /// #     fn build_hasher(&self) -> Self::Hasher { DefaultHasher::new() }
+    /// # }
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, MyBuildHasher, 42>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Velocity {
+    /// #     dx: f32,
+    /// #     dy: f32,
+    /// # }
+    /// let storage = HashArrayStorage::<Velocity, _, 42>::with_hasher(MyBuildHasher);
+    /// assert!(storage.is_empty());
+    /// ```
+    ///
+    /// It also can be used to create globally accessible hash array component storage of fixed size:
+    ///
+    /// ```
+    /// # use core::hash::BuildHasher;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::{storage::array::HashArrayStorage, Component};
+    /// # struct MyBuildHasher;
+    /// # impl BuildHasher for MyBuildHasher {
+    /// #     type Hasher = DefaultHasher;
+    /// #     fn build_hasher(&self) -> Self::Hasher { DefaultHasher::new() }
+    /// # }
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, MyBuildHasher, 42>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Velocity {
+    /// #     dx: f32,
+    /// #     dy: f32,
+    /// # }
+    /// const STORAGE: HashArrayStorage<Velocity, MyBuildHasher, 42> =
+    ///     HashArrayStorage::with_hasher(MyBuildHasher);
     /// ```
     pub const fn with_hasher(build_hasher: S) -> Self {
         Self {
@@ -165,7 +241,19 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::component::storage::array::HashArrayStorage;
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let storage = HashArrayStorage::<Position, _, 10>::new();
+    /// assert_eq!(storage.capacity(), 10);
     /// ```
     pub const fn capacity(&self) -> usize {
         self.buckets.capacity()
@@ -176,7 +264,25 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    ///
+    /// storage.attach(Entity::new(15, 1), Position { x: 0.0, y: 0.0 });
+    /// storage.attach(Entity::new(8, 6), Position { x: 10.0, y: -10.0 });
+    /// assert!(!storage.is_empty());
+    ///
+    /// storage.clear();
+    /// assert!(storage.is_empty());
     /// ```
     pub fn clear(&mut self) {
         self.buckets.clear();
@@ -188,7 +294,22 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    ///
+    /// storage.attach(Entity::new(50, 1), Position { x: 0.0, y: 0.0 });
+    /// storage.attach(Entity::new(97, 63), Position { x: 10.0, y: -10.0 });
+    /// assert_eq!(storage.len(), 2);
     /// ```
     pub const fn len(&self) -> usize {
         self.buckets.len()
@@ -199,7 +320,22 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// assert!(storage.is_empty());
+    ///
+    /// storage.attach(Entity::new(0, 0), Position { x: 0.0, y: 0.0 });
+    /// assert!(!storage.is_empty());
     /// ```
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
@@ -210,7 +346,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// storage.attach(Entity::new(1, 0), Position { x: 0.0, y: -10.0 });
+    /// storage.attach(Entity::new(7, 15), Position { x: 10.0, y: 0.0 });
+    /// storage.attach(Entity::new(9, 10), Position { x: 1.0, y: 23.0 });
+    ///
+    /// let mut iter = storage.iter();
+    /// assert_eq!(iter.next(), Some((Entity::new(1, 0), &Position { x: 0.0, y: -10.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(7, 15), &Position { x: 10.0, y: 0.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &Position { x: 1.0, y: 23.0 })));
+    /// assert_eq!(iter.next(), None);
     /// ```
     pub fn iter(&self) -> Iter<'_, T> {
         self.into_iter()
@@ -221,7 +377,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// storage.attach(Entity::new(1, 0), Position { x: 0.0, y: -10.0 });
+    /// storage.attach(Entity::new(7, 15), Position { x: 10.0, y: 0.0 });
+    /// storage.attach(Entity::new(9, 10), Position { x: 1.0, y: 23.0 });
+    ///
+    /// let mut iter = storage.iter_mut();
+    /// assert_eq!(iter.next(), Some((Entity::new(1, 0), &mut Position { x: 0.0, y: -10.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(7, 15), &mut Position { x: 10.0, y: 0.0 })));
+    /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &mut Position { x: 1.0, y: 23.0 })));
+    /// assert_eq!(iter.next(), None);
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.into_iter()
@@ -310,7 +486,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use core::hash::BuildHasherDefault;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    ///
+    /// let entity = Entity::new(15, 0);
+    /// let component = storage.attach(entity, Position { x: 10.0, y: 12.0 });
+    /// assert_eq!(component, None);
+    ///
+    /// let entity = Entity::new(15, 1);
+    /// let component = storage.attach(entity, Position { x: 0.0, y: 0.0 });
+    /// assert_eq!(component, Some(Position { x: 10.0, y: 12.0 }));
     /// ```
     #[track_caller]
     pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
@@ -331,7 +527,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use core::hash::BuildHasherDefault;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// for i in 0..10 {
+    ///     let entity = Entity::new(i + 10, 0);
+    ///     storage.attach(entity, Position { x: 10.0, y: 10.0 });
+    /// }
+    ///
+    /// let entity = Entity::new(36, 0);
+    /// let result = storage.try_attach(entity, Position { x: 0.0, y: 0.0 });
+    /// assert!(result.is_err());
     /// ```
     ///
     /// This is the fallible version of [`attach`][Self::attach()] method.
@@ -446,7 +662,26 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use core::hash::BuildHasherDefault;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// let entity = Entity::new(100, 0);
+    ///
+    /// storage.attach(entity, Position { x: 0.0, y: 0.0 });
+    /// assert!(storage.is_attached(entity));
+    ///
+    /// storage.remove(entity);
+    /// assert!(!storage.is_attached(entity));
     /// ```
     pub fn is_attached(&self, entity: Entity) -> bool {
         self.find_bucket(entity).is_some()
@@ -458,7 +693,26 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use core::hash::BuildHasherDefault;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// let entity = Entity::new(90, 12);
+    ///
+    /// storage.attach(entity, Position { x: 1.0, y: -1.0 });
+    /// assert_eq!(storage.get(entity), Some(&Position { x: 1.0, y: -1.0 }));
+    ///
+    /// storage.remove(entity);
+    /// assert_eq!(storage.get(entity), None);
     /// ```
     pub fn get(&self, entity: Entity) -> Option<&T> {
         let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
@@ -475,7 +729,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use core::hash::BuildHasherDefault;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// let entity = Entity::new(96, 12);
+    ///
+    /// storage.attach(entity, Position { x: 1.0, y: -1.0 });
+    /// *storage.get_mut(entity).unwrap() = Position { x: 0.0, y: 2.0 };
+    /// assert_eq!(storage.get_mut(entity), Some(&mut Position { x: 0.0, y: 2.0 }));
+    ///
+    /// storage.remove(entity);
+    /// assert_eq!(storage.get_mut(entity), None);
     /// ```
     pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
         let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
@@ -492,7 +766,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// todo!()
+    /// # use core::hash::BuildHasherDefault;
+    /// # use std::collections::hash_map::DefaultHasher;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// let entity = Entity::new(127, 0);
+    ///
+    /// let component = storage.remove(entity);
+    /// assert_eq!(component, None);
+    ///
+    /// storage.attach(entity, Position { x: 0.0, y: -10.0 });
+    /// let component = storage.remove(entity);
+    /// assert_eq!(component, Some(Position { x: 0.0, y: -10.0 }));
     /// ```
     pub fn remove(&mut self, entity: Entity) -> Option<T> {
         let FindBucket {
