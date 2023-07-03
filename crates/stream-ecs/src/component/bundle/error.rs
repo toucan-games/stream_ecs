@@ -8,6 +8,12 @@ use derive_more::{Display, From};
 use crate::component::Component;
 
 /// The error type which is returned when component type was not registered in the component registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy)]
 #[display(fmt = r#"component of type "{type_name}" was not registered"#)]
 pub struct NotRegisteredError {
@@ -17,6 +23,12 @@ pub struct NotRegisteredError {
 
 impl NotRegisteredError {
     /// Creates new error for the component type that was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new<T>() -> Self
     where
         T: Component,
@@ -28,6 +40,12 @@ impl NotRegisteredError {
     }
 
     /// Returns [`TypeId`] of component that was not registered in the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn type_id(self) -> TypeId {
         self.type_id
     }

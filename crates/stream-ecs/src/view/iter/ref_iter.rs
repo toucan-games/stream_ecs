@@ -4,6 +4,12 @@ use crate::{
 };
 
 /// Iterator for the borrow of the view.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct ViewRefIter<'fetch, Q, E>
 where
     Q: AsReadonly,

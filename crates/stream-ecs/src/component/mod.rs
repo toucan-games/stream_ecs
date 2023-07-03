@@ -17,6 +17,12 @@ pub mod storage;
 ///
 /// It implements [`Copy`] trait to ensure that type does not manage some resource
 /// because copyable types cannot implement [`Drop`].
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Component: Copy + 'static {
     /// Type of storage which will be used to store this type of component.
     type Storage: Storage<Item = Self>;

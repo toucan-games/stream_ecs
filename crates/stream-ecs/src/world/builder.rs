@@ -13,6 +13,12 @@ use crate::{
 };
 
 /// Type of entity builder with state provided by entity and component registries.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
 #[derive(Debug)]
 pub struct EntityBuilder<'state, E, C, T = Nil> {
@@ -25,6 +31,12 @@ impl<'state, E, C> EntityBuilder<'state, E, C> {
     /// Creates an empty entity builder with provided entity and component registries.
     ///
     /// Returns new builder without any components attached to it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new(entities: &'state mut E, components: &'state mut C) -> Self {
         let builder = builder::EntityBuilder::empty();
         Self::from_builder(entities, components, builder)
@@ -36,6 +48,12 @@ impl<'state, E, C, T> EntityBuilder<'state, E, C, T> {
     /// and entity and component registries.
     ///
     /// Returns new builder with all the components from the stateless builder.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn from_builder(
         entities: &'state mut E,
         components: &'state mut C,
@@ -57,6 +75,12 @@ where
     ///
     /// Contents of inserted bundles will be attached to the entity
     /// in the order of their insertion.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn with<B>(self, bundle: B) -> EntityBuilder<'state, E, C, T::Output<B>>
     where
         B: Bundle,

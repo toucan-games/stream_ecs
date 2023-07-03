@@ -16,6 +16,12 @@ use crate::{
 use super::view_ref::ViewRef;
 
 /// Stateful view of entities and their components.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct View<'state, Q, E>
 where
     Q: Query,
@@ -31,6 +37,12 @@ where
     E: Entities,
 {
     /// Creates new view of entities from provided entity and mutable component registries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new<C>(entities: &'state E, components: &'state mut C) -> Option<Self>
     where
         C: Components,
@@ -40,12 +52,24 @@ where
     }
 
     /// Creates new view from provided entity registry and fetcher object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn from_fetch(entities: &'state E, fetch: Q::Fetch<'state>) -> Self {
         let view = view::View::from_fetch(fetch);
         Self::from_view(entities, view)
     }
 
     /// Creates new stateful view from provided entity registry and view.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn from_view(entities: &'state E, view: view::View<'state, Q>) -> Self {
         Self { entities, view }
     }
@@ -94,6 +118,12 @@ where
     }
 
     /// Turn this view into a mutable iterator of entities and their data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn iter_mut(&mut self) -> ViewIterMut<'_, 'state, Q, E::Iter<'_>> {
         let Self { entities, view } = self;
         let entities = entities.iter();
@@ -107,6 +137,12 @@ where
     E: Entities,
 {
     /// Converts this view into readonly view.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn into_readonly(self) -> View<'state, Q::Readonly, E> {
         let Self { entities, view } = self;
         let view = view.into_readonly();
@@ -120,6 +156,12 @@ where
     E: Entities,
 {
     /// Returns a borrow of the view.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn as_readonly(&self) -> ViewRef<'_, Q, E> {
         let Self { entities, view } = self;
         let view_ref = view.as_readonly();
@@ -133,6 +175,12 @@ where
     E: Entities,
 {
     /// Creates new view of entities from provided entity and component registries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new_readonly<C>(entities: &'state E, components: &'state C) -> Option<Self>
     where
         C: Components,
@@ -164,6 +212,12 @@ where
     }
 
     /// Turn this view into an iterator of entities and their data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn iter(&self) -> ViewIter<'_, 'state, Q, E::Iter<'_>> {
         self.into_iter()
     }

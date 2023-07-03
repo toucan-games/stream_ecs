@@ -12,6 +12,12 @@ mod impls;
 ///
 /// This trait is implemented for all of resources since they can be inserted and removed trivially.
 /// Also it is implemented for heterogenous lists of resources of any size (but not for an empty one).
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Bundle: Sized + 'static {
     /// Type of the registry with this resource bundle.
     type With<R>
@@ -20,6 +26,12 @@ pub trait Bundle: Sized + 'static {
 
     /// Inserts provided resource bundle into the registry,
     /// resulting in a registry with a new type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn with<R>(resources: R, bundle: Self) -> Self::With<R>
     where
         R: Resources;
@@ -28,6 +40,12 @@ pub trait Bundle: Sized + 'static {
     ///
     /// Returns previous bundle data inserted in the registry earlier.
     /// Returns [`None`] if there was no bundle inserted in the registry or some of bundle parts are missing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn insert<R>(resources: &mut R, bundle: Self) -> Option<Self>
     where
         R: ResourcesMut;
@@ -36,17 +54,35 @@ pub trait Bundle: Sized + 'static {
     ///
     /// Returns previous bundle data inserted in the registry earlier.
     /// Returns [`None`] if there was no bundle inserted in the registry or some of bundle parts are missing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn remove<R>(resources: &mut R) -> Option<Self>
     where
         R: ResourcesMut;
 
     /// Checks if all resources of the bundle are inserted to provided registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn contains<R>(resources: &R) -> bool
     where
         R: Resources;
 }
 
 /// Extension of bundle which allows to implement fallible operations for the bundle.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait TryBundle: Bundle {
     /// Tries to insert provided resource bundle to the registry.
     ///
@@ -71,24 +107,48 @@ pub trait TryBundle: Bundle {
 }
 
 /// Extension of bundle which allows to get a reference to a resource bundle from the registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the resource registry.
     type Ref<'resources>;
 
     /// Retrieves a reference to the resource bundle which is stored in provided registry.
     /// Returns [`None`] if provided registry does not have some bundle resource.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get<R>(resources: &R) -> Option<Self::Ref<'_>>
     where
         R: Resources;
 }
 
 /// Extension of bundle which allows to get a *mutable* reference to a resource bundle from the registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait GetBundleMut: Bundle {
     /// Type of a mutable reference to the bundle to retrieve from the resource registry.
     type RefMut<'resources>;
 
     /// Retrieves a mutable reference to the resource bundle which is stored in provided registry.
     /// Returns [`None`] if provided registry does not have some bundle resource.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get_mut<R>(resources: &mut R) -> Option<Self::RefMut<'_>>
     where
         R: Resources;
@@ -104,6 +164,12 @@ pub trait GetBundleMut: Bundle {
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
 /// Generally it does not need to be used in custom trait implementations,
 /// but definitely should be used in generic bounds to support all possible implementations.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait ProvideBundle<R, I = Here>: Bundle
 where
     R: Resources,
@@ -114,6 +180,12 @@ where
         R: 'resources;
 
     /// Retrieves a reference to the resource bundle which is stored in provided registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide(resources: &R) -> Self::Ref<'_>;
 }
 
@@ -127,6 +199,12 @@ where
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
 /// Generally it does not need to be used in custom trait implementations,
 /// but definitely should be used in generic bounds to support all possible implementations.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait ProvideBundleMut<R, I = Here>: Bundle
 where
     R: Resources,
@@ -137,5 +215,11 @@ where
         R: 'resources;
 
     /// Retrieves a mutable reference to the resource bundle which is stored in provided registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_>;
 }

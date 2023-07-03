@@ -4,6 +4,12 @@ use polonius_the_crab::prelude::*;
 use crate::{entity::Entity, view::query::Query};
 
 /// Iterator of the view.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct ViewIterMut<'borrow, 'fetch, Q, E>
 where
     Q: Query,

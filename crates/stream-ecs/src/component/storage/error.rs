@@ -6,6 +6,12 @@ use crate::component::Component;
 
 /// The error type which is returned when type of component was mismatched
 /// when trying to attach it to the entity with erased storage.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy)]
 #[display(fmt = r#"type of component in the storage was mismatched: \
                 provided type is "{provided_type_name}", \
@@ -19,6 +25,12 @@ pub struct TypeMismatchError {
 
 impl TypeMismatchError {
     /// Creates new error for the component type that was mismatched.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new<Actual>(provided: &dyn Any) -> Self
     where
         Actual: Component,
@@ -39,11 +51,23 @@ impl TypeMismatchError {
     }
 
     /// Returns [`TypeId`] of component that was provided by the caller.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn provided_type_id(self) -> TypeId {
         self.provided_type_id
     }
 
     /// Returns [`TypeId`] of component that was actually stored in the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn actual_type_id(self) -> TypeId {
         self.actual_type_id
     }

@@ -23,6 +23,12 @@ use crate::{
 /// Entity will be actually created on [`build`][build] function call.
 ///
 /// [build]: EntityBuilder::build()
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityBuilder<T = Nil>(T);
@@ -237,6 +243,13 @@ where
 }
 
 impl Default for EntityBuilder {
+    /// Creates default entity builder, which is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn default() -> Self {
         Self::empty()
     }

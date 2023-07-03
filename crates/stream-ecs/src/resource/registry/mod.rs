@@ -9,6 +9,12 @@ mod impls;
 /// Resource registry of the world.
 ///
 /// This trait represents type of container for [resources](Resource).
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Registry {
     /// Type of the registry with provided type of resource.
     type With<R>
@@ -17,31 +23,67 @@ pub trait Registry {
 
     /// Inserts provided resource into the registry,
     /// resulting in a registry with a new type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn with<R>(self, resource: R) -> Self::With<R>
     where
         R: Resource;
 
     /// Checks if the resource was previously inserted in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn contains<R>(&self) -> bool
     where
         R: Resource;
 
     /// Returns count of resources which are stored in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn len(&self) -> usize;
 
     /// Checks if the registry is empty, or has no resources.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Retrieves a reference to the inserted resource.
     /// Returns [`None`] if the resource was not inserted in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get<R>(&self) -> Option<&R>
     where
         R: Resource;
 
     /// Retrieves a mutable reference to the inserted resource.
     /// Returns [`None`] if the resource was not inserted in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get_mut<R>(&mut self) -> Option<&mut R>
     where
         R: Resource;
@@ -52,6 +94,12 @@ pub trait Registry {
         Self: 'me;
 
     /// Returns an iterator of references of all the resources contained in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter(&self) -> Self::Iter<'_>;
 
     /// Iterator which returns mutable references of all the resources contained in the registry.
@@ -60,12 +108,24 @@ pub trait Registry {
         Self: 'me;
 
     /// Returns an iterator of mutable references of all the resources contained in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
 /// Extension of resource registry which allows to modify state of the registry at runtime.
 ///
 /// Implementations of the trait could insert or remove new resources without changing the base type.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait RegistryMut: Registry {
     /// Inserts provided resource into the registry.
     /// Returns previous value of the resource, or [`None`] if the resource was not in the registry.
@@ -75,6 +135,12 @@ pub trait RegistryMut: Registry {
     ///
     /// [get]: Registry::get()
     /// [get_mut]: Registry::get_mut()
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn insert<R>(&mut self, resource: R) -> Option<R>
     where
         R: Resource;
@@ -86,15 +152,33 @@ pub trait RegistryMut: Registry {
     /// from the registry and returned to the user.
     ///
     /// [insert]: RegistryMut::insert()
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn remove<R>(&mut self) -> Option<R>
     where
         R: Resource;
 
     /// Clears the registry, removing all resources in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn clear(&mut self);
 }
 
 /// Extension of resource registry which allows to implement fallible operations for the registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait TryRegistryMut: RegistryMut {
     /// The type of error which can be returned on failure.
     type Err;
@@ -131,11 +215,23 @@ pub trait TryRegistryMut: RegistryMut {
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
 /// Generally it does not need to be used in custom trait implementations,
 /// but definitely should be used in generic bounds to support all possible implementations.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Provider<R, I = Here>: Registry
 where
     R: Resource,
 {
     /// Retrieves a reference to the resource of provided type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide(&self) -> &R {
         let Some(resource) = self.get() else {
             let type_name = core::any::type_name::<R>();
@@ -145,6 +241,12 @@ where
     }
 
     /// Retrieves a mutable reference to the resource of provided type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide_mut(&mut self) -> &mut R {
         let Some(resource) = self.get_mut() else {
             let type_name = core::any::type_name::<R>();

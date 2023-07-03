@@ -21,12 +21,24 @@ pub mod registry;
 /// Storing and accessing resources can be useful to access unique data in systems.
 ///
 /// [component]: crate::component::Component
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Resource: 'static {}
 
 /// Erased variant of resource of some resource type in ECS.
 ///
 /// Compared to [`Resource`] trait, this trait is guaranteed to be object safe, so it can be used as trait object.
 /// This trait is implemented for all the resources, so it can be used as trait object for any type of resource.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait ErasedResource: AsAny {}
 
 impl<T> ErasedResource for T where T: Resource {}

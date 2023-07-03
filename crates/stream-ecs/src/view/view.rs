@@ -9,6 +9,12 @@ use super::{
 };
 
 /// View of entities and their components.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct View<'fetch, Q>
 where
     Q: Query,
@@ -21,6 +27,12 @@ where
     Q: Query,
 {
     /// Creates new view of entities from provided mutable component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new<C>(components: &'fetch mut C) -> Option<Self>
     where
         C: Components,
@@ -30,23 +42,47 @@ where
     }
 
     /// Creates new view from provided fetcher object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn from_fetch(fetch: Q::Fetch<'fetch>) -> Self {
         Self { fetch }
     }
 
     /// Checks if provided entity satisfies this query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn satisfies(&self, entity: Entity) -> bool {
         let Self { fetch } = self;
         Q::satisfies(fetch, entity)
     }
 
     /// Get mutable items of the query by provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn get_mut(&mut self, entity: Entity) -> Option<Q::Item<'_>> {
         let Self { fetch } = self;
         Q::fetch(fetch, entity)
     }
 
     /// Turn this view into a mutable iterator of entities and their data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn iter_mut<I>(&mut self, entities: I) -> ViewIterMut<'_, 'fetch, Q, I::IntoIter>
     where
         I: IntoIterator<Item = Entity>,
@@ -61,6 +97,12 @@ where
     Q: IntoReadonly,
 {
     /// Converts this view into readonly view.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn into_readonly(self) -> View<'fetch, Q::Readonly> {
         let Self { fetch } = self;
         let fetch = Q::into_readonly(fetch);
@@ -73,6 +115,12 @@ where
     Q: AsReadonly,
 {
     /// Returns a borrow of the view.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn as_readonly(&self) -> ViewRef<'_, Q> {
         let Self { fetch } = self;
         let fetch = Q::as_readonly(fetch);
@@ -85,6 +133,12 @@ where
     Q: ReadonlyQuery,
 {
     /// Creates new view of entities from provided component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new_readonly<C>(components: &'fetch C) -> Option<Self>
     where
         C: Components,
@@ -94,12 +148,24 @@ where
     }
 
     /// Get items of the query by provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn get(&self, entity: Entity) -> Option<Q::Item<'fetch>> {
         let Self { fetch } = self;
         Q::readonly_fetch(fetch, entity)
     }
 
     /// Turn this view into an iterator of entities and their data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn iter<I>(&self, entities: I) -> ViewIter<'_, 'fetch, Q, I::IntoIter>
     where
         I: IntoIterator<Item = Entity>,

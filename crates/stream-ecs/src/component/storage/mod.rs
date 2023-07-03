@@ -18,6 +18,12 @@ mod error;
 /// This trait represents container of components attached to some entities.
 /// Furthermore, this trait defines basic operations for such container
 /// (for example, to insert or remove component from the storage).
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Storage: 'static {
     /// Type of component which is stored in this storage.
     type Item: Component<Storage = Self>;
@@ -27,30 +33,78 @@ pub trait Storage: 'static {
     ///
     /// Note that this method can reuse existing entities when provided entity
     /// is newer (its generation is greater) than an actual entity with the same index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item>;
 
     /// Checks if a component is attached to provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get(&self, entity: Entity) -> Option<&Self::Item>;
 
     /// Retrieves a mutable reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item>;
 
     /// Removes component from provided entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn remove(&mut self, entity: Entity) -> Option<Self::Item>;
 
     /// Clears this storage, destroying all components in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn clear(&mut self);
 
     /// Returns count of components which are stored in the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn len(&self) -> usize;
 
     /// Checks if the storage is empty, or has no components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -63,6 +117,12 @@ pub trait Storage: 'static {
 
     /// Returns an iterator over entity keys
     /// with references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter(&self) -> Self::Iter<'_>;
 
     /// Iterator which returns entity keys
@@ -73,10 +133,22 @@ pub trait Storage: 'static {
 
     /// Returns an iterator over entity keys
     /// with mutable references of components attached to them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
 /// Extension of storage which allows to implement fallible operations for the storage.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait TryStorage: Storage {
     /// The type of error which can be returned on failure.
     type Err;
@@ -111,6 +183,12 @@ pub trait TryStorage: Storage {
 ///
 /// Compared to [`Storage`] trait, this trait is guaranteed to be object safe, so it can be used as trait object.
 /// This trait is implemented for all the storages, so it can be used as trait object for any type of storage.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait ErasedStorage: AsAny {
     /// Attaches provided component to the entity
     /// only if type of provided component matches the type of component stored in the storage.
@@ -132,27 +210,69 @@ pub trait ErasedStorage: AsAny {
     fn attach(&mut self, entity: Entity, component: &dyn Any) -> Result<(), TypeMismatchError>;
 
     /// Checks if any component is attached to provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_attached(&self, entity: Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get(&self, entity: Entity) -> Option<&dyn Any>;
 
     /// Retrieves a mutable reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get_mut(&mut self, entity: Entity) -> Option<&mut dyn Any>;
 
     /// Removes component from provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     // FIXME: replace return type with `Option<impl Component>` when stabilized
     fn remove(&mut self, entity: Entity);
 
     /// Clears this storage, destroying all components in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn clear(&mut self);
 
     /// Returns count of components which are stored in the storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn len(&self) -> usize;
 
     /// Checks if the storage is empty, or has no components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_empty(&self) -> bool {
         self.len() == 0
     }

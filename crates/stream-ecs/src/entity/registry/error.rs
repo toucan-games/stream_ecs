@@ -12,11 +12,23 @@ pub struct NotPresentError {
 
 impl NotPresentError {
     /// Creates new error when the entity does not present in the entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn new(entity: Entity) -> Self {
         Self { entity }
     }
 
     /// Returns the entity that was does not present in the entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entity(self) -> Entity {
         self.entity
     }

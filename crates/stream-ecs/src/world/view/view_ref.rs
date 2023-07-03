@@ -11,6 +11,12 @@ use crate::{
 };
 
 /// Stateful readonly borrow of the view.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct ViewRef<'state, Q, E>
 where
     Q: AsReadonly,
@@ -76,6 +82,12 @@ where
     }
 
     /// Turn this view into an iterator of entities and their data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn iter(&self) -> ViewRefIter<'state, Q, E::Iter<'state>> {
         self.into_iter()
     }

@@ -6,6 +6,12 @@ use super::{
 };
 
 /// Readonly borrow of the view.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct ViewRef<'fetch, Q>
 where
     Q: AsReadonly,
@@ -22,18 +28,36 @@ where
     }
 
     /// Checks if provided entity satisfies this query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn satisfies(&self, entity: Entity) -> bool {
         let Self { fetch } = *self;
         Q::readonly_ref_satisfies(fetch, entity)
     }
 
     /// Get items of the query by provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn get(&self, entity: Entity) -> Option<<Q::Readonly as Query>::Item<'fetch>> {
         let Self { fetch } = *self;
         Q::readonly_ref_fetch(fetch, entity)
     }
 
     /// Turn this view into an iterator of entities and their data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn iter<I>(&self, entities: I) -> ViewRefIter<'fetch, Q, I::IntoIter>
     where
         I: IntoIterator<Item = Entity>,

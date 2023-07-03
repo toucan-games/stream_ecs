@@ -13,6 +13,12 @@ mod impls;
 /// (see [`Component::Storage`][component_storage] associated type).
 ///
 /// [component_storage]: super::Component::Storage
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Registry {
     /// Type of the registry with provided type of component.
     type With<C>
@@ -21,31 +27,67 @@ pub trait Registry {
 
     /// Inserts provided component storage into the registry,
     /// resulting in a registry with a new type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn with<C>(self, storage: C::Storage) -> Self::With<C>
     where
         C: Component;
 
     /// Checks if the component was previously registered in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_registered<C>(&self) -> bool
     where
         C: Component;
 
     /// Returns count of component storages which are stored in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn len(&self) -> usize;
 
     /// Checks if the registry is empty, or has no component storages.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Retrieves a reference to the storage of registered component.
     /// Returns [`None`] if provided component type was not registered.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get<C>(&self) -> Option<&C::Storage>
     where
         C: Component;
 
     /// Retrieves a mutable reference to the storage of registered component.
     /// Returns [`None`] if provided component type was not registered.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn get_mut<C>(&mut self) -> Option<&mut C::Storage>
     where
         C: Component;
@@ -58,6 +100,12 @@ pub trait Registry {
 
     /// Returns an iterator of references of all the storages
     /// for components registered in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter(&self) -> Self::Iter<'_>;
 
     /// Iterator which returns mutable references of all the storages
@@ -68,12 +116,24 @@ pub trait Registry {
 
     /// Returns an iterator of mutable references of all the storages
     /// for components registered in the registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
 }
 
 /// Extension of component registry which allows to modify state of the registry at runtime.
 ///
 /// Implementations of the trait could register or unregister new components without changing the base type.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait RegistryMut: Registry {
     /// Registers the component in the registry with provided component storage.
     /// Returns previous value of the storage, or [`None`] if the component was not registered.
@@ -83,6 +143,12 @@ pub trait RegistryMut: Registry {
     ///
     /// [get]: Registry::get()
     /// [get_mut]: Registry::get_mut()
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn register<C>(&mut self, storage: C::Storage) -> Option<C::Storage>
     where
         C: Component;
@@ -94,15 +160,33 @@ pub trait RegistryMut: Registry {
     /// from the registry and returned to the user.
     ///
     /// [register]: RegistryMut::register()
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn unregister<C>(&mut self) -> Option<C::Storage>
     where
         C: Component;
 
     /// Clears the registry, removing all component storages in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn clear(&mut self);
 }
 
 /// Extension of component registry which allows to implement fallible operations for the registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait TryRegistryMut: RegistryMut {
     /// The type of error which can be returned on failure.
     type Err;
@@ -139,11 +223,23 @@ pub trait TryRegistryMut: RegistryMut {
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
 /// Generally it does not need to be used in custom trait implementations,
 /// but definitely should be used in generic bounds to support all possible implementations.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Provider<C, I = Here>: Registry
 where
     C: Component,
 {
     /// Retrieves a reference to the storage of provided component.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide(&self) -> &C::Storage {
         let Some(storage) = self.get::<C>() else {
             let type_name = core::any::type_name::<C>();
@@ -153,6 +249,12 @@ where
     }
 
     /// Retrieves a mutable reference to the storage of provided component type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide_mut(&mut self) -> &mut C::Storage {
         let Some(storage) = self.get_mut::<C>() else {
             let type_name = core::any::type_name::<C>();

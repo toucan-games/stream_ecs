@@ -13,6 +13,12 @@ pub mod dense;
 pub mod hash;
 
 /// The error type which is returned when array storage capacity was exceeded.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy)]
 #[display(fmt = "array storage capacity exceeded")]
 pub struct ArrayStorageError;

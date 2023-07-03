@@ -13,6 +13,12 @@ mod error;
 /// This trait represents type of container for unique entities of the current world.
 /// Result of using entities which was created in another world is unspecified
 /// and can vary from false-positives to errors and even panics.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Registry {
     /// Creates new entity which is registered in the registry.
     ///
@@ -96,6 +102,12 @@ pub trait Registry {
 }
 
 /// Extension of entity registry which allows to implement fallible operations for the registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait TryRegistry: Registry {
     /// The type of error which can be returned on failure.
     type Err;

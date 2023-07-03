@@ -14,6 +14,12 @@ use crate::{
 /// Use this struct to simplify access to the entity so
 /// you don't have to provide it each time to retrieve something:
 /// you can do it only once during struct initialization.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct EntryMut<'state, E, C> {
     entity: Entity,
     entities: &'state mut E,

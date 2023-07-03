@@ -15,6 +15,12 @@ mod impls;
 ///
 /// This trait is implemented for all of components since they can be attached and removed trivially.
 /// Also it is implemented for heterogenous lists of components of any size (but not for an empty one).
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Bundle: Copy + 'static {
     /// Storage bundle associated with this component bundle.
     type Storages: StorageBundle<Items = Self>;
@@ -79,6 +85,12 @@ pub trait Bundle: Copy + 'static {
 }
 
 /// Extension of bundle which allows to implement fallible operations for the bundle.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait TryBundle: Bundle {
     /// The type of error which can be returned on failure.
     type Err;
@@ -111,6 +123,12 @@ pub trait TryBundle: Bundle {
 }
 
 /// Extension of bundle which allows to get a reference to a bundle from the component registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait GetBundle: Bundle {
     /// Type of a reference to the bundle to retrieve from the component registry.
     type Ref<'components>;
@@ -134,6 +152,12 @@ pub trait GetBundle: Bundle {
 }
 
 /// Extension of bundle which allows to get a **mutable** reference to a bundle from the component registry.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait GetBundleMut: Bundle {
     /// Type of a mutable reference to the bundle to retrieve from the component registry.
     type RefMut<'components>;
@@ -169,6 +193,12 @@ pub trait GetBundleMut: Bundle {
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
 /// Generally it does not need to be used in custom trait implementations,
 /// but definitely should be used in generic bounds to support all possible implementations.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait ProvideBundle<C, I = Here>: Bundle
 where
     C: Components,
@@ -180,6 +210,12 @@ where
 
     /// Retrieves a reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have some bundle component.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>>;
 }
 
@@ -193,6 +229,12 @@ where
 /// Default generic parameter exists here only to work around the lack of specialization in Rust.
 /// Generally it does not need to be used in custom trait implementations,
 /// but definitely should be used in generic bounds to support all possible implementations.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait ProvideBundleMut<C, I = Here>: Bundle
 where
     C: Components,
@@ -204,5 +246,11 @@ where
 
     /// Retrieves a mutable reference to the bundle which components are attached to provided entity.
     /// Returns [`None`] if provided entity does not have some bundle component.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>;
 }

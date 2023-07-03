@@ -8,6 +8,12 @@ use crate::entity::builder::EntityBuilder;
 ///
 /// Similarly as in arenas, you can store it anywhere
 /// to obtain components attached to the entity.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[display(fmt = "{index}v{generation}")]
 pub struct Entity {

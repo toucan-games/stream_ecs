@@ -3,12 +3,24 @@
 mod impls;
 
 /// Type of dependency to be created from provided inputs.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Dependency<Input> {
     /// Type of container which stores provided inputs.
     type Container: Container<Input, Output = Self>;
 }
 
 /// Type of container which stores provided inputs into itself.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub trait Container<Input>: Default {
     /// Type of dependency in which this container will be flushed.
     type Output;
@@ -19,10 +31,22 @@ pub trait Container<Input>: Default {
     ///
     /// This function returns an error (provided input object)
     /// if the container cannot insert provided input into itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn insert(&mut self, input: Input) -> Result<(), Input>;
 
     /// Flushes inserted inputs into dependency object.
     /// Returns [`None`] if it is not possible to create such dependency.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     fn flush(self) -> Option<Self::Output>;
 }
 

@@ -38,6 +38,12 @@ use super::{
 ///
 /// Additionally ECS world can store [resources](crate::resource::Resource) — aka singletons in ECS
 /// which does not belong to any specific entity.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Default, Clone)]
 pub struct World<E, C, R> {
     /// Entity registry of the world.
@@ -50,6 +56,12 @@ pub struct World<E, C, R> {
 
 impl<E, C, R> World<E, C, R> {
     /// Create new world with provided entity, component and resource registry implementations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub const fn with(entities: E, components: C, resources: R) -> Self {
         Self {
             entities,
@@ -59,36 +71,72 @@ impl<E, C, R> World<E, C, R> {
     }
 
     /// Retrieves a reference of the entity registry of the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub const fn entities(&self) -> &E {
         let Self { entities, .. } = self;
         entities
     }
 
     /// Retrieves a mutable reference of the entity registry of the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entities_mut(&mut self) -> &mut E {
         let Self { entities, .. } = self;
         entities
     }
 
     /// Retrieves a reference of the component registry of the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub const fn components(&self) -> &C {
         let Self { components, .. } = self;
         components
     }
 
     /// Retrieves a mutable reference of the component registry of the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn components_mut(&mut self) -> &mut C {
         let Self { components, .. } = self;
         components
     }
 
     /// Retrieves a reference of the resource registry of the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub const fn resources(&self) -> &R {
         let Self { resources, .. } = self;
         resources
     }
 
     /// Retrieves a mutable reference of the resource registry of the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn resources_mut(&mut self) -> &mut R {
         let Self { resources, .. } = self;
         resources
@@ -102,6 +150,12 @@ where
     /// Creates new empty entity in the current world.
     ///
     /// Newly created entity is empty, so it has no components attached to it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn create(&mut self) -> Entity {
         let Self { entities, .. } = self;
         entities.create()
@@ -109,6 +163,12 @@ where
 
     /// Creates an [entry](Entry) for the provided entity.
     /// Returns [`None`] if provided entity was not in the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entry(&self, entity: Entity) -> Option<Entry<'_, E, C>> {
         let Self {
             entities,
@@ -120,6 +180,12 @@ where
 
     /// Creates a mutable [entry](EntryMut) for the provided entity.
     /// Returns [`None`] if provided entity was not in the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut<'_, E, C>> {
         let Self {
             entities,
@@ -134,6 +200,12 @@ where
     /// This is considered as the main API for creation of new entities in the world.
     /// If you only need to create new entity, use [`create`][World::create()] method.
     /// If you need to create entity *lazily*, use [`builder`][World::builder()] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn spawn(&mut self) -> EntryMut<'_, E, C> {
         let Self {
             entities,
@@ -144,6 +216,12 @@ where
     }
 
     /// Checks if the world contains provided entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn contains(&self, entity: Entity) -> bool {
         let Self { entities, .. } = self;
         entities.contains(entity)
@@ -222,6 +300,12 @@ where
 {
     /// Inserts storages of provided component bundle into the world,
     /// resulting in a world with a new type of the component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn with_components<B>(
         self,
         bundle: B::Storages,
@@ -239,6 +323,12 @@ where
     }
 
     /// Checks if the component bundle was previously registered in the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn is_registered<B>(&self) -> bool
     where
         B: Bundle,
@@ -254,6 +344,12 @@ where
 {
     /// Registers the component bundle in the current world with provided storage bundle.
     /// Returns previous value of the storage bundle, or [`None`] if the component bundle was not registered.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn register<B>(&mut self, bundle: B::Storages) -> Option<B::Storages>
     where
         B: Bundle,
@@ -264,6 +360,12 @@ where
 
     /// Unregisters the component bundle from the current world and returns component storage bundle.
     /// Returns [`None`] if the component bundle was not registered.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn unregister<B>(&mut self) -> Option<B::Storages>
     where
         B: Bundle,
@@ -308,6 +410,12 @@ where
 {
     /// Inserts provided resource bundle into the world,
     /// resulting in a world with a new type of the resource registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn with_res<B>(self, bundle: B) -> World<E, C, B::With<R>>
     where
         B: ResourceBundle,
@@ -322,6 +430,12 @@ where
     }
 
     /// Checks if the resource bundle was previously inserted in the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn contains_res<B>(&self) -> bool
     where
         B: ResourceBundle,
@@ -332,6 +446,12 @@ where
 
     /// Retrieves a reference to the inserted resource bundle.
     /// Returns [`None`] if the resource bundle was not inserted in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn get_res<B>(&self) -> Option<B::Ref<'_>>
     where
         B: ResourceGetBundle,
@@ -342,6 +462,12 @@ where
 
     /// Retrieves a mutable reference to the inserted resource bundle.
     /// Returns [`None`] if the resource bundle was not inserted in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn get_res_mut<B>(&mut self) -> Option<B::RefMut<'_>>
     where
         B: ResourceGetBundleMut,
@@ -354,6 +480,12 @@ where
     ///
     /// Unlike other methods, this guarantees that all the components
     /// of provided bundle always exist in resource registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn provide_res<B, I>(&self) -> B::Ref<'_>
     where
         B: ResourceProvideBundle<R, I>,
@@ -366,6 +498,12 @@ where
     ///
     /// Unlike other methods, this guarantees that all the components
     /// of provided bundle always exist in resource registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn provide_res_mut<B, I>(&mut self) -> B::RefMut<'_>
     where
         B: ResourceProvideBundleMut<R, I>,
@@ -381,6 +519,12 @@ where
 {
     /// Insert provided resource bundle into the current world.
     /// Returns previous value of the resource bundle, or [`None`] if the resource bundle was not in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn insert_res<B>(&mut self, bundle: B) -> Option<B>
     where
         B: ResourceBundle,
@@ -391,6 +535,12 @@ where
 
     /// Removes the resource bundle from the current world and returns value of removed resource bundle.
     /// Returns [`None`] if the resource bundle was not in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn remove_res<B>(&mut self) -> Option<B>
     where
         B: ResourceBundle,
@@ -434,6 +584,12 @@ where
     C: Components,
 {
     /// Creates an empty [entity builder](EntityBuilder), which allows to create new entity *lazily*.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn builder(&mut self) -> EntityBuilder<'_, E, C> {
         let Self {
             entities,
@@ -710,6 +866,12 @@ where
     }
 
     /// Creates new view by provided readonly query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn view<Q>(&self) -> Option<View<'_, Q, E>>
     where
         Q: ReadonlyQuery,
@@ -723,6 +885,12 @@ where
     }
 
     /// Creates new mutable view by provided query.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn view_mut<Q>(&mut self) -> Option<View<'_, Q, E>>
     where
         Q: Query,
@@ -743,6 +911,12 @@ where
     R: ResourcesMut,
 {
     /// Checks if the world contains no entities, components or resources.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn is_empty(&self) -> bool {
         let Self {
             entities,
@@ -753,6 +927,12 @@ where
     }
 
     /// Clears the current world, destroying all entities, their components and all resources of the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
     pub fn clear(&mut self) {
         let Self {
             entities,

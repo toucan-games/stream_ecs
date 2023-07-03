@@ -3,6 +3,12 @@
 use crate::{entity::Entity, view::query::ReadonlyQuery};
 
 /// Iterator for the view of readonly query.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 pub struct ViewIter<'borrow, 'fetch, Q, E>
 where
     Q: ReadonlyQuery,
