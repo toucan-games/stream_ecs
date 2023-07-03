@@ -2,7 +2,7 @@ use core::any::{type_name, Any, TypeId};
 
 use derive_more::Display;
 
-use crate::component::Component;
+use crate::{component::Component, utils::type_name::TypeName};
 
 /// The error type which is returned when type of component was mismatched
 /// when trying to attach it to the entity with erased storage.
@@ -70,18 +70,5 @@ impl TypeMismatchError {
     /// ```
     pub fn actual_type_id(self) -> TypeId {
         self.actual_type_id
-    }
-}
-
-trait TypeName {
-    fn type_name(&self) -> &'static str;
-}
-
-impl<T> TypeName for T
-where
-    T: ?Sized,
-{
-    fn type_name(&self) -> &'static str {
-        type_name::<T>()
     }
 }
