@@ -27,6 +27,12 @@ struct Slot<T> {
 }
 
 /// Default implementation of the entity registry backed by an array.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct ArrayRegistry<const N: usize> {
     slots: ArrayVec<Slot<()>, N>,

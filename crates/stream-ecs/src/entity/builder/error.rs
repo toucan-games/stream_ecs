@@ -5,6 +5,12 @@ use derive_more::{Display, From};
 use crate::component::bundle::{NotRegisteredError, TryBundleError};
 
 /// The error type which is returned when trying to build a new entity.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy, From)]
 #[display(bound = "Err: Display")]
 pub enum TryEntityBuildError<Err> {
@@ -17,6 +23,12 @@ pub enum TryEntityBuildError<Err> {
 }
 
 /// The error type which is returned when trying to build a new entity.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy, From)]
 #[display(bound = "EntitiesErr: Display, StorageErr: Display")]
 pub enum TryBuildError<EntitiesErr, StorageErr> {

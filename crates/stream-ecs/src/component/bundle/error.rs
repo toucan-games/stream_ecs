@@ -52,6 +52,12 @@ impl NotRegisteredError {
 }
 
 /// The error type which is returned when trying to attach a bundle to the entity.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy, From)]
 #[display(bound = "Err: Display")]
 pub enum TryBundleError<Err> {

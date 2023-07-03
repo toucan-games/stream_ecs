@@ -11,6 +11,12 @@ pub mod basic;
 pub mod dense;
 
 /// The error type which is returned when array registry capacity was exceeded.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy)]
 #[display(fmt = "array registry capacity exceeded")]
 pub struct ArrayRegistryError;

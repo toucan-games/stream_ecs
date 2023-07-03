@@ -31,6 +31,12 @@ struct Dense {
 
 /// Implementation of the entity registry backed by an array
 /// which stores entities in a dense array.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct DenseArrayRegistry<const N: usize> {
     dense: ArrayVec<Dense, N>,

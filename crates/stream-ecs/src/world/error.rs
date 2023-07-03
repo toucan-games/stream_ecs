@@ -8,6 +8,12 @@ use crate::{
 };
 
 /// The error type which is returned when operating with entities in the ECS world.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy, From)]
 pub enum EntityError {
     /// Component was not registered in the world.
@@ -17,6 +23,12 @@ pub enum EntityError {
 }
 
 /// The error type which is returned when trying to attach a bundle to the entity in the world.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
 #[derive(Debug, Display, Clone, Copy, From)]
 #[display(bound = "Err: Display")]
 pub enum TryAttachError<Err> {
