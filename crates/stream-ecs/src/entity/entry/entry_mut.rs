@@ -2,26 +2,29 @@ use crate::{
     component::{
         bundle::{Bundle, GetBundle, GetBundleMut, NotRegisteredError, TryBundle, TryBundleError},
         registry::Registry as Components,
+        storage::bundle::Bundle as StorageBundle,
     },
-    entity::{
-        registry::{Registry as Entities, TryRegistry as TryEntities},
-        Entity,
-    },
+    entity::registry::{Registry as Entities, TryRegistry as TryEntities},
 };
 
-/// Mutable entry of the specific [entity](Entity).
+/// Mutable entry of the specific [entity].
 ///
 /// Use this struct to simplify access to the entity so
 /// you don't have to provide it each time to retrieve something:
 /// you can do it only once during struct initialization.
+///
+/// [entity]: crate::entity::Entity
 ///
 /// # Examples
 ///
 /// ```
 /// todo!()
 /// ```
-pub struct EntryMut<'state, E, C> {
-    entity: Entity,
+pub struct EntryMut<'state, E, C>
+where
+    E: Entities,
+{
+    entity: E::Entity,
     entities: &'state mut E,
     components: &'state mut C,
 }
@@ -38,7 +41,11 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn new(entity: Entity, entities: &'state mut E, components: &'state mut C) -> Option<Self> {
+    pub fn new(
+        entity: E::Entity,
+        entities: &'state mut E,
+        components: &'state mut C,
+    ) -> Option<Self> {
         if entities.contains(entity) {
             let entry = Self {
                 entity,
@@ -68,6 +75,39 @@ where
         }
     }
 
+    /// Returns unique handle of the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn entity(&self) -> E::Entity {
+        self.entity
+    }
+
+    /// Retrieves a reference of the underlying entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn entities(&self) -> &E {
+        self.entities
+    }
+
+    /// Retrieves a reference of the underlying component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn components(&self) -> &C {
+        self.components
+    }
+
     /// Destroys the underlying entity, returning its handle.
     ///
     /// # Examples
@@ -75,13 +115,13 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn destroy(self) -> Entity {
+    pub fn destroy(self) -> E::Entity {
         let Self {
             entity, entities, ..
         } = self;
-        entities
-            .destroy(entity)
-            .expect("entity should present in the registry");
+        let Ok(_) = entities.destroy(entity) else {
+            panic!("entity should present in the registry");
+        };
         entity
     }
 }
@@ -117,43 +157,9 @@ where
     }
 }
 
-impl<'state, E, C> EntryMut<'state, E, C> {
-    /// Returns unique handle of the entity.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn entity(&self) -> Entity {
-        self.entity
-    }
-
-    /// Retrieves a reference of the underlying entity registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn entities(&self) -> &E {
-        self.entities
-    }
-
-    /// Retrieves a reference of the underlying component registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn components(&self) -> &C {
-        self.components
-    }
-}
-
 impl<'state, E, C> EntryMut<'state, E, C>
 where
+    E: Entities,
     C: Components,
 {
     /// Attaches provided bundle to the underlying entity.
@@ -174,6 +180,7 @@ where
     pub fn attach<B>(&mut self, bundle: B) -> Result<Option<B>, NotRegisteredError>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let entity = self.entity;
         let components = &mut *self.components;
@@ -201,6 +208,7 @@ where
     pub fn try_attach<B>(&mut self, bundle: B) -> Result<Option<B>, TryBundleError<B::Err>>
     where
         B: TryBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let entity = self.entity;
         let components = &mut *self.components;
@@ -222,6 +230,7 @@ where
     pub fn is_attached<B>(&self) -> Result<bool, NotRegisteredError>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let entity = self.entity;
         let components = &*self.components;
@@ -246,6 +255,7 @@ where
     pub fn remove<B>(&mut self) -> Result<Option<B>, NotRegisteredError>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let entity = self.entity;
         let components = &mut *self.components;
@@ -268,6 +278,7 @@ where
     pub fn get<B>(&self) -> Result<Option<B::Ref<'_>>, NotRegisteredError>
     where
         B: GetBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let entity = self.entity;
         let components = &*self.components;
@@ -290,6 +301,7 @@ where
     pub fn get_mut<B>(&mut self) -> Result<Option<B::RefMut<'_>>, NotRegisteredError>
     where
         B: GetBundleMut,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let entity = self.entity;
         let components = &mut *self.components;

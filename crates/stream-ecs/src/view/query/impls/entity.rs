@@ -1,11 +1,14 @@
 use crate::{
     component::registry::Registry as Components,
-    entity::Entity,
+    entity::{DefaultEntity, Entity},
     view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 
-impl Query for Entity {
-    type Item<'item> = Entity;
+impl<Index> Query<DefaultEntity<Index>> for DefaultEntity<Index>
+where
+    DefaultEntity<Index>: Entity,
+{
+    type Item<'item> = DefaultEntity<Index>;
 
     type Fetch<'fetch> = ();
 
@@ -18,25 +21,33 @@ impl Query for Entity {
 
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: Entity,
+        entity: DefaultEntity<Index>,
     ) -> Option<Self::Item<'borrow>> {
         Self::readonly_fetch(fetch, entity)
     }
 
-    fn satisfies(_fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+    fn satisfies(_fetch: &Self::Fetch<'_>, entity: DefaultEntity<Index>) -> bool {
         Self::readonly_ref_satisfies((), entity)
     }
 }
 
-impl IntoReadonly for Entity {
+impl<Index> IntoReadonly<DefaultEntity<Index>> for DefaultEntity<Index>
+where
+    DefaultEntity<Index>: Entity,
+{
     type Readonly = Self;
 
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+    fn into_readonly(
+        fetch: Self::Fetch<'_>,
+    ) -> <Self::Readonly as Query<DefaultEntity<Index>>>::Fetch<'_> {
         fetch
     }
 }
 
-impl AsReadonly for Entity {
+impl<Index> AsReadonly<DefaultEntity<Index>> for DefaultEntity<Index>
+where
+    DefaultEntity<Index>: Entity,
+{
     type ReadonlyRef<'borrow> = ();
 
     fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow> {
@@ -45,17 +56,20 @@ impl AsReadonly for Entity {
 
     fn readonly_ref_fetch(
         _fetch: Self::ReadonlyRef<'_>,
-        entity: Entity,
-    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        entity: DefaultEntity<Index>,
+    ) -> Option<<Self::Readonly as Query<DefaultEntity<Index>>>::Item<'_>> {
         Some(entity)
     }
 
-    fn readonly_ref_satisfies(_: Self::ReadonlyRef<'_>, _: Entity) -> bool {
+    fn readonly_ref_satisfies(_: Self::ReadonlyRef<'_>, _: DefaultEntity<Index>) -> bool {
         true
     }
 }
 
-impl ReadonlyQuery for Entity {
+impl<Index> ReadonlyQuery<DefaultEntity<Index>> for DefaultEntity<Index>
+where
+    DefaultEntity<Index>: Entity,
+{
     fn new_readonly_fetch<C>(_: &C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
@@ -65,7 +79,7 @@ impl ReadonlyQuery for Entity {
 
     fn readonly_fetch<'fetch>(
         _fetch: &Self::Fetch<'fetch>,
-        entity: Entity,
+        entity: DefaultEntity<Index>,
     ) -> Option<Self::Item<'fetch>> {
         Some(entity)
     }

@@ -12,8 +12,9 @@ use crate::{
 /// ```
 pub struct ViewRefIter<'fetch, Q, E>
 where
-    Q: AsReadonly,
-    E: Iterator<Item = Entity>,
+    Q: AsReadonly<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     entities: E,
     fetch: Q::ReadonlyRef<'fetch>,
@@ -21,8 +22,9 @@ where
 
 impl<'fetch, Q, E> ViewRefIter<'fetch, Q, E>
 where
-    Q: AsReadonly,
-    E: Iterator<Item = Entity>,
+    Q: AsReadonly<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     pub(in crate::view) fn new<I>(entities: I, fetch: Q::ReadonlyRef<'fetch>) -> Self
     where
@@ -35,10 +37,11 @@ where
 
 impl<'fetch, Q, E> Iterator for ViewRefIter<'fetch, Q, E>
 where
-    Q: AsReadonly,
-    E: Iterator<Item = Entity>,
+    Q: AsReadonly<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
-    type Item = <Q::Readonly as Query>::Item<'fetch>;
+    type Item = <Q::Readonly as Query<E::Item>>::Item<'fetch>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Self {

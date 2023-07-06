@@ -29,6 +29,9 @@ pub trait Bundle: Sized + 'static {
     /// Component bundle associated with this bundle.
     type Items: ComponentBundle<Storages = Self>;
 
+    /// Type of entity which is used by components of this bundle.
+    type Entity: Entity;
+
     /// Type of the registry with this storage bundle.
     type With<C>
     where
@@ -255,7 +258,7 @@ pub trait GetItems: Bundle {
     /// ```
     /// todo!()
     /// ```
-    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>>;
+    fn items(&self, entity: Self::Entity) -> Option<Self::ItemsRef<'_>>;
 }
 
 /// Extension of bundle which allows to get a *mutable* reference to the [items](Bundle::Items) of the storage bundle.
@@ -279,5 +282,5 @@ pub trait GetItemsMut: Bundle {
     /// ```
     /// todo!()
     /// ```
-    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>>;
+    fn items_mut(&mut self, entity: Self::Entity) -> Option<Self::ItemsRefMut<'_>>;
 }

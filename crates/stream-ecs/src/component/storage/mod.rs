@@ -1,12 +1,13 @@
 //! Utilities for storages of components in ECS.
 
-use core::any::Any;
+use as_any::{AsAny, Downcast};
 
-use as_any::AsAny;
+pub use self::error::{AttachError, ComponentMismatchError, EntityMismatchError};
 
-pub use self::error::TypeMismatchError;
-
-use crate::{component::Component, entity::Entity};
+use crate::{
+    component::{Component, ErasedComponent},
+    entity::{Entity, ErasedEntity},
+};
 
 pub mod array;
 pub mod bundle;
@@ -28,6 +29,9 @@ pub trait Storage: 'static {
     /// Type of component which is stored in this storage.
     type Item: Component<Storage = Self>;
 
+    /// Type of entity which is used to track stored components.
+    type Entity: Entity;
+
     /// Attaches provided component to the entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.
     ///
@@ -39,7 +43,7 @@ pub trait Storage: 'static {
     /// ```
     /// todo!()
     /// ```
-    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item>;
+    fn attach(&mut self, entity: Self::Entity, component: Self::Item) -> Option<Self::Item>;
 
     /// Checks if a component is attached to provided entity.
     ///
@@ -48,7 +52,7 @@ pub trait Storage: 'static {
     /// ```
     /// todo!()
     /// ```
-    fn is_attached(&self, entity: Entity) -> bool;
+    fn is_attached(&self, entity: Self::Entity) -> bool;
 
     /// Retrieves a reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
@@ -58,7 +62,7 @@ pub trait Storage: 'static {
     /// ```
     /// todo!()
     /// ```
-    fn get(&self, entity: Entity) -> Option<&Self::Item>;
+    fn get(&self, entity: Self::Entity) -> Option<&Self::Item>;
 
     /// Retrieves a mutable reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
@@ -68,7 +72,7 @@ pub trait Storage: 'static {
     /// ```
     /// todo!()
     /// ```
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item>;
+    fn get_mut(&mut self, entity: Self::Entity) -> Option<&mut Self::Item>;
 
     /// Removes component from provided entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.
@@ -78,7 +82,7 @@ pub trait Storage: 'static {
     /// ```
     /// todo!()
     /// ```
-    fn remove(&mut self, entity: Entity) -> Option<Self::Item>;
+    fn remove(&mut self, entity: Self::Entity) -> Option<Self::Item>;
 
     /// Clears this storage, destroying all components in it.
     ///
@@ -111,7 +115,7 @@ pub trait Storage: 'static {
 
     /// Iterator which returns entity keys
     /// with references of components attached to them.
-    type Iter<'me>: Iterator<Item = (Entity, &'me Self::Item)>
+    type Iter<'me>: Iterator<Item = (Self::Entity, &'me Self::Item)>
     where
         Self: 'me;
 
@@ -127,7 +131,7 @@ pub trait Storage: 'static {
 
     /// Iterator which returns entity keys
     /// with mutable references of components attached to them.
-    type IterMut<'me>: Iterator<Item = (Entity, &'me mut Self::Item)>
+    type IterMut<'me>: Iterator<Item = (Self::Entity, &'me mut Self::Item)>
     where
         Self: 'me;
 
@@ -170,7 +174,7 @@ pub trait TryStorage: Storage {
     /// This is the fallible version of [`attach`][Storage::attach()] method.
     fn try_attach(
         &mut self,
-        entity: Entity,
+        entity: Self::Entity,
         component: Self::Item,
     ) -> Result<Option<Self::Item>, Self::Err>;
 }
@@ -207,7 +211,11 @@ pub trait ErasedStorage: AsAny {
     /// Note that this method can reuse existing entities when provided entity
     /// is newer (its generation is greater) than an actual entity with the same index.
     // FIXME: replace result `Ok` type with `Option<impl Component>` when stabilized
-    fn attach(&mut self, entity: Entity, component: &dyn Any) -> Result<(), TypeMismatchError>;
+    fn attach(
+        &mut self,
+        entity: &dyn ErasedEntity,
+        component: &dyn ErasedComponent,
+    ) -> Result<(), AttachError>;
 
     /// Checks if any component is attached to provided entity.
     ///
@@ -216,7 +224,7 @@ pub trait ErasedStorage: AsAny {
     /// ```
     /// todo!()
     /// ```
-    fn is_attached(&self, entity: Entity) -> bool;
+    fn is_attached(&self, entity: &dyn ErasedEntity) -> Result<bool, EntityMismatchError>;
 
     /// Retrieves a reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
@@ -226,7 +234,10 @@ pub trait ErasedStorage: AsAny {
     /// ```
     /// todo!()
     /// ```
-    fn get(&self, entity: Entity) -> Option<&dyn Any>;
+    fn get(
+        &self,
+        entity: &dyn ErasedEntity,
+    ) -> Result<Option<&dyn ErasedComponent>, EntityMismatchError>;
 
     /// Retrieves a mutable reference to the component attached to provided entity.
     /// Returns [`None`] if provided entity does not have component of such type.
@@ -236,7 +247,10 @@ pub trait ErasedStorage: AsAny {
     /// ```
     /// todo!()
     /// ```
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut dyn Any>;
+    fn get_mut(
+        &mut self,
+        entity: &dyn ErasedEntity,
+    ) -> Result<Option<&mut dyn ErasedComponent>, EntityMismatchError>;
 
     /// Removes component from provided entity.
     ///
@@ -246,7 +260,7 @@ pub trait ErasedStorage: AsAny {
     /// todo!()
     /// ```
     // FIXME: replace return type with `Option<impl Component>` when stabilized
-    fn remove(&mut self, entity: Entity);
+    fn remove(&mut self, entity: &dyn ErasedEntity) -> Result<(), EntityMismatchError>;
 
     /// Clears this storage, destroying all components in it.
     ///
@@ -282,28 +296,63 @@ impl<T> ErasedStorage for T
 where
     T: Storage,
 {
-    fn attach(&mut self, entity: Entity, component: &dyn Any) -> Result<(), TypeMismatchError> {
+    fn attach(
+        &mut self,
+        entity: &dyn ErasedEntity,
+        component: &dyn ErasedComponent,
+    ) -> Result<(), AttachError> {
         let Some(component) = component.downcast_ref().copied() else {
-            return Err(TypeMismatchError::new::<T::Item>(component));
+            let error = ComponentMismatchError::new::<T::Item>(component);
+            return Err(error.into());
+        };
+        let Some(entity) = entity.downcast_ref().copied() else {
+            let error = EntityMismatchError::new::<T::Entity>(entity);
+            return Err(error.into());
         };
         let _ = Storage::attach(self, entity, component);
         Ok(())
     }
 
-    fn is_attached(&self, entity: Entity) -> bool {
-        Storage::is_attached(self, entity)
+    fn is_attached(&self, entity: &dyn ErasedEntity) -> Result<bool, EntityMismatchError> {
+        let Some(entity) = entity.downcast_ref().copied() else {
+            let error = EntityMismatchError::new::<T::Entity>(entity);
+            return Err(error);
+        };
+        let is_attached = Storage::is_attached(self, entity);
+        Ok(is_attached)
     }
 
-    fn get(&self, entity: Entity) -> Option<&dyn Any> {
-        Storage::get(self, entity).map(AsAny::as_any)
+    fn get(
+        &self,
+        entity: &dyn ErasedEntity,
+    ) -> Result<Option<&dyn ErasedComponent>, EntityMismatchError> {
+        let Some(entity) = entity.downcast_ref().copied() else {
+            let error = EntityMismatchError::new::<T::Entity>(entity);
+            return Err(error);
+        };
+        let component = Storage::get(self, entity).map(|item| item as _);
+        Ok(component)
     }
 
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut dyn Any> {
-        Storage::get_mut(self, entity).map(AsAny::as_any_mut)
+    fn get_mut(
+        &mut self,
+        entity: &dyn ErasedEntity,
+    ) -> Result<Option<&mut dyn ErasedComponent>, EntityMismatchError> {
+        let Some(entity) = entity.downcast_ref().copied() else {
+            let error = EntityMismatchError::new::<T::Entity>(entity);
+            return Err(error);
+        };
+        let component = Storage::get_mut(self, entity).map(|item| item as _);
+        Ok(component)
     }
 
-    fn remove(&mut self, entity: Entity) {
+    fn remove(&mut self, entity: &dyn ErasedEntity) -> Result<(), EntityMismatchError> {
+        let Some(entity) = entity.downcast_ref().copied() else {
+            let error = EntityMismatchError::new::<T::Entity>(entity);
+            return Err(error);
+        };
         let _ = Storage::remove(self, entity);
+        Ok(())
     }
 
     fn clear(&mut self) {

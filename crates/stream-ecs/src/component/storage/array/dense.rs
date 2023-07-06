@@ -9,24 +9,24 @@ use crate::{
         storage::{Storage, TryStorage},
         Component,
     },
-    entity::Entity,
+    entity::{DefaultEntity, Entity},
 };
 
 use super::ArrayStorageError;
 
 #[derive(Debug, Clone)]
-struct Dense<T>
+struct Dense<T, I>
 where
     T: Component,
 {
     index: usize,
-    generation: u32,
+    generation: I,
     value: T,
 }
 
 #[derive(Debug, Clone)]
-enum Slot {
-    Occupied { dense_index: usize, generation: u32 },
+enum Slot<I> {
+    Occupied { dense_index: usize, generation: I },
     Free,
 }
 
@@ -76,20 +76,24 @@ enum Slot {
 /// assert!(storage.is_attached(entity));
 /// ```
 #[derive(Debug, Clone)]
-pub struct DenseArrayStorage<T, const N: usize>
+pub struct DenseArrayStorage<T, const N: usize, E = DefaultEntity>
 where
     T: Component<Storage = Self>,
+    E: Entity,
 {
-    dense: ArrayVec<Dense<T>, N>,
-    sparse: [Slot; N],
+    dense: ArrayVec<Dense<T, E::Index>, N>,
+    sparse: [Slot<E::Index>; N],
 }
 
-impl<T, const N: usize> DenseArrayStorage<T, N>
+impl<T, E, const N: usize> DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialOrd,
+    usize: TryFrom<E::Index>,
 {
-    const FREE_SLOT: Slot = Slot::Free;
-    const FREE_ARRAY: [Slot; N] = [Self::FREE_SLOT; N];
+    const FREE_SLOT: Slot<E::Index> = Slot::Free;
+    const FREE_ARRAY: [Slot<E::Index>; N] = [Self::FREE_SLOT; N];
 
     /// Creates new empty dense array component storage.
     ///
@@ -189,7 +193,7 @@ where
     /// assert_eq!(component, Some(Position { x: 10.0, y: 12.0 }));
     /// ```
     #[track_caller]
-    pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
+    pub fn attach(&mut self, entity: E, component: T) -> Option<T> {
         match self.try_attach(entity, component) {
             Ok(component) => component,
             Err(err) => panic!("{err}"),
@@ -224,11 +228,7 @@ where
     /// ```
     ///
     /// This is the fallible version of [`attach`][Self::attach()] method.
-    pub fn try_attach(
-        &mut self,
-        entity: Entity,
-        component: T,
-    ) -> Result<Option<T>, ArrayStorageError> {
+    pub fn try_attach(&mut self, entity: E, component: T) -> Result<Option<T>, ArrayStorageError> {
         let Ok(index) = usize::try_from(entity.index()) else {
             return Err(ArrayStorageError);
         };
@@ -295,7 +295,7 @@ where
     /// storage.remove(entity);
     /// assert!(!storage.is_attached(entity));
     /// ```
-    pub fn is_attached(&self, entity: Entity) -> bool {
+    pub fn is_attached(&self, entity: E) -> bool {
         let Ok(index) = usize::try_from(entity.index()) else {
             return false;
         };
@@ -336,7 +336,7 @@ where
     /// storage.remove(entity);
     /// assert_eq!(storage.get(entity), None);
     /// ```
-    pub fn get(&self, entity: Entity) -> Option<&T> {
+    pub fn get(&self, entity: E) -> Option<&T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.sparse.get(index)?;
         let &Slot::Occupied { dense_index, generation } = slot else {
@@ -375,7 +375,7 @@ where
     /// storage.remove(entity);
     /// assert_eq!(storage.get_mut(entity), None);
     /// ```
-    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
+    pub fn get_mut(&mut self, entity: E) -> Option<&mut T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.sparse.get(index)?;
         let &Slot::Occupied { dense_index, generation } = slot else {
@@ -414,7 +414,7 @@ where
     /// let component = storage.remove(entity);
     /// assert_eq!(component, Some(Position { x: 0.0, y: -10.0 }));
     /// ```
-    pub fn remove(&mut self, entity: Entity) -> Option<T> {
+    pub fn remove(&mut self, entity: E) -> Option<T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.sparse.get_mut(index)?;
         let Slot::Occupied { dense_index, generation } = mem::replace(slot, Slot::Free) else {
@@ -552,7 +552,7 @@ where
     /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &Position { x: 1.0, y: 23.0 })));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter<'_, T> {
+    pub fn iter(&self) -> Iter<'_, T, E> {
         self.into_iter()
     }
 
@@ -582,43 +582,50 @@ where
     /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &mut Position { x: 1.0, y: 23.0 })));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T, E> {
         self.into_iter()
     }
 }
 
-impl<T, const N: usize> Default for DenseArrayStorage<T, N>
+impl<T, E, const N: usize> Default for DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialOrd,
+    usize: TryFrom<E::Index>,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T, const N: usize> Storage for DenseArrayStorage<T, N>
+impl<T, E, const N: usize> Storage for DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialOrd,
+    usize: TryFrom<E::Index>,
 {
     type Item = T;
+    type Entity = E;
 
-    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+    fn attach(&mut self, entity: Self::Entity, component: Self::Item) -> Option<Self::Item> {
         DenseArrayStorage::attach(self, entity, component)
     }
 
-    fn is_attached(&self, entity: Entity) -> bool {
+    fn is_attached(&self, entity: Self::Entity) -> bool {
         DenseArrayStorage::is_attached(self, entity)
     }
 
-    fn get(&self, entity: Entity) -> Option<&Self::Item> {
+    fn get(&self, entity: Self::Entity) -> Option<&Self::Item> {
         DenseArrayStorage::get(self, entity)
     }
 
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
+    fn get_mut(&mut self, entity: Self::Entity) -> Option<&mut Self::Item> {
         DenseArrayStorage::get_mut(self, entity)
     }
 
-    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
+    fn remove(&mut self, entity: Self::Entity) -> Option<Self::Item> {
         DenseArrayStorage::remove(self, entity)
     }
 
@@ -634,7 +641,7 @@ where
         DenseArrayStorage::is_empty(self)
     }
 
-    type Iter<'me> = Iter<'me, T>
+    type Iter<'me> = Iter<'me, Self::Item, Self::Entity>
     where
         Self: 'me;
 
@@ -642,7 +649,7 @@ where
         DenseArrayStorage::iter(self)
     }
 
-    type IterMut<'me> = IterMut<'me, T>
+    type IterMut<'me> = IterMut<'me, Self::Item, Self::Entity>
     where
         Self: 'me;
 
@@ -651,28 +658,33 @@ where
     }
 }
 
-impl<T, const N: usize> TryStorage for DenseArrayStorage<T, N>
+impl<T, E, const N: usize> TryStorage for DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialOrd,
+    usize: TryFrom<E::Index>,
 {
     type Err = ArrayStorageError;
 
     fn try_attach(
         &mut self,
-        entity: Entity,
+        entity: Self::Entity,
         component: Self::Item,
     ) -> Result<Option<Self::Item>, Self::Err> {
         DenseArrayStorage::try_attach(self, entity, component)
     }
 }
 
-impl<'me, T, const N: usize> IntoIterator for &'me DenseArrayStorage<T, N>
+impl<'me, T, E, const N: usize> IntoIterator for &'me DenseArrayStorage<T, N, E>
 where
-    T: Component<Storage = DenseArrayStorage<T, N>>,
+    T: Component<Storage = DenseArrayStorage<T, N, E>>,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
-    type Item = (Entity, &'me T);
+    type Item = (E, &'me T);
 
-    type IntoIter = Iter<'me, T>;
+    type IntoIter = Iter<'me, T, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.iter();
@@ -680,13 +692,15 @@ where
     }
 }
 
-impl<'me, T, const N: usize> IntoIterator for &'me mut DenseArrayStorage<T, N>
+impl<'me, T, E, const N: usize> IntoIterator for &'me mut DenseArrayStorage<T, N, E>
 where
-    T: Component<Storage = DenseArrayStorage<T, N>>,
+    T: Component<Storage = DenseArrayStorage<T, N, E>>,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
-    type Item = (Entity, &'me mut T);
+    type Item = (E, &'me mut T);
 
-    type IntoIter = IterMut<'me, T>;
+    type IntoIter = IterMut<'me, T, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.iter_mut();
@@ -694,13 +708,15 @@ where
     }
 }
 
-impl<T, const N: usize> IntoIterator for DenseArrayStorage<T, N>
+impl<T, E, const N: usize> IntoIterator for DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
-    type Item = (Entity, T);
+    type Item = (E, T);
 
-    type IntoIter = IntoIter<T, N>;
+    type IntoIter = IntoIter<T, E, N>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.into_iter();
@@ -711,18 +727,21 @@ where
 /// Iterator of entities with references of components attached to them
 /// in the dense array storage.
 #[derive(Debug, Clone)]
-pub struct Iter<'data, T>
+pub struct Iter<'data, T, E>
 where
     T: Component,
+    E: Entity,
 {
-    iter: slice::Iter<'data, Dense<T>>,
+    iter: slice::Iter<'data, Dense<T, E::Index>>,
 }
 
-impl<'data, T> Iterator for Iter<'data, T>
+impl<'data, T, E> Iterator for Iter<'data, T, E>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
-    type Item = (Entity, &'data T);
+    type Item = (E, &'data T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &Dense {
@@ -731,7 +750,7 @@ where
             ref value,
         } = self.iter.next()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some((entity, value))
     }
 
@@ -740,9 +759,11 @@ where
     }
 }
 
-impl<T> DoubleEndedIterator for Iter<'_, T>
+impl<T, E> DoubleEndedIterator for Iter<'_, T, E>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let &Dense {
@@ -751,37 +772,48 @@ where
             ref value,
         } = self.iter.next_back()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some((entity, value))
     }
 }
 
-impl<T> ExactSizeIterator for Iter<'_, T>
+impl<T, E> ExactSizeIterator for Iter<'_, T, E>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T> FusedIterator for Iter<'_, T> where T: Component {}
+impl<T, E> FusedIterator for Iter<'_, T, E>
+where
+    T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+}
 
 /// Iterator of entities with mutable references of components attached to them
 /// in the dense array storage.
 #[derive(Debug)]
-pub struct IterMut<'data, T>
+pub struct IterMut<'data, T, E>
 where
     T: Component,
+    E: Entity,
 {
-    iter: slice::IterMut<'data, Dense<T>>,
+    iter: slice::IterMut<'data, Dense<T, E::Index>>,
 }
 
-impl<'data, T> Iterator for IterMut<'data, T>
+impl<'data, T, E> Iterator for IterMut<'data, T, E>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
-    type Item = (Entity, &'data mut T);
+    type Item = (E, &'data mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &mut Dense {
@@ -790,7 +822,7 @@ where
             ref mut value,
         } = self.iter.next()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some((entity, value))
     }
 
@@ -799,9 +831,11 @@ where
     }
 }
 
-impl<T> DoubleEndedIterator for IterMut<'_, T>
+impl<T, E> DoubleEndedIterator for IterMut<'_, T, E>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let &mut Dense {
@@ -810,36 +844,47 @@ where
             ref mut value,
         } = self.iter.next_back()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some((entity, value))
     }
 }
 
-impl<T> ExactSizeIterator for IterMut<'_, T>
+impl<T, E> ExactSizeIterator for IterMut<'_, T, E>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T> FusedIterator for IterMut<'_, T> where T: Component {}
+impl<T, E> FusedIterator for IterMut<'_, T, E>
+where
+    T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+}
 
 /// Iterator of entities with components attached to them in the dense array storage.
 #[derive(Debug, Clone)]
-pub struct IntoIter<T, const N: usize>
+pub struct IntoIter<T, E, const N: usize>
 where
     T: Component,
+    E: Entity,
 {
-    iter: arrayvec::IntoIter<Dense<T>, N>,
+    iter: arrayvec::IntoIter<Dense<T, E::Index>, N>,
 }
 
-impl<T, const N: usize> Iterator for IntoIter<T, N>
+impl<T, E, const N: usize> Iterator for IntoIter<T, E, N>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
-    type Item = (Entity, T);
+    type Item = (E, T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let Dense {
@@ -848,7 +893,7 @@ where
             value,
         } = self.iter.next()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some((entity, value))
     }
 
@@ -857,9 +902,11 @@ where
     }
 }
 
-impl<T, const N: usize> DoubleEndedIterator for IntoIter<T, N>
+impl<T, E, const N: usize> DoubleEndedIterator for IntoIter<T, E, N>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let Dense {
@@ -868,25 +915,33 @@ where
             value,
         } = self.iter.next_back()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some((entity, value))
     }
 }
 
-impl<T, const N: usize> ExactSizeIterator for IntoIter<T, N>
+impl<T, E, const N: usize> ExactSizeIterator for IntoIter<T, E, N>
 where
     T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
 {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T, const N: usize> FusedIterator for IntoIter<T, N> where T: Component {}
+impl<T, E, const N: usize> FusedIterator for IntoIter<T, E, N>
+where
+    T: Component,
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::{component::Component, entity::Entity};
+    use crate::{component::Component, entity::DefaultEntity as Entity};
 
     use super::DenseArrayStorage;
 

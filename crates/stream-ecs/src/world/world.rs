@@ -12,7 +12,6 @@ use crate::{
     entity::{
         entry::{Entry, EntryMut},
         registry::{NotPresentError, Registry as Entities, TryRegistry as TryEntities},
-        Entity,
     },
     resource::{
         bundle::{
@@ -33,7 +32,7 @@ use super::{
     view::View,
 };
 
-/// ECS world — storage of [entities](Entity)
+/// ECS world — storage of [entities](crate::entity::Entity)
 /// and all the [data](crate::component::Component) attached to them.
 ///
 /// Additionally ECS world can store [resources](crate::resource::Resource) — aka singletons in ECS
@@ -156,7 +155,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn create(&mut self) -> Entity {
+    pub fn create(&mut self) -> E::Entity {
         let Self { entities, .. } = self;
         entities.create()
     }
@@ -169,7 +168,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn entry(&self, entity: Entity) -> Option<Entry<'_, E, C>> {
+    pub fn entry(&self, entity: E::Entity) -> Option<Entry<'_, E, C>> {
         let Self {
             entities,
             components,
@@ -186,7 +185,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut<'_, E, C>> {
+    pub fn entry_mut(&mut self, entity: E::Entity) -> Option<EntryMut<'_, E, C>> {
         let Self {
             entities,
             components,
@@ -222,7 +221,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn contains(&self, entity: Entity) -> bool {
+    pub fn contains(&self, entity: E::Entity) -> bool {
         let Self { entities, .. } = self;
         entities.contains(entity)
     }
@@ -239,7 +238,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+    pub fn destroy(&mut self, entity: E::Entity) -> Result<(), NotPresentError<E::Entity>> {
         let Self { entities, .. } = self;
         entities.destroy(entity)
     }
@@ -265,7 +264,7 @@ where
     /// ```
     ///
     /// This is the fallible version of [`create`][World::create()] method.
-    pub fn try_create(&mut self) -> Result<Entity, E::Err> {
+    pub fn try_create(&mut self) -> Result<E::Entity, E::Err> {
         let Self { entities, .. } = self;
         entities.try_create()
     }
@@ -614,9 +613,14 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn attach<B>(&mut self, entity: Entity, bundle: B) -> Result<Option<B>, EntityError>
+    pub fn attach<B>(
+        &mut self,
+        entity: E::Entity,
+        bundle: B,
+    ) -> Result<Option<B>, EntityError<E::Entity>>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -653,11 +657,12 @@ where
     /// This is the fallible version of [`attach`][World::attach()] method.
     pub fn try_attach<B>(
         &mut self,
-        entity: Entity,
+        entity: E::Entity,
         bundle: B,
-    ) -> Result<Option<B>, TryAttachError<B::Err>>
+    ) -> Result<Option<B>, TryAttachError<B::Err, E::Entity>>
     where
         B: TryBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -685,9 +690,10 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn is_attached<B>(&self, entity: Entity) -> Result<bool, EntityError>
+    pub fn is_attached<B>(&self, entity: E::Entity) -> Result<bool, EntityError<E::Entity>>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -716,9 +722,10 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn remove<B>(&mut self, entity: Entity) -> Result<Option<B>, EntityError>
+    pub fn remove<B>(&mut self, entity: E::Entity) -> Result<Option<B>, EntityError<E::Entity>>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -747,9 +754,10 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get<B>(&self, entity: Entity) -> Result<Option<B::Ref<'_>>, EntityError>
+    pub fn get<B>(&self, entity: E::Entity) -> Result<Option<B::Ref<'_>>, EntityError<E::Entity>>
     where
         B: GetBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -778,9 +786,13 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get_mut<B>(&mut self, entity: Entity) -> Result<Option<B::RefMut<'_>>, EntityError>
+    pub fn get_mut<B>(
+        &mut self,
+        entity: E::Entity,
+    ) -> Result<Option<B::RefMut<'_>>, EntityError<E::Entity>>
     where
         B: GetBundleMut,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -811,9 +823,13 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn provide<B, I>(&self, entity: Entity) -> Result<Option<B::Ref<'_>>, NotPresentError>
+    pub fn provide<B, I>(
+        &self,
+        entity: E::Entity,
+    ) -> Result<Option<B::Ref<'_>>, NotPresentError<E::Entity>>
     where
         B: ProvideBundle<C, I>,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -846,10 +862,11 @@ where
     /// ```
     pub fn provide_mut<B, I>(
         &mut self,
-        entity: Entity,
-    ) -> Result<Option<B::RefMut<'_>>, NotPresentError>
+        entity: E::Entity,
+    ) -> Result<Option<B::RefMut<'_>>, NotPresentError<E::Entity>>
     where
         B: ProvideBundleMut<C, I>,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -874,7 +891,7 @@ where
     /// ```
     pub fn view<Q>(&self) -> Option<View<'_, Q, E>>
     where
-        Q: ReadonlyQuery,
+        Q: ReadonlyQuery<E::Entity>,
     {
         let Self {
             entities,
@@ -893,7 +910,7 @@ where
     /// ```
     pub fn view_mut<Q>(&mut self) -> Option<View<'_, Q, E>>
     where
-        Q: Query,
+        Q: Query<E::Entity>,
     {
         let Self {
             entities,

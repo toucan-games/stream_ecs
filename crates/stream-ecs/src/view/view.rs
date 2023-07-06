@@ -1,6 +1,9 @@
 #![allow(clippy::module_inception)]
 
-use crate::{component::registry::Registry as Components, entity::Entity};
+use crate::{
+    component::registry::Registry as Components,
+    entity::{DefaultEntity, Entity},
+};
 
 use super::{
     iter::{ViewIter, ViewIterMut},
@@ -15,16 +18,18 @@ use super::{
 /// ```
 /// todo!()
 /// ```
-pub struct View<'fetch, Q>
+pub struct View<'fetch, Q, E = DefaultEntity>
 where
-    Q: Query,
+    Q: Query<E>,
+    E: Entity,
 {
     fetch: Q::Fetch<'fetch>,
 }
 
-impl<'fetch, Q> View<'fetch, Q>
+impl<'fetch, Q, E> View<'fetch, Q, E>
 where
-    Q: Query,
+    Q: Query<E>,
+    E: Entity,
 {
     /// Creates new view of entities from provided mutable component registry.
     ///
@@ -59,7 +64,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn satisfies(&self, entity: Entity) -> bool {
+    pub fn satisfies(&self, entity: E) -> bool {
         let Self { fetch } = self;
         Q::satisfies(fetch, entity)
     }
@@ -71,7 +76,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get_mut(&mut self, entity: Entity) -> Option<Q::Item<'_>> {
+    pub fn get_mut(&mut self, entity: E) -> Option<Q::Item<'_>> {
         let Self { fetch } = self;
         Q::fetch(fetch, entity)
     }
@@ -85,16 +90,17 @@ where
     /// ```
     pub fn iter_mut<I>(&mut self, entities: I) -> ViewIterMut<'_, 'fetch, Q, I::IntoIter>
     where
-        I: IntoIterator<Item = Entity>,
+        I: IntoIterator<Item = E>,
     {
         let Self { fetch } = self;
         ViewIterMut::new(entities, fetch)
     }
 }
 
-impl<'fetch, Q> View<'fetch, Q>
+impl<'fetch, Q, E> View<'fetch, Q, E>
 where
-    Q: IntoReadonly,
+    Q: IntoReadonly<E>,
+    E: Entity,
 {
     /// Converts this view into readonly view.
     ///
@@ -103,16 +109,17 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn into_readonly(self) -> View<'fetch, Q::Readonly> {
+    pub fn into_readonly(self) -> View<'fetch, Q::Readonly, E> {
         let Self { fetch } = self;
         let fetch = Q::into_readonly(fetch);
         View::from_fetch(fetch)
     }
 }
 
-impl<'fetch, Q> View<'fetch, Q>
+impl<'fetch, Q, E> View<'fetch, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E>,
+    E: Entity,
 {
     /// Returns a borrow of the view.
     ///
@@ -121,16 +128,17 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn as_readonly(&self) -> ViewRef<'_, Q> {
+    pub fn as_readonly(&self) -> ViewRef<'_, Q, E> {
         let Self { fetch } = self;
         let fetch = Q::as_readonly(fetch);
         ViewRef::new(fetch)
     }
 }
 
-impl<'fetch, Q> View<'fetch, Q>
+impl<'fetch, Q, E> View<'fetch, Q, E>
 where
-    Q: ReadonlyQuery,
+    Q: ReadonlyQuery<E>,
+    E: Entity,
 {
     /// Creates new view of entities from provided component registry.
     ///
@@ -154,7 +162,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get(&self, entity: Entity) -> Option<Q::Item<'fetch>> {
+    pub fn get(&self, entity: E) -> Option<Q::Item<'fetch>> {
         let Self { fetch } = self;
         Q::readonly_fetch(fetch, entity)
     }
@@ -168,7 +176,7 @@ where
     /// ```
     pub fn iter<I>(&self, entities: I) -> ViewIter<'_, 'fetch, Q, I::IntoIter>
     where
-        I: IntoIterator<Item = Entity>,
+        I: IntoIterator<Item = E>,
     {
         let Self { fetch } = self;
         ViewIter::new(entities, fetch)

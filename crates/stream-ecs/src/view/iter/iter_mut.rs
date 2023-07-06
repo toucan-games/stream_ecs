@@ -12,8 +12,9 @@ use crate::{entity::Entity, view::query::Query};
 /// ```
 pub struct ViewIterMut<'borrow, 'fetch, Q, E>
 where
-    Q: Query,
-    E: Iterator<Item = Entity>,
+    Q: Query<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     entities: E,
     fetch: &'borrow mut Q::Fetch<'fetch>,
@@ -21,8 +22,9 @@ where
 
 impl<'borrow, 'fetch, Q, E> ViewIterMut<'borrow, 'fetch, Q, E>
 where
-    Q: Query,
-    E: Iterator<Item = Entity>,
+    Q: Query<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     pub(in crate::view) fn new<I>(entities: I, fetch: &'borrow mut Q::Fetch<'fetch>) -> Self
     where
@@ -36,8 +38,9 @@ where
 #[gat]
 impl<'borrow, 'fetch, Q, E> LendingIterator for ViewIterMut<'borrow, 'fetch, Q, E>
 where
-    Q: Query,
-    E: Iterator<Item = Entity>,
+    Q: Query<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     type Item<'next> = Q::Item<'next>
     where

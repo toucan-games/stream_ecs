@@ -10,9 +10,10 @@ use crate::{
     view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 
-impl<Head> Query for Cons<Head, Nil>
+impl<E, Head> Query<E> for Cons<Head, Nil>
 where
-    Head: Query,
+    E: Entity,
+    Head: Query<E>,
 {
     type Item<'item> = Cons<Head::Item<'item>, Nil>;
 
@@ -29,7 +30,7 @@ where
 
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: Entity,
+        entity: E,
     ) -> Option<Self::Item<'borrow>> {
         let Cons(head, _) = fetch;
         let head = Head::fetch(head, entity)?;
@@ -37,16 +38,17 @@ where
         Some(item)
     }
 
-    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: E) -> bool {
         let Cons(head, _) = fetch;
         Head::satisfies(head, entity)
     }
 }
 
-impl<Head, Tail> Query for Cons<Head, Tail>
+impl<E, Head, Tail> Query<E> for Cons<Head, Tail>
 where
-    Head: Query,
-    Tail: Query,
+    E: Entity,
+    Head: Query<E>,
+    Tail: Query<E>,
     for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
     for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
@@ -66,7 +68,7 @@ where
 
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: Entity,
+        entity: E,
     ) -> Option<Self::Item<'borrow>> {
         let Cons(head, tail) = fetch;
         let head = Head::fetch(head, entity)?;
@@ -75,37 +77,39 @@ where
         Some(item)
     }
 
-    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: E) -> bool {
         let Cons(head, tail) = fetch;
         Head::satisfies(head, entity) && Tail::satisfies(tail, entity)
     }
 }
 
-impl<Head> IntoReadonly for Cons<Head, Nil>
+impl<E, Head> IntoReadonly<E> for Cons<Head, Nil>
 where
-    Head: IntoReadonly,
+    E: Entity,
+    Head: IntoReadonly<E>,
 {
     type Readonly = Cons<Head::Readonly, Nil>;
 
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query<E>>::Fetch<'_> {
         let Cons(head, nil) = fetch;
         let head = Head::into_readonly(head);
         Cons(head, nil)
     }
 }
 
-impl<Head, Tail> IntoReadonly for Cons<Head, Tail>
+impl<E, Head, Tail> IntoReadonly<E> for Cons<Head, Tail>
 where
-    Head: IntoReadonly,
-    Tail: IntoReadonly,
+    E: Entity,
+    Head: IntoReadonly<E>,
+    Tail: IntoReadonly<E>,
     for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
     for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
-    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
-    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Head::Readonly as Query<E>>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Tail::Readonly as Query<E>>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
     type Readonly = Cons<Head::Readonly, Tail::Readonly>;
 
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query<E>>::Fetch<'_> {
         let Cons(head, tail) = fetch;
         let head = Head::into_readonly(head);
         let tail = Tail::into_readonly(tail);
@@ -113,9 +117,10 @@ where
     }
 }
 
-impl<Head> AsReadonly for Cons<Head, Nil>
+impl<E, Head> AsReadonly<E> for Cons<Head, Nil>
 where
-    Head: AsReadonly,
+    E: Entity,
+    Head: AsReadonly<E>,
 {
     type ReadonlyRef<'borrow> = Cons<Head::ReadonlyRef<'borrow>, Nil>;
 
@@ -127,28 +132,29 @@ where
 
     fn readonly_ref_fetch(
         fetch: Self::ReadonlyRef<'_>,
-        entity: Entity,
-    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        entity: E,
+    ) -> Option<<Self::Readonly as Query<E>>::Item<'_>> {
         let Cons(head, _) = fetch;
         let head = Head::readonly_ref_fetch(head, entity)?;
         let item = Cons(head, Nil);
         Some(item)
     }
 
-    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: E) -> bool {
         let Cons(head, _) = fetch;
         Head::readonly_ref_satisfies(head, entity)
     }
 }
 
-impl<Head, Tail> AsReadonly for Cons<Head, Tail>
+impl<E, Head, Tail> AsReadonly<E> for Cons<Head, Tail>
 where
-    Head: AsReadonly,
-    Tail: AsReadonly,
+    E: Entity,
+    Head: AsReadonly<E>,
+    Tail: AsReadonly<E>,
     for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
     for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
-    for<'any> <Head::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
-    for<'any> <Tail::Readonly as Query>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Head::Readonly as Query<E>>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
+    for<'any> <Tail::Readonly as Query<E>>::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
     type ReadonlyRef<'borrow> = Cons<Head::ReadonlyRef<'borrow>, Tail::ReadonlyRef<'borrow>>;
 
@@ -161,8 +167,8 @@ where
 
     fn readonly_ref_fetch(
         fetch: Self::ReadonlyRef<'_>,
-        entity: Entity,
-    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        entity: E,
+    ) -> Option<<Self::Readonly as Query<E>>::Item<'_>> {
         let Cons(head, tail) = fetch;
         let head = Head::readonly_ref_fetch(head, entity)?;
         let tail = Tail::readonly_ref_fetch(tail, entity)?;
@@ -170,15 +176,16 @@ where
         Some(item)
     }
 
-    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: E) -> bool {
         let Cons(head, tail) = fetch;
         Head::readonly_ref_satisfies(head, entity) && Tail::readonly_ref_satisfies(tail, entity)
     }
 }
 
-impl<Head> ReadonlyQuery for Cons<Head, Nil>
+impl<E, Head> ReadonlyQuery<E> for Cons<Head, Nil>
 where
-    Head: ReadonlyQuery,
+    E: Entity,
+    Head: ReadonlyQuery<E>,
 {
     fn new_readonly_fetch<C>(components: &C) -> Option<Self::Fetch<'_>>
     where
@@ -191,7 +198,7 @@ where
 
     fn readonly_fetch<'fetch>(
         fetch: &Self::Fetch<'fetch>,
-        entity: Entity,
+        entity: E,
     ) -> Option<Self::Item<'fetch>> {
         let Cons(head, _) = fetch;
         let head = Head::readonly_fetch(head, entity)?;
@@ -200,10 +207,11 @@ where
     }
 }
 
-impl<Head, Tail> ReadonlyQuery for Cons<Head, Tail>
+impl<E, Head, Tail> ReadonlyQuery<E> for Cons<Head, Tail>
 where
-    Head: ReadonlyQuery,
-    Tail: ReadonlyQuery,
+    E: Entity,
+    Head: ReadonlyQuery<E>,
+    Tail: ReadonlyQuery<E>,
     for<'any> Head::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
     for<'any> Tail::Fetch<'any>: Dependency<Option<RefKind<'any, dyn Any>>>,
 {
@@ -219,7 +227,7 @@ where
 
     fn readonly_fetch<'fetch>(
         fetch: &Self::Fetch<'fetch>,
-        entity: Entity,
+        entity: E,
     ) -> Option<Self::Item<'fetch>> {
         let Cons(head, tail) = fetch;
         let head = Head::readonly_fetch(head, entity)?;

@@ -4,11 +4,11 @@ use crate::{
     component::{
         bundle::{Bundle, NotRegisteredError, TryBundle, TryBundleError},
         registry::Registry as Components,
+        storage::bundle::Bundle as StorageBundle,
     },
     entity::{
         builder::{self, TryBuildError, TryEntityBuildError},
         registry::{Registry as Entities, TryRegistry as TryEntities},
-        Entity,
     },
 };
 
@@ -101,6 +101,7 @@ where
 impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
 where
     T: Bundle,
+    T::Storages: StorageBundle<Entity = E::Entity>,
     E: Entities,
     C: Components,
 {
@@ -119,7 +120,7 @@ where
     ///
     /// Note that the contents of inserted bundles are attached to the newly created entity
     /// in the order of their insertion.
-    pub fn build(self) -> Result<Entity, NotRegisteredError> {
+    pub fn build(self) -> Result<E::Entity, NotRegisteredError> {
         let Self {
             entities,
             components,
@@ -132,6 +133,7 @@ where
 impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
 where
     T: Bundle,
+    T::Storages: StorageBundle<Entity = E::Entity>,
     E: TryEntities,
     C: Components,
 {
@@ -152,7 +154,7 @@ where
     /// in the order of their insertion.
     ///
     /// This is the fallible version of [`build`][EntityBuilder::build()] method.
-    pub fn try_entity_build(self) -> Result<Entity, TryEntityBuildError<E::Err>> {
+    pub fn try_entity_build(self) -> Result<E::Entity, TryEntityBuildError<E::Err>> {
         let Self {
             entities,
             components,
@@ -165,6 +167,7 @@ where
 impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
 where
     T: TryBundle,
+    T::Storages: StorageBundle<Entity = E::Entity>,
     E: Entities,
     C: Components,
 {
@@ -186,7 +189,7 @@ where
     /// in the order of their insertion.
     ///
     /// This is the fallible version of [`build`][EntityBuilder::build()] method.
-    pub fn try_bundle_build(self) -> Result<Entity, TryBundleError<T::Err>> {
+    pub fn try_bundle_build(self) -> Result<E::Entity, TryBundleError<T::Err>> {
         let Self {
             entities,
             components,
@@ -199,6 +202,7 @@ where
 impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
 where
     T: TryBundle,
+    T::Storages: StorageBundle<Entity = E::Entity>,
     E: TryEntities,
     C: Components,
 {
@@ -220,7 +224,7 @@ where
     /// in the order of their insertion.
     ///
     /// This is the fallible version of [`build`][EntityBuilder::build()] method.
-    pub fn try_build(self) -> Result<Entity, TryBuildError<E::Err, T::Err>> {
+    pub fn try_build(self) -> Result<E::Entity, TryBuildError<E::Err, T::Err>> {
         let Self {
             entities,
             components,

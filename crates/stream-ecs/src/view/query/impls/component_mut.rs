@@ -4,9 +4,11 @@ use crate::{
     view::query::{AsReadonly, IntoReadonly, Query},
 };
 
-impl<C> Query for &mut C
+impl<C, E> Query<E> for &mut C
 where
     C: Component,
+    C::Storage: Storage<Entity = E>,
+    E: Entity,
 {
     type Item<'item> = &'item mut C;
 
@@ -21,30 +23,34 @@ where
 
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: Entity,
+        entity: E,
     ) -> Option<Self::Item<'borrow>> {
         Storage::get_mut(*fetch, entity)
     }
 
-    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool {
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: E) -> bool {
         Self::readonly_ref_satisfies(fetch, entity)
     }
 }
 
-impl<'me, C> IntoReadonly for &'me mut C
+impl<'me, C, E> IntoReadonly<E> for &'me mut C
 where
     C: Component,
+    C::Storage: Storage<Entity = E>,
+    E: Entity,
 {
     type Readonly = &'me C;
 
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query<E>>::Fetch<'_> {
         fetch
     }
 }
 
-impl<C> AsReadonly for &mut C
+impl<C, E> AsReadonly<E> for &mut C
 where
     C: Component,
+    C::Storage: Storage<Entity = E>,
+    E: Entity,
 {
     type ReadonlyRef<'borrow> = &'borrow C::Storage;
 
@@ -54,12 +60,12 @@ where
 
     fn readonly_ref_fetch(
         fetch: Self::ReadonlyRef<'_>,
-        entity: Entity,
-    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
+        entity: E,
+    ) -> Option<<Self::Readonly as Query<E>>::Item<'_>> {
         Storage::get(fetch, entity)
     }
 
-    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool {
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: E) -> bool {
         Storage::is_attached(fetch, entity)
     }
 }

@@ -2,10 +2,7 @@
 
 use crate::{
     component::registry::Registry as Components,
-    entity::{
-        registry::{NotPresentError, Registry as Entities},
-        Entity,
-    },
+    entity::registry::{NotPresentError, Registry as Entities},
     view::{
         self,
         iter::{ViewIter, ViewIterMut},
@@ -24,16 +21,16 @@ use super::view_ref::ViewRef;
 /// ```
 pub struct View<'state, Q, E>
 where
-    Q: Query,
+    Q: Query<E::Entity>,
     E: Entities,
 {
     entities: &'state E,
-    view: view::View<'state, Q>,
+    view: view::View<'state, Q, E::Entity>,
 }
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: Query,
+    Q: Query<E::Entity>,
     E: Entities,
 {
     /// Creates new view of entities from provided entity and mutable component registries.
@@ -70,7 +67,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn from_view(entities: &'state E, view: view::View<'state, Q>) -> Self {
+    pub fn from_view(entities: &'state E, view: view::View<'state, Q, E::Entity>) -> Self {
         Self { entities, view }
     }
 
@@ -85,7 +82,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn satisfies(&self, entity: Entity) -> Result<bool, NotPresentError> {
+    pub fn satisfies(&self, entity: E::Entity) -> Result<bool, NotPresentError<E::Entity>> {
         let Self { entities, view } = self;
 
         if !entities.contains(entity) {
@@ -106,7 +103,10 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get_mut(&mut self, entity: Entity) -> Result<Option<Q::Item<'_>>, NotPresentError> {
+    pub fn get_mut(
+        &mut self,
+        entity: E::Entity,
+    ) -> Result<Option<Q::Item<'_>>, NotPresentError<E::Entity>> {
         let Self { entities, view } = self;
 
         if !entities.contains(entity) {
@@ -133,7 +133,7 @@ where
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: IntoReadonly,
+    Q: IntoReadonly<E::Entity>,
     E: Entities,
 {
     /// Converts this view into readonly view.
@@ -152,7 +152,7 @@ where
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E::Entity>,
     E: Entities,
 {
     /// Returns a borrow of the view.
@@ -171,7 +171,7 @@ where
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: ReadonlyQuery,
+    Q: ReadonlyQuery<E::Entity>,
     E: Entities,
 {
     /// Creates new view of entities from provided entity and component registries.
@@ -200,7 +200,10 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get(&self, entity: Entity) -> Result<Option<Q::Item<'state>>, NotPresentError> {
+    pub fn get(
+        &self,
+        entity: E::Entity,
+    ) -> Result<Option<Q::Item<'state>>, NotPresentError<E::Entity>> {
         let Self { entities, view } = self;
 
         if !entities.contains(entity) {
@@ -225,7 +228,7 @@ where
 
 impl<'me, 'state, Q, E> IntoIterator for &'me View<'state, Q, E>
 where
-    Q: ReadonlyQuery,
+    Q: ReadonlyQuery<E::Entity>,
     E: Entities,
 {
     type Item = Q::Item<'state>;

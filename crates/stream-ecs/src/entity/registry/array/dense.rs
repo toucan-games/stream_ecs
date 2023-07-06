@@ -1,12 +1,12 @@
 //! Dense entity registry implementation backed by an array.
 
-use core::{iter::FusedIterator, slice};
+use core::{iter::FusedIterator, ops::Add, slice};
 
 use arrayvec::ArrayVec;
 
 use crate::entity::{
     registry::{NotPresentError, Registry, TryRegistry},
-    Entity,
+    DefaultEntity, Entity,
 };
 
 use super::ArrayRegistryError;
@@ -18,15 +18,15 @@ enum SlotEntry {
 }
 
 #[derive(Debug, Clone)]
-struct Slot {
+struct Slot<I> {
     entry: SlotEntry,
-    generation: u32,
+    generation: I,
 }
 
 #[derive(Debug, Clone)]
-struct Dense {
+struct Dense<I> {
     index: usize,
-    generation: u32,
+    generation: I,
 }
 
 /// Implementation of the entity registry backed by an array
@@ -38,13 +38,21 @@ struct Dense {
 /// todo!()
 /// ```
 #[derive(Debug, Clone, Default)]
-pub struct DenseArrayRegistry<const N: usize> {
-    dense: ArrayVec<Dense, N>,
-    sparse: ArrayVec<Slot, N>,
+pub struct DenseArrayRegistry<const N: usize, E = DefaultEntity>
+where
+    E: Entity,
+{
+    dense: ArrayVec<Dense<E::Index>, N>,
+    sparse: ArrayVec<Slot<E::Index>, N>,
     free_head: usize,
 }
 
-impl<const N: usize> DenseArrayRegistry<N> {
+impl<E, const N: usize> DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    usize: TryFrom<E::Index>,
+{
     /// Creates new empty dense array registry.
     ///
     /// # Examples
@@ -106,7 +114,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// assert_ne!(first, second);
     /// ```
     #[track_caller]
-    pub fn create(&mut self) -> Entity {
+    pub fn create(&mut self) -> E {
         match self.try_create() {
             Ok(entity) => entity,
             Err(err) => panic!("{err}"),
@@ -133,7 +141,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// ```
     ///
     /// This is the fallible version of [`create`][Self::create()] method.
-    pub fn try_create(&mut self) -> Result<Entity, ArrayRegistryError> {
+    pub fn try_create(&mut self) -> Result<E, ArrayRegistryError> {
         let entity = if let Some(slot) = self.sparse.get_mut(self.free_head) {
             if let SlotEntry::Free { next_free } = slot.entry {
                 let index = self.free_head;
@@ -142,7 +150,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
                     generation: slot.generation,
                 };
                 let index = index.try_into().map_err(|_| ArrayRegistryError)?;
-                let entity = Entity::new(index, dense.generation);
+                let entity = E::with(index, dense.generation);
                 if self.dense.try_push(dense).is_err() {
                     return Err(ArrayRegistryError);
                 }
@@ -156,10 +164,10 @@ impl<const N: usize> DenseArrayRegistry<N> {
             }
         } else {
             let index = self.free_head;
-            let generation = 0;
+            let generation = 0.try_into().map_err(|_| ArrayRegistryError)?;
             let dense = Dense { index, generation };
             let index = index.try_into().map_err(|_| ArrayRegistryError)?;
-            let entity = Entity::new(index, dense.generation);
+            let entity = E::with(index, dense.generation);
             let slot = Slot {
                 entry: SlotEntry::Occupied {
                     dense_index: self.dense.len(),
@@ -192,7 +200,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// registry.destroy(entity).unwrap();
     /// assert!(!registry.contains(entity))
     /// ```
-    pub fn contains(&self, entity: Entity) -> bool {
+    pub fn contains(&self, entity: E) -> bool {
         let Ok(index) = usize::try_from(entity.index()) else {
             return false;
         };
@@ -229,7 +237,7 @@ impl<const N: usize> DenseArrayRegistry<N> {
     /// let result = registry.destroy(entity);
     /// assert!(result.is_err());
     /// ```
-    pub fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+    pub fn destroy(&mut self, entity: E) -> Result<(), NotPresentError<E>> {
         let Ok(index) = usize::try_from(entity.index()) else {
             return Err(NotPresentError::new(entity));
         };
@@ -245,10 +253,15 @@ impl<const N: usize> DenseArrayRegistry<N> {
         if slot.generation != entity.generation() {
             return Err(NotPresentError::new(entity));
         }
+        slot.generation = {
+            let Ok(one) = 1.try_into() else {
+                return Err(NotPresentError::new(entity));
+            };
+            slot.generation + one
+        };
         slot.entry = SlotEntry::Free {
             next_free: self.free_head,
         };
-        slot.generation += 1;
         self.free_head = index;
         self.dense.swap_remove(dense_index);
         if let Some(dense) = self.dense.get(dense_index) {
@@ -338,21 +351,28 @@ impl<const N: usize> DenseArrayRegistry<N> {
     ///     println!("entity is {entity}");
     /// }
     /// ```
-    pub fn iter(&self) -> Iter<'_> {
+    pub fn iter(&self) -> Iter<'_, E> {
         self.into_iter()
     }
 }
 
-impl<const N: usize> Registry for DenseArrayRegistry<N> {
-    fn create(&mut self) -> Entity {
+impl<E, const N: usize> Registry for DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    usize: TryFrom<E::Index>,
+{
+    type Entity = E;
+
+    fn create(&mut self) -> Self::Entity {
         DenseArrayRegistry::create(self)
     }
 
-    fn contains(&self, entity: Entity) -> bool {
+    fn contains(&self, entity: Self::Entity) -> bool {
         DenseArrayRegistry::contains(self, entity)
     }
 
-    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError> {
+    fn destroy(&mut self, entity: Self::Entity) -> Result<(), NotPresentError<Self::Entity>> {
         DenseArrayRegistry::destroy(self, entity)
     }
 
@@ -368,7 +388,7 @@ impl<const N: usize> Registry for DenseArrayRegistry<N> {
         DenseArrayRegistry::clear(self)
     }
 
-    type Iter<'me> = Iter<'me>
+    type Iter<'me> = Iter<'me, Self::Entity>
     where
         Self: 'me;
 
@@ -377,18 +397,27 @@ impl<const N: usize> Registry for DenseArrayRegistry<N> {
     }
 }
 
-impl<const N: usize> TryRegistry for DenseArrayRegistry<N> {
+impl<E, const N: usize> TryRegistry for DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    usize: TryFrom<E::Index>,
+{
     type Err = ArrayRegistryError;
 
-    fn try_create(&mut self) -> Result<Entity, Self::Err> {
+    fn try_create(&mut self) -> Result<Self::Entity, Self::Err> {
         DenseArrayRegistry::try_create(self)
     }
 }
 
-impl<'me, const N: usize> IntoIterator for &'me DenseArrayRegistry<N> {
-    type Item = Entity;
+impl<'me, E, const N: usize> IntoIterator for &'me DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+    type Item = E;
 
-    type IntoIter = Iter<'me>;
+    type IntoIter = Iter<'me, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.iter();
@@ -396,10 +425,14 @@ impl<'me, const N: usize> IntoIterator for &'me DenseArrayRegistry<N> {
     }
 }
 
-impl<const N: usize> IntoIterator for DenseArrayRegistry<N> {
-    type Item = Entity;
+impl<E, const N: usize> IntoIterator for DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+    type Item = E;
 
-    type IntoIter = IntoIter<N>;
+    type IntoIter = IntoIter<E, N>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.dense.into_iter();
@@ -409,17 +442,24 @@ impl<const N: usize> IntoIterator for DenseArrayRegistry<N> {
 
 /// Iterator over alive entities contained in the dense array registry.
 #[derive(Debug, Clone)]
-pub struct Iter<'data> {
-    iter: slice::Iter<'data, Dense>,
+pub struct Iter<'data, E>
+where
+    E: Entity,
+{
+    iter: slice::Iter<'data, Dense<E::Index>>,
 }
 
-impl Iterator for Iter<'_> {
-    type Item = Entity;
+impl<E> Iterator for Iter<'_, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+    type Item = E;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Dense { index, generation } = self.iter.next().cloned()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some(entity)
     }
 
@@ -428,36 +468,56 @@ impl Iterator for Iter<'_> {
     }
 }
 
-impl DoubleEndedIterator for Iter<'_> {
+impl<E> DoubleEndedIterator for Iter<'_, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         let Dense { index, generation } = self.iter.next_back().cloned()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some(entity)
     }
 }
 
-impl ExactSizeIterator for Iter<'_> {
+impl<E> ExactSizeIterator for Iter<'_, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl FusedIterator for Iter<'_> {}
+impl<E> FusedIterator for Iter<'_, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+}
 
 /// Type of iterator in which dense array registry can be converted.
 #[derive(Debug, Clone)]
-pub struct IntoIter<const N: usize> {
-    iter: arrayvec::IntoIter<Dense, N>,
+pub struct IntoIter<E, const N: usize>
+where
+    E: Entity,
+{
+    iter: arrayvec::IntoIter<Dense<E::Index>, N>,
 }
 
-impl<const N: usize> Iterator for IntoIter<N> {
-    type Item = Entity;
+impl<E, const N: usize> Iterator for IntoIter<E, N>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+    type Item = E;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Dense { index, generation } = self.iter.next()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some(entity)
     }
 
@@ -466,22 +526,35 @@ impl<const N: usize> Iterator for IntoIter<N> {
     }
 }
 
-impl<const N: usize> DoubleEndedIterator for IntoIter<N> {
+impl<E, const N: usize> DoubleEndedIterator for IntoIter<E, N>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         let Dense { index, generation } = self.iter.next_back()?;
         let index = index.try_into().ok()?;
-        let entity = Entity::new(index, generation);
+        let entity = E::with(index, generation);
         Some(entity)
     }
 }
 
-impl<const N: usize> ExactSizeIterator for IntoIter<N> {
+impl<E, const N: usize> ExactSizeIterator for IntoIter<E, N>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<const N: usize> FusedIterator for IntoIter<N> {}
+impl<E, const N: usize> FusedIterator for IntoIter<E, N>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
+}
 
 #[cfg(test)]
 mod tests {

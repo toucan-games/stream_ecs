@@ -6,11 +6,11 @@ use crate::{
     component::{
         bundle::{Bundle, NotRegisteredError, TryBundle, TryBundleError},
         registry::Registry as Components,
+        storage::bundle::Bundle as StorageBundle,
     },
     entity::{
         builder::{TryBuildError, TryEntityBuildError},
         registry::{Registry as Entities, TryRegistry as TryEntities},
-        Entity,
     },
 };
 
@@ -98,10 +98,11 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> Result<Entity, NotRegisteredError>
+    ) -> Result<E::Entity, NotRegisteredError>
     where
         E: Entities,
         C: Components,
+        T::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self(bundle) = self;
 
@@ -137,10 +138,11 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> Result<Entity, TryEntityBuildError<E::Err>>
+    ) -> Result<E::Entity, TryEntityBuildError<E::Err>>
     where
         E: TryEntities,
         C: Components,
+        T::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self(bundle) = self;
 
@@ -185,10 +187,11 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> Result<Entity, TryBundleError<T::Err>>
+    ) -> Result<E::Entity, TryBundleError<T::Err>>
     where
         E: Entities,
         C: Components,
+        T::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self(bundle) = self;
 
@@ -226,10 +229,11 @@ where
         self,
         entities: &mut E,
         components: &mut C,
-    ) -> Result<Entity, TryBuildError<E::Err, T::Err>>
+    ) -> Result<E::Entity, TryBuildError<E::Err, T::Err>>
     where
         E: TryEntities,
         C: Components,
+        T::Storages: StorageBundle<Entity = E::Entity>,
     {
         let Self(bundle) = self;
 

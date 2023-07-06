@@ -12,7 +12,6 @@ use crate::{
         storage::Storage,
     },
     dependency::{dependency_from_iter, Dependency},
-    entity::Entity,
 };
 
 use super::{
@@ -26,6 +25,7 @@ where
     T: Storage,
 {
     type Items = T::Item;
+    type Entity = T::Entity;
 
     type With<C> = C::With<T::Item>
     where
@@ -66,6 +66,7 @@ where
     Head: Bundle,
 {
     type Items = Cons<Head::Items, Nil>;
+    type Entity = Head::Entity;
 
     type With<C> = Cons<Head::With<C>, Nil>
     where
@@ -111,9 +112,10 @@ where
 impl<Head, Tail> Bundle for Cons<Head, Tail>
 where
     Head: Bundle,
-    Tail: Bundle,
+    Tail: Bundle<Entity = Head::Entity>,
 {
     type Items = Cons<Head::Items, Tail::Items>;
+    type Entity = Head::Entity;
 
     type With<C> = Cons<Head::With<C>, Tail>
     where
@@ -192,7 +194,7 @@ where
 impl<Head, Tail> TryBundle for Cons<Head, Tail>
 where
     Head: TryBundle,
-    Tail: TryBundle,
+    Tail: TryBundle<Entity = Head::Entity>,
 {
     fn try_register<C>(components: &mut C, bundle: Self) -> Result<Option<Self>, C::Err>
     where
@@ -246,7 +248,7 @@ where
 impl<Head, Tail> GetBundle for Cons<Head, Tail>
 where
     Head: GetBundle,
-    Tail: GetBundle,
+    Tail: GetBundle<Entity = Head::Entity>,
 {
     type Ref<'components> = Cons<Head::Ref<'components>, Tail::Ref<'components>>;
 
@@ -297,7 +299,7 @@ where
 impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
-    Tail: GetBundleMut,
+    Tail: GetBundleMut<Entity = Head::Entity>,
     for<'any> Head::RefMut<'any>: Dependency<&'any mut dyn Any>,
     for<'any> Tail::RefMut<'any>: Dependency<&'any mut dyn Any>,
 {
@@ -347,7 +349,7 @@ where
 impl<Head, Tail, C, Index, TailIndex> ProvideBundle<C, Cons<Index, TailIndex>> for Cons<Head, Tail>
 where
     Head: ProvideBundle<C, Index>,
-    Tail: ProvideBundle<C, TailIndex> + Bundle,
+    Tail: ProvideBundle<C, TailIndex> + Bundle<Entity = Head::Entity>,
     C: Components,
 {
     type Ref<'components> = Cons<Head::Ref<'components>, Tail::Ref<'components>>
@@ -397,7 +399,7 @@ impl<Head, Tail, C, Index, TailIndex> ProvideBundleMut<C, Cons<Index, TailIndex>
     for Cons<Head, Tail>
 where
     Head: ProvideBundleMut<C, Index>,
-    Tail: ProvideBundleMut<C, TailIndex> + Bundle,
+    Tail: ProvideBundleMut<C, TailIndex> + Bundle<Entity = Head::Entity>,
     C: Components,
     for<'any> Head::RefMut<'any>: Dependency<&'any mut dyn Any>,
     for<'any> Tail::RefMut<'any>: Dependency<&'any mut dyn Any>,
@@ -422,7 +424,7 @@ where
     where
         Self: 'me;
 
-    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>> {
+    fn items(&self, entity: Self::Entity) -> Option<Self::ItemsRef<'_>> {
         self.get(entity)
     }
 }
@@ -436,7 +438,7 @@ where
     where
         Self: 'me;
 
-    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>> {
+    fn items(&self, entity: Self::Entity) -> Option<Self::ItemsRef<'_>> {
         let Cons(head, _) = self;
         let head = head.items(entity)?;
         let items = Cons(head, Nil);
@@ -448,13 +450,13 @@ where
 impl<Head, Tail> GetItems for Cons<Head, Tail>
 where
     Head: GetItems,
-    Tail: GetItems,
+    Tail: GetItems<Entity = Head::Entity>,
 {
     type ItemsRef<'me> = Cons<Head::ItemsRef<'me>, Tail::ItemsRef<'me>>
     where
         Self: 'me;
 
-    fn items(&self, entity: Entity) -> Option<Self::ItemsRef<'_>> {
+    fn items(&self, entity: Self::Entity) -> Option<Self::ItemsRef<'_>> {
         let Cons(head, tail) = self;
         let head = head.items(entity)?;
         let tail = tail.items(entity)?;
@@ -472,7 +474,7 @@ where
     where
         Self: 'me;
 
-    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>> {
+    fn items_mut(&mut self, entity: Self::Entity) -> Option<Self::ItemsRefMut<'_>> {
         self.get_mut(entity)
     }
 }
@@ -486,7 +488,7 @@ where
     where
         Self: 'me;
 
-    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>> {
+    fn items_mut(&mut self, entity: Self::Entity) -> Option<Self::ItemsRefMut<'_>> {
         let Cons(head, _) = self;
         let head = head.items_mut(entity)?;
         let items = Cons(head, Nil);
@@ -498,13 +500,13 @@ where
 impl<Head, Tail> GetItemsMut for Cons<Head, Tail>
 where
     Head: GetItemsMut,
-    Tail: GetItemsMut,
+    Tail: GetItemsMut<Entity = Head::Entity>,
 {
     type ItemsRefMut<'me> = Cons<Head::ItemsRefMut<'me>, Tail::ItemsRefMut<'me>>
     where
         Self: 'me;
 
-    fn items_mut(&mut self, entity: Entity) -> Option<Self::ItemsRefMut<'_>> {
+    fn items_mut(&mut self, entity: Self::Entity) -> Option<Self::ItemsRefMut<'_>> {
         let Cons(head, tail) = self;
         let head = head.items_mut(entity)?;
         let tail = tail.items_mut(entity)?;

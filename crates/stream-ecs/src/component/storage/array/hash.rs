@@ -13,7 +13,7 @@ use crate::{
         storage::{Storage, TryStorage},
         Component,
     },
-    entity::Entity,
+    entity::{DefaultEntity, Entity},
 };
 
 use super::ArrayStorageError;
@@ -111,18 +111,20 @@ enum HashIndex {
 /// assert!(storage.is_attached(entity));
 /// ```
 #[derive(Debug, Clone)]
-pub struct HashArrayStorage<T, S, const N: usize>
+pub struct HashArrayStorage<T, S, const N: usize, E = DefaultEntity>
 where
     T: Component<Storage = Self>,
+    E: Entity,
 {
-    buckets: ArrayVec<Bucket<Entity, T>, N>,
+    buckets: ArrayVec<Bucket<E, T>, N>,
     indices: [HashIndex; N],
     build_hasher: S,
 }
 
-impl<T, S, const N: usize> HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
     S: Default,
 {
     /// Creates new empty hash array component storage.
@@ -150,9 +152,10 @@ where
     }
 }
 
-impl<T, S, const N: usize> HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
 {
     const EMPTY_INDEX: HashIndex = HashIndex::Free;
     const EMPTY_ARRAY: [HashIndex; N] = [Self::EMPTY_INDEX; N];
@@ -368,7 +371,7 @@ where
     /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &Position { x: 1.0, y: 23.0 })));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter<'_, T> {
+    pub fn iter(&self) -> Iter<'_, T, E> {
         self.into_iter()
     }
 
@@ -399,14 +402,15 @@ where
     /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &mut Position { x: 1.0, y: 23.0 })));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T, E> {
         self.into_iter()
     }
 }
 
-impl<T, S, const N: usize> Default for HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> Default for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
     S: Default,
 {
     fn default() -> Self {
@@ -420,12 +424,14 @@ struct FindBucket {
     bucket_index: usize,
 }
 
-impl<T, S, const N: usize> HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity + PartialEq,
+    E::Index: Hash + PartialEq + PartialOrd,
     S: BuildHasher,
 {
-    fn find_bucket(&self, entity: Entity) -> Option<FindBucket> {
+    fn find_bucket(&self, entity: E) -> Option<FindBucket> {
         if self.buckets.is_empty() {
             return None;
         }
@@ -509,7 +515,7 @@ where
     /// assert_eq!(component, Some(Position { x: 10.0, y: 12.0 }));
     /// ```
     #[track_caller]
-    pub fn attach(&mut self, entity: Entity, component: T) -> Option<T> {
+    pub fn attach(&mut self, entity: E, component: T) -> Option<T> {
         match self.try_attach(entity, component) {
             Ok(component) => component,
             Err(err) => panic!("{err}"),
@@ -551,11 +557,7 @@ where
     /// ```
     ///
     /// This is the fallible version of [`attach`][Self::attach()] method.
-    pub fn try_attach(
-        &mut self,
-        entity: Entity,
-        component: T,
-    ) -> Result<Option<T>, ArrayStorageError> {
+    pub fn try_attach(&mut self, entity: E, component: T) -> Result<Option<T>, ArrayStorageError> {
         enum AttachOperation<'a> {
             Replace { hash_index: &'a mut HashIndex },
             TakeFromRich { start_index: usize },
@@ -683,7 +685,7 @@ where
     /// storage.remove(entity);
     /// assert!(!storage.is_attached(entity));
     /// ```
-    pub fn is_attached(&self, entity: Entity) -> bool {
+    pub fn is_attached(&self, entity: E) -> bool {
         self.find_bucket(entity).is_some()
     }
 
@@ -714,7 +716,7 @@ where
     /// storage.remove(entity);
     /// assert_eq!(storage.get(entity), None);
     /// ```
-    pub fn get(&self, entity: Entity) -> Option<&T> {
+    pub fn get(&self, entity: E) -> Option<&T> {
         let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
         let Bucket { value, .. } = self
             .buckets
@@ -751,7 +753,7 @@ where
     /// storage.remove(entity);
     /// assert_eq!(storage.get_mut(entity), None);
     /// ```
-    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
+    pub fn get_mut(&mut self, entity: E) -> Option<&mut T> {
         let FindBucket { bucket_index, .. } = self.find_bucket(entity)?;
         let Bucket { value, .. } = self
             .buckets
@@ -788,7 +790,7 @@ where
     /// let component = storage.remove(entity);
     /// assert_eq!(component, Some(Position { x: 0.0, y: -10.0 }));
     /// ```
-    pub fn remove(&mut self, entity: Entity) -> Option<T> {
+    pub fn remove(&mut self, entity: E) -> Option<T> {
         let FindBucket {
             hash_index,
             bucket_index,
@@ -853,30 +855,33 @@ where
     }
 }
 
-impl<T, S, const N: usize> Storage for HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> Storage for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity + PartialEq,
+    E::Index: Hash + PartialEq + PartialOrd,
     S: BuildHasher + 'static,
 {
     type Item = T;
+    type Entity = E;
 
-    fn attach(&mut self, entity: Entity, component: Self::Item) -> Option<Self::Item> {
+    fn attach(&mut self, entity: Self::Entity, component: Self::Item) -> Option<Self::Item> {
         HashArrayStorage::attach(self, entity, component)
     }
 
-    fn is_attached(&self, entity: Entity) -> bool {
+    fn is_attached(&self, entity: Self::Entity) -> bool {
         HashArrayStorage::is_attached(self, entity)
     }
 
-    fn get(&self, entity: Entity) -> Option<&Self::Item> {
+    fn get(&self, entity: Self::Entity) -> Option<&Self::Item> {
         HashArrayStorage::get(self, entity)
     }
 
-    fn get_mut(&mut self, entity: Entity) -> Option<&mut Self::Item> {
+    fn get_mut(&mut self, entity: Self::Entity) -> Option<&mut Self::Item> {
         HashArrayStorage::get_mut(self, entity)
     }
 
-    fn remove(&mut self, entity: Entity) -> Option<Self::Item> {
+    fn remove(&mut self, entity: Self::Entity) -> Option<Self::Item> {
         HashArrayStorage::remove(self, entity)
     }
 
@@ -892,7 +897,7 @@ where
         HashArrayStorage::is_empty(self)
     }
 
-    type Iter<'me> = Iter<'me, T>
+    type Iter<'me> = Iter<'me, Self::Item, Self::Entity>
     where
         Self: 'me;
 
@@ -900,7 +905,7 @@ where
         HashArrayStorage::iter(self)
     }
 
-    type IterMut<'me> = IterMut<'me, T>
+    type IterMut<'me> = IterMut<'me, Self::Item, Self::Entity>
     where
         Self: 'me;
 
@@ -909,29 +914,32 @@ where
     }
 }
 
-impl<T, S, const N: usize> TryStorage for HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> TryStorage for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity + PartialEq,
+    E::Index: Hash + PartialEq + PartialOrd,
     S: BuildHasher + 'static,
 {
     type Err = ArrayStorageError;
 
     fn try_attach(
         &mut self,
-        entity: Entity,
+        entity: Self::Entity,
         component: Self::Item,
     ) -> Result<Option<Self::Item>, Self::Err> {
         HashArrayStorage::try_attach(self, entity, component)
     }
 }
 
-impl<'me, T, S, const N: usize> IntoIterator for &'me HashArrayStorage<T, S, N>
+impl<'me, T, E, S, const N: usize> IntoIterator for &'me HashArrayStorage<T, S, N, E>
 where
-    T: Component<Storage = HashArrayStorage<T, S, N>>,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
+    E: Entity,
 {
-    type Item = (Entity, &'me T);
+    type Item = (E, &'me T);
 
-    type IntoIter = Iter<'me, T>;
+    type IntoIter = Iter<'me, T, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.iter();
@@ -939,13 +947,14 @@ where
     }
 }
 
-impl<'me, T, S, const N: usize> IntoIterator for &'me mut HashArrayStorage<T, S, N>
+impl<'me, T, E, S, const N: usize> IntoIterator for &'me mut HashArrayStorage<T, S, N, E>
 where
-    T: Component<Storage = HashArrayStorage<T, S, N>>,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
+    E: Entity,
 {
-    type Item = (Entity, &'me mut T);
+    type Item = (E, &'me mut T);
 
-    type IntoIter = IterMut<'me, T>;
+    type IntoIter = IterMut<'me, T, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.iter_mut();
@@ -953,13 +962,14 @@ where
     }
 }
 
-impl<T, S, const N: usize> IntoIterator for HashArrayStorage<T, S, N>
+impl<T, E, S, const N: usize> IntoIterator for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
+    E: Entity,
 {
-    type Item = (Entity, T);
+    type Item = (E, T);
 
-    type IntoIter = IntoIter<T, N>;
+    type IntoIter = IntoIter<T, E, N>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.into_iter();
@@ -970,18 +980,20 @@ where
 /// Iterator of entities with references of components attached to them
 /// in the hash array storage.
 #[derive(Debug, Clone)]
-pub struct Iter<'data, T>
+pub struct Iter<'data, T, E>
 where
     T: Component,
+    E: Entity,
 {
-    iter: slice::Iter<'data, Bucket<Entity, T>>,
+    iter: slice::Iter<'data, Bucket<E, T>>,
 }
 
-impl<'data, T> Iterator for Iter<'data, T>
+impl<'data, T, E> Iterator for Iter<'data, T, E>
 where
     T: Component,
+    E: Entity,
 {
-    type Item = (Entity, &'data T);
+    type Item = (E, &'data T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &Bucket { key, ref value, .. } = self.iter.next()?;
@@ -993,9 +1005,10 @@ where
     }
 }
 
-impl<T> DoubleEndedIterator for Iter<'_, T>
+impl<T, E> DoubleEndedIterator for Iter<'_, T, E>
 where
     T: Component,
+    E: Entity,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let &Bucket { key, ref value, .. } = self.iter.next_back()?;
@@ -1003,32 +1016,40 @@ where
     }
 }
 
-impl<T> ExactSizeIterator for Iter<'_, T>
+impl<T, E> ExactSizeIterator for Iter<'_, T, E>
 where
     T: Component,
+    E: Entity,
 {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T> FusedIterator for Iter<'_, T> where T: Component {}
+impl<T, E> FusedIterator for Iter<'_, T, E>
+where
+    T: Component,
+    E: Entity,
+{
+}
 
 /// Iterator of entities with mutable references of components attached to them
 /// in the hash array storage.
 #[derive(Debug)]
-pub struct IterMut<'data, T>
+pub struct IterMut<'data, T, E>
 where
     T: Component,
+    E: Entity,
 {
-    iter: slice::IterMut<'data, Bucket<Entity, T>>,
+    iter: slice::IterMut<'data, Bucket<E, T>>,
 }
 
-impl<'data, T> Iterator for IterMut<'data, T>
+impl<'data, T, E> Iterator for IterMut<'data, T, E>
 where
     T: Component,
+    E: Entity,
 {
-    type Item = (Entity, &'data mut T);
+    type Item = (E, &'data mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let &mut Bucket {
@@ -1042,9 +1063,10 @@ where
     }
 }
 
-impl<T> DoubleEndedIterator for IterMut<'_, T>
+impl<T, E> DoubleEndedIterator for IterMut<'_, T, E>
 where
     T: Component,
+    E: Entity,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let &mut Bucket {
@@ -1054,31 +1076,39 @@ where
     }
 }
 
-impl<T> ExactSizeIterator for IterMut<'_, T>
+impl<T, E> ExactSizeIterator for IterMut<'_, T, E>
 where
     T: Component,
+    E: Entity,
 {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T> FusedIterator for IterMut<'_, T> where T: Component {}
+impl<T, E> FusedIterator for IterMut<'_, T, E>
+where
+    T: Component,
+    E: Entity,
+{
+}
 
 /// Iterator of entities with components attached to them in the hash array storage.
 #[derive(Debug, Clone)]
-pub struct IntoIter<T, const N: usize>
+pub struct IntoIter<T, E, const N: usize>
 where
     T: Component,
+    E: Entity,
 {
-    iter: arrayvec::IntoIter<Bucket<Entity, T>, N>,
+    iter: arrayvec::IntoIter<Bucket<E, T>, N>,
 }
 
-impl<T, const N: usize> Iterator for IntoIter<T, N>
+impl<T, E, const N: usize> Iterator for IntoIter<T, E, N>
 where
     T: Component,
+    E: Entity,
 {
-    type Item = (Entity, T);
+    type Item = (E, T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let Bucket { key, value, .. } = self.iter.next()?;
@@ -1090,9 +1120,10 @@ where
     }
 }
 
-impl<T, const N: usize> DoubleEndedIterator for IntoIter<T, N>
+impl<T, E, const N: usize> DoubleEndedIterator for IntoIter<T, E, N>
 where
     T: Component,
+    E: Entity,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let Bucket { key, value, .. } = self.iter.next_back()?;
@@ -1100,23 +1131,29 @@ where
     }
 }
 
-impl<T, const N: usize> ExactSizeIterator for IntoIter<T, N>
+impl<T, E, const N: usize> ExactSizeIterator for IntoIter<T, E, N>
 where
     T: Component,
+    E: Entity,
 {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T, const N: usize> FusedIterator for IntoIter<T, N> where T: Component {}
+impl<T, E, const N: usize> FusedIterator for IntoIter<T, E, N>
+where
+    T: Component,
+    E: Entity,
+{
+}
 
 #[cfg(test)]
 mod tests {
     use core::hash::BuildHasherDefault;
     use std::collections::hash_map::DefaultHasher;
 
-    use crate::{component::Component, entity::Entity};
+    use crate::{component::Component, entity::DefaultEntity as Entity};
 
     type HashArrayStorage<T, const N: usize> =
         super::HashArrayStorage<T, BuildHasherDefault<DefaultHasher>, N>;

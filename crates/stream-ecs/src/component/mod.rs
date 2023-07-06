@@ -1,10 +1,12 @@
 //! Provides utilities for components in ECS.
 
-use self::storage::Storage;
+use as_any::AsAny;
 
 /// Derive macro for [`Component`] trait.
 #[cfg(feature = "derive")]
 pub use stream_ecs_macros::Component;
+
+use self::storage::Storage;
 
 pub mod bundle;
 pub mod registry;
@@ -27,3 +29,17 @@ pub trait Component: Copy + 'static {
     /// Type of storage which will be used to store this type of component.
     type Storage: Storage<Item = Self>;
 }
+
+/// Erased variant of component of some component type in ECS.
+///
+/// Compared to [`Component`] trait, this trait is guaranteed to be object safe, so it can be used as trait object.
+/// This trait is implemented for all the components, so it can be used as trait object for any type of component.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
+pub trait ErasedComponent: AsAny {}
+
+impl<T> ErasedComponent for T where T: Component {}

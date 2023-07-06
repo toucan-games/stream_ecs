@@ -1,12 +1,9 @@
 use crate::{
-    entity::{
-        registry::{NotPresentError, Registry as Entities},
-        Entity,
-    },
+    entity::registry::{NotPresentError, Registry as Entities},
     view::{
         self,
         iter::ViewRefIter,
-        query::{AsReadonly, Query},
+        query::{AsReadonly, IntoReadonly, Query},
     },
 };
 
@@ -19,19 +16,19 @@ use crate::{
 /// ```
 pub struct ViewRef<'state, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E::Entity>,
     E: Entities,
 {
     entities: &'state E,
-    view_ref: view::ViewRef<'state, Q>,
+    view_ref: view::ViewRef<'state, Q, E::Entity>,
 }
 
 impl<'state, Q, E> ViewRef<'state, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E::Entity>,
     E: Entities,
 {
-    pub(super) fn new(entities: &'state E, view_ref: view::ViewRef<'state, Q>) -> Self {
+    pub(super) fn new(entities: &'state E, view_ref: view::ViewRef<'state, Q, E::Entity>) -> Self {
         Self { entities, view_ref }
     }
 
@@ -46,7 +43,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn satisfies(&self, entity: Entity) -> Result<bool, NotPresentError> {
+    pub fn satisfies(&self, entity: E::Entity) -> Result<bool, NotPresentError<E::Entity>> {
         let Self { entities, view_ref } = self;
 
         if !entities.contains(entity) {
@@ -67,10 +64,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get(
-        &self,
-        entity: Entity,
-    ) -> Result<Option<<Q::Readonly as Query>::Item<'state>>, NotPresentError> {
+    pub fn get(&self, entity: E::Entity) -> GetResult<'state, Q, E::Entity> {
         let Self { entities, view_ref } = self;
 
         if !entities.contains(entity) {
@@ -93,9 +87,13 @@ where
     }
 }
 
+type GetResult<'a, Q, E> = Result<Option<ReadonlyItem<'a, Q, E>>, NotPresentError<E>>;
+
+type ReadonlyItem<'a, Q, E> = <<Q as IntoReadonly<E>>::Readonly as Query<E>>::Item<'a>;
+
 impl<'state, Q, E> Clone for ViewRef<'state, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E::Entity>,
     E: Entities,
 {
     fn clone(&self) -> Self {
@@ -105,17 +103,17 @@ where
 
 impl<'state, Q, E> Copy for ViewRef<'state, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E::Entity>,
     E: Entities,
 {
 }
 
 impl<'state, Q, E> IntoIterator for &ViewRef<'state, Q, E>
 where
-    Q: AsReadonly,
+    Q: AsReadonly<E::Entity>,
     E: Entities,
 {
-    type Item = <Q::Readonly as Query>::Item<'state>;
+    type Item = <Q::Readonly as Query<E::Entity>>::Item<'state>;
 
     type IntoIter = ViewRefIter<'state, Q, E::Iter<'state>>;
 

@@ -11,8 +11,9 @@ use crate::{entity::Entity, view::query::ReadonlyQuery};
 /// ```
 pub struct ViewIter<'borrow, 'fetch, Q, E>
 where
-    Q: ReadonlyQuery,
-    E: Iterator<Item = Entity>,
+    Q: ReadonlyQuery<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     entities: E,
     fetch: &'borrow Q::Fetch<'fetch>,
@@ -20,8 +21,9 @@ where
 
 impl<'borrow, 'fetch, Q, E> ViewIter<'borrow, 'fetch, Q, E>
 where
-    Q: ReadonlyQuery,
-    E: Iterator<Item = Entity>,
+    Q: ReadonlyQuery<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     pub(in crate::view) fn new<I>(entities: I, fetch: &'borrow Q::Fetch<'fetch>) -> Self
     where
@@ -34,8 +36,9 @@ where
 
 impl<'borrow, 'fetch, Q, E> Iterator for ViewIter<'borrow, 'fetch, Q, E>
 where
-    Q: ReadonlyQuery,
-    E: Iterator<Item = Entity>,
+    Q: ReadonlyQuery<E::Item>,
+    E: Iterator,
+    E::Item: Entity,
 {
     type Item = Q::Item<'fetch>;
 

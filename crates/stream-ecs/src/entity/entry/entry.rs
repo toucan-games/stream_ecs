@@ -4,26 +4,29 @@ use crate::{
     component::{
         bundle::{Bundle, GetBundle, NotRegisteredError},
         registry::Registry as Components,
+        storage::bundle::Bundle as StorageBundle,
     },
-    entity::{
-        registry::{Registry as Entities, TryRegistry as TryEntities},
-        Entity,
-    },
+    entity::registry::{Registry as Entities, TryRegistry as TryEntities},
 };
 
-/// Entry of the specific [entity](Entity).
+/// Entry of the specific [entity].
 ///
 /// Use this struct to simplify access to the entity so
 /// you don't have to provide it each time to retrieve something:
 /// you can do it only once during struct initialization.
+///
+/// [entity]: crate::entity::Entity
 ///
 /// # Examples
 ///
 /// ```
 /// todo!()
 /// ```
-pub struct Entry<'state, E, C> {
-    entity: Entity,
+pub struct Entry<'state, E, C>
+where
+    E: Entities,
+{
+    entity: E::Entity,
     entities: &'state E,
     components: &'state C,
 }
@@ -40,7 +43,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn new(entity: Entity, entities: &'state E, components: &'state C) -> Option<Self> {
+    pub fn new(entity: E::Entity, entities: &'state E, components: &'state C) -> Option<Self> {
         if entities.contains(entity) {
             let entry = Self {
                 entity,
@@ -68,6 +71,39 @@ where
             entities,
             components,
         }
+    }
+
+    /// Returns unique handle of the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn entity(&self) -> E::Entity {
+        self.entity
+    }
+
+    /// Retrieves a reference of the underlying entity registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn entities(&self) -> &'state E {
+        self.entities
+    }
+
+    /// Retrieves a reference of the underlying component registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn components(&self) -> &'state C {
+        self.components
     }
 }
 
@@ -102,43 +138,9 @@ where
     }
 }
 
-impl<'state, E, C> Entry<'state, E, C> {
-    /// Returns unique handle of the entity.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn entity(&self) -> Entity {
-        self.entity
-    }
-
-    /// Retrieves a reference of the underlying entity registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn entities(&self) -> &'state E {
-        self.entities
-    }
-
-    /// Retrieves a reference of the underlying component registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn components(&self) -> &'state C {
-        self.components
-    }
-}
-
 impl<'state, E, C> Entry<'state, E, C>
 where
+    E: Entities,
     C: Components,
 {
     /// Checks if all components of the bundle are attached to the underlying entity.
@@ -156,6 +158,7 @@ where
     pub fn is_attached<B>(&self) -> Result<bool, NotRegisteredError>
     where
         B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let &Self {
             entity, components, ..
@@ -179,6 +182,7 @@ where
     pub fn get<B>(&self) -> Result<Option<B::Ref<'_>>, NotRegisteredError>
     where
         B: GetBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
     {
         let &Self {
             entity, components, ..

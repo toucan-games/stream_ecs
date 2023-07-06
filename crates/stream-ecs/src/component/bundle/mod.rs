@@ -2,8 +2,6 @@
 
 use hlist::ops::Here;
 
-use crate::entity::Entity;
-
 pub use self::error::{NotRegisteredError, TryBundleError};
 
 use super::{registry::Registry as Components, storage::bundle::Bundle as StorageBundle};
@@ -42,7 +40,7 @@ pub trait Bundle: Copy + 'static {
     /// ```
     fn attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         bundle: Self,
     ) -> Result<Option<Self>, NotRegisteredError>
     where
@@ -63,7 +61,10 @@ pub trait Bundle: Copy + 'static {
     /// ```
     /// todo!()
     /// ```
-    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
+    fn remove<C>(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components;
 
@@ -79,7 +80,10 @@ pub trait Bundle: Copy + 'static {
     /// ```
     /// todo!()
     /// ```
-    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
+    fn is_attached<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<bool, NotRegisteredError>
     where
         C: Components;
 }
@@ -115,7 +119,7 @@ pub trait TryBundle: Bundle {
     /// This is the fallible version of [`attach`][Bundle::attach()] method.
     fn try_attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         bundle: Self,
     ) -> Result<Option<Self>, TryBundleError<Self::Err>>
     where
@@ -146,7 +150,10 @@ pub trait GetBundle: Bundle {
     /// ```
     /// todo!()
     /// ```
-    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    fn get<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components;
 }
@@ -177,7 +184,7 @@ pub trait GetBundleMut: Bundle {
     /// ```
     fn get_mut<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
     ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components;
@@ -216,7 +223,10 @@ where
     /// ```
     /// todo!()
     /// ```
-    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>>;
+    fn provide(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::Ref<'_>>;
 }
 
 /// Extension of bundle which allows to get a **mutable** reference to a bundle from the component registry
@@ -252,5 +262,8 @@ where
     /// ```
     /// todo!()
     /// ```
-    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>>;
+    fn provide_mut(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::RefMut<'_>>;
 }

@@ -1,6 +1,9 @@
 //! Utilities for queries of ECS.
 
-use crate::{component::registry::Registry as Components, entity::Entity};
+use crate::{
+    component::registry::Registry as Components,
+    entity::{DefaultEntity, Entity},
+};
 
 mod impls;
 
@@ -11,7 +14,10 @@ mod impls;
 /// ```
 /// todo!()
 /// ```
-pub trait Query {
+pub trait Query<E = DefaultEntity>
+where
+    E: Entity,
+{
     /// Type of result yielded by the query.
     type Item<'item>;
 
@@ -38,7 +44,7 @@ pub trait Query {
     /// ```
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: Entity,
+        entity: E,
     ) -> Option<Self::Item<'borrow>>;
 
     /// Checks if provided entity satisfies this query.
@@ -48,7 +54,7 @@ pub trait Query {
     /// ```
     /// todo!()
     /// ```
-    fn satisfies(fetch: &Self::Fetch<'_>, entity: Entity) -> bool;
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: E) -> bool;
 }
 
 /// Type of query which is readonly, or has no mutable access to data.
@@ -58,7 +64,10 @@ pub trait Query {
 /// ```
 /// todo!()
 /// ```
-pub trait ReadonlyQuery: AsReadonly<Readonly = Self> {
+pub trait ReadonlyQuery<E = DefaultEntity>: AsReadonly<E, Readonly = Self>
+where
+    E: Entity,
+{
     /// Creates new fetcher from provided component registry.
     ///
     /// # Examples
@@ -77,10 +86,8 @@ pub trait ReadonlyQuery: AsReadonly<Readonly = Self> {
     /// ```
     /// todo!()
     /// ```
-    fn readonly_fetch<'fetch>(
-        fetch: &Self::Fetch<'fetch>,
-        entity: Entity,
-    ) -> Option<Self::Item<'fetch>>;
+    fn readonly_fetch<'fetch>(fetch: &Self::Fetch<'fetch>, entity: E)
+        -> Option<Self::Item<'fetch>>;
 }
 
 /// Extension of query which allows to convert this query into readonly query.
@@ -90,9 +97,12 @@ pub trait ReadonlyQuery: AsReadonly<Readonly = Self> {
 /// ```
 /// todo!()
 /// ```
-pub trait IntoReadonly: Query {
+pub trait IntoReadonly<E = DefaultEntity>: Query<E>
+where
+    E: Entity,
+{
     /// Readonly variant of this query.
-    type Readonly: ReadonlyQuery;
+    type Readonly: ReadonlyQuery<E>;
 
     /// Converts the fetcher of this query into a readonly fetcher.
     ///
@@ -101,7 +111,7 @@ pub trait IntoReadonly: Query {
     /// ```
     /// todo!()
     /// ```
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_>;
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query<E>>::Fetch<'_>;
 }
 
 /// Extension of query which allows to borrow this query as readonly query.
@@ -111,7 +121,10 @@ pub trait IntoReadonly: Query {
 /// ```
 /// todo!()
 /// ```
-pub trait AsReadonly: IntoReadonly {
+pub trait AsReadonly<E = DefaultEntity>: IntoReadonly<E>
+where
+    E: Entity,
+{
     /// Borrow of the fetch of this query.
     type ReadonlyRef<'borrow>: Copy;
 
@@ -133,8 +146,8 @@ pub trait AsReadonly: IntoReadonly {
     /// ```
     fn readonly_ref_fetch(
         fetch: Self::ReadonlyRef<'_>,
-        entity: Entity,
-    ) -> Option<<Self::Readonly as Query>::Item<'_>>;
+        entity: E,
+    ) -> Option<<Self::Readonly as Query<E>>::Item<'_>>;
 
     /// Checks if provided entity satisfies readonly variant of this query.
     ///
@@ -143,5 +156,5 @@ pub trait AsReadonly: IntoReadonly {
     /// ```
     /// todo!()
     /// ```
-    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Entity) -> bool;
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: E) -> bool;
 }

@@ -1,18 +1,16 @@
 use either::Either;
 use hlist::{Cons, Nil};
 
-use crate::{
-    component::{
-        registry::{Provider, Registry as Components},
-        storage::{
-            bundle::{
-                GetBundleMut as StorageGetBundleMut, ProvideBundleMut as StorageProvideBundleMut,
-            },
-            Storage, TryStorage,
+use crate::component::{
+    registry::{Provider, Registry as Components},
+    storage::{
+        bundle::{
+            Bundle as StorageBundle, GetBundleMut as StorageGetBundleMut,
+            ProvideBundleMut as StorageProvideBundleMut,
         },
-        Component,
+        Storage, TryStorage,
     },
-    entity::Entity,
+    Component,
 };
 
 use super::{
@@ -31,7 +29,7 @@ where
 
     fn attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         component: Self,
     ) -> Result<Option<Self>, NotRegisteredError>
     where
@@ -44,7 +42,10 @@ where
         Ok(component)
     }
 
-    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
+    fn remove<C>(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components,
     {
@@ -55,7 +56,10 @@ where
         Ok(component)
     }
 
-    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
+    fn is_attached<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<bool, NotRegisteredError>
     where
         C: Components,
     {
@@ -76,7 +80,7 @@ where
 
     fn attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         bundle: Self,
     ) -> Result<Option<Self>, NotRegisteredError>
     where
@@ -90,7 +94,10 @@ where
         Ok(Some(bundle))
     }
 
-    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
+    fn remove<C>(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components,
     {
@@ -101,7 +108,10 @@ where
         Ok(Some(bundle))
     }
 
-    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
+    fn is_attached<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<bool, NotRegisteredError>
     where
         C: Components,
     {
@@ -114,12 +124,13 @@ impl<Head, Tail> Bundle for Cons<Head, Tail>
 where
     Head: Bundle,
     Tail: Bundle,
+    Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
 {
     type Storages = Cons<Head::Storages, Tail::Storages>;
 
     fn attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         bundle: Self,
     ) -> Result<Option<Self>, NotRegisteredError>
     where
@@ -137,7 +148,10 @@ where
         Ok(Some(bundle))
     }
 
-    fn remove<C>(components: &mut C, entity: Entity) -> Result<Option<Self>, NotRegisteredError>
+    fn remove<C>(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self>, NotRegisteredError>
     where
         C: Components,
     {
@@ -152,7 +166,10 @@ where
         Ok(Some(bundle))
     }
 
-    fn is_attached<C>(components: &C, entity: Entity) -> Result<bool, NotRegisteredError>
+    fn is_attached<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<bool, NotRegisteredError>
     where
         C: Components,
     {
@@ -172,7 +189,7 @@ where
 
     fn try_attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         component: Self,
     ) -> Result<Option<Self>, TryBundleError<Self::Err>>
     where
@@ -199,7 +216,7 @@ where
 
     fn try_attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         bundle: Self,
     ) -> Result<Option<Self>, TryBundleError<Self::Err>>
     where
@@ -219,12 +236,13 @@ impl<Head, Tail> TryBundle for Cons<Head, Tail>
 where
     Head: TryBundle,
     Tail: TryBundle,
+    Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
 {
     type Err = Either<Head::Err, Tail::Err>;
 
     fn try_attach<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
         bundle: Self,
     ) -> Result<Option<Self>, TryBundleError<Self::Err>>
     where
@@ -266,7 +284,10 @@ where
 {
     type Ref<'components> = &'components T;
 
-    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    fn get<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components,
     {
@@ -285,7 +306,10 @@ where
 {
     type Ref<'components> = Cons<Head::Ref<'components>, Nil>;
 
-    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    fn get<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components,
     {
@@ -302,10 +326,14 @@ impl<Head, Tail> GetBundle for Cons<Head, Tail>
 where
     Head: GetBundle,
     Tail: GetBundle,
+    Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
 {
     type Ref<'components> = Cons<Head::Ref<'components>, Tail::Ref<'components>>;
 
-    fn get<C>(components: &C, entity: Entity) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
+    fn get<C>(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Result<Option<Self::Ref<'_>>, NotRegisteredError>
     where
         C: Components,
     {
@@ -329,7 +357,7 @@ where
 
     fn get_mut<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
     ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components,
@@ -351,7 +379,7 @@ where
 
     fn get_mut<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
     ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components,
@@ -369,15 +397,20 @@ impl<Head, Tail> GetBundleMut for Cons<Head, Tail>
 where
     Head: GetBundleMut,
     Tail: GetBundleMut,
+    Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
     Cons<Head::Storages, Tail::Storages>: StorageGetBundleMut,
     for<'any> <Cons<Head::Storages, Tail::Storages> as StorageGetBundleMut>::RefMut<'any>:
-        GetComponentsMut<'any, Components = Cons<Head::RefMut<'any>, Tail::RefMut<'any>>>,
+        GetComponentsMut<
+            'any,
+            Components = Cons<Head::RefMut<'any>, Tail::RefMut<'any>>,
+            Entity = <Self::Storages as StorageBundle>::Entity,
+        >,
 {
     type RefMut<'components> = Cons<Head::RefMut<'components>, Tail::RefMut<'components>>;
 
     fn get_mut<C>(
         components: &mut C,
-        entity: Entity,
+        entity: <Self::Storages as StorageBundle>::Entity,
     ) -> Result<Option<Self::RefMut<'_>>, NotRegisteredError>
     where
         C: Components,
@@ -399,7 +432,10 @@ where
     where
         C: 'components;
 
-    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>> {
+    fn provide(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::Ref<'_>> {
         let storage = components.provide();
         Storage::get(storage, entity)
     }
@@ -414,7 +450,10 @@ where
     where
         C: 'components;
 
-    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>> {
+    fn provide(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::Ref<'_>> {
         let head = Head::provide(components, entity)?;
         let bundle = Cons(head, Nil);
         Some(bundle)
@@ -425,13 +464,17 @@ impl<Head, Tail, C, Index, TailIndex> ProvideBundle<C, Cons<Index, TailIndex>> f
 where
     Head: ProvideBundle<C, Index>,
     Tail: ProvideBundle<C, TailIndex> + Bundle,
+    Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
     C: Components,
 {
     type Ref<'components> = Cons<Head::Ref<'components>, Tail::Ref<'components>>
     where
         C: 'components;
 
-    fn provide(components: &C, entity: Entity) -> Option<Self::Ref<'_>> {
+    fn provide(
+        components: &C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::Ref<'_>> {
         let head = Head::provide(components, entity)?;
         let tail = Tail::provide(components, entity)?;
         let bundle = Cons(head, tail);
@@ -448,7 +491,10 @@ where
     where
         C: 'components;
 
-    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>> {
+    fn provide_mut(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::RefMut<'_>> {
         let storage = components.provide_mut();
         Storage::get_mut(storage, entity)
     }
@@ -463,7 +509,10 @@ where
     where
         C: 'components;
 
-    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>> {
+    fn provide_mut(
+        components: &mut C,
+        entity: <Self::Storages as StorageBundle>::Entity,
+    ) -> Option<Self::RefMut<'_>> {
         let head = Head::provide_mut(components, entity)?;
         let bundle = Cons(head, Nil);
         Some(bundle)
@@ -474,16 +523,21 @@ impl<Head, Tail, C, Index, TailIndex> ProvideBundleMut<C, Cons<Index, TailIndex>
 where
     Head: ProvideBundleMut<C, Index>,
     Tail: ProvideBundleMut<C, TailIndex> + Bundle,
+    Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
     C: Components,
     Cons<Head::Storages, Tail::Storages>: StorageProvideBundleMut<C, Cons<Index, TailIndex>>,
     for<'any> <Cons<Head::Storages, Tail::Storages> as StorageProvideBundleMut<C, Cons<Index, TailIndex>>>::RefMut<'any>:
-        GetComponentsMut<'any, Components = Cons<Head::RefMut<'any>, Tail::RefMut<'any>>>,
+        GetComponentsMut<
+            'any,
+            Components = Cons<Head::RefMut<'any>, Tail::RefMut<'any>>,
+            Entity = <Self::Storages as StorageBundle>::Entity,
+        >,
 {
     type RefMut<'components> = Cons<Head::RefMut<'components>, Tail::RefMut<'components>>
     where
         C: 'components;
 
-    fn provide_mut(components: &mut C, entity: Entity) -> Option<Self::RefMut<'_>> {
+    fn provide_mut(components: &mut C, entity: <Self::Storages as StorageBundle>::Entity) -> Option<Self::RefMut<'_>> {
         let storages = <Self::Storages as StorageProvideBundleMut<C, Cons<Index, TailIndex>>>::provide_mut(components);
         storages.get_components_mut(entity)
     }
@@ -496,8 +550,9 @@ mod impl_details {
 
     pub trait GetComponentsMut<'components> {
         type Components: 'components;
+        type Entity: Entity;
 
-        fn get_components_mut(self, entity: Entity) -> Option<Self::Components>;
+        fn get_components_mut(self, entity: Self::Entity) -> Option<Self::Components>;
     }
 
     impl<'components, T> GetComponentsMut<'components> for &'components mut T
@@ -505,8 +560,9 @@ mod impl_details {
         T: Storage,
     {
         type Components = &'components mut T::Item;
+        type Entity = T::Entity;
 
-        fn get_components_mut(self, entity: Entity) -> Option<Self::Components> {
+        fn get_components_mut(self, entity: Self::Entity) -> Option<Self::Components> {
             self.get_mut(entity)
         }
     }
@@ -516,8 +572,9 @@ mod impl_details {
         Head: GetComponentsMut<'components>,
     {
         type Components = Cons<Head::Components, Nil>;
+        type Entity = Head::Entity;
 
-        fn get_components_mut(self, entity: Entity) -> Option<Self::Components> {
+        fn get_components_mut(self, entity: Self::Entity) -> Option<Self::Components> {
             let Cons(head, nil) = self;
             let head = Head::get_components_mut(head, entity)?;
             let bundle = Cons(head, nil);
@@ -528,11 +585,12 @@ mod impl_details {
     impl<'components, Head, Tail> GetComponentsMut<'components> for Cons<Head, Tail>
     where
         Head: GetComponentsMut<'components>,
-        Tail: GetComponentsMut<'components>,
+        Tail: GetComponentsMut<'components, Entity = Head::Entity>,
     {
         type Components = Cons<Head::Components, Tail::Components>;
+        type Entity = Head::Entity;
 
-        fn get_components_mut(self, entity: Entity) -> Option<Self::Components> {
+        fn get_components_mut(self, entity: Self::Entity) -> Option<Self::Components> {
             let Cons(head, tail) = self;
             let head = Head::get_components_mut(head, entity)?;
             let tail = Tail::get_components_mut(tail, entity)?;

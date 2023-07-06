@@ -20,6 +20,9 @@ mod error;
 /// todo!()
 /// ```
 pub trait Registry {
+    /// Type of entity which is stored in this entity registry.
+    type Entity: Entity;
+
     /// Creates new entity which is registered in the registry.
     ///
     /// This method can reuse indices from destroyed entities,
@@ -30,7 +33,7 @@ pub trait Registry {
     /// ```
     /// todo!()
     /// ```
-    fn create(&mut self) -> Entity;
+    fn create(&mut self) -> Self::Entity;
 
     /// Checks if the registry contains provided entity.
     ///
@@ -39,7 +42,7 @@ pub trait Registry {
     /// ```
     /// todo!()
     /// ```
-    fn contains(&self, entity: Entity) -> bool;
+    fn contains(&self, entity: Self::Entity) -> bool;
 
     /// Destroys previously created entity.
     ///
@@ -55,7 +58,7 @@ pub trait Registry {
     /// ```
     ///
     /// Note that provided entity will be removed from the registry.
-    fn destroy(&mut self, entity: Entity) -> Result<(), NotPresentError>;
+    fn destroy(&mut self, entity: Self::Entity) -> Result<(), NotPresentError<Self::Entity>>;
 
     /// Returns count of currently alive entities.
     ///
@@ -87,7 +90,7 @@ pub trait Registry {
     fn clear(&mut self);
 
     /// Type of iterator of alive entities created by the registry.
-    type Iter<'me>: Iterator<Item = Entity>
+    type Iter<'me>: Iterator<Item = Self::Entity>
     where
         Self: 'me;
 
@@ -129,5 +132,5 @@ pub trait TryRegistry: Registry {
     /// ```
     ///
     /// This is the fallible version of [`create`][Registry::create()] method.
-    fn try_create(&mut self) -> Result<Entity, Self::Err>;
+    fn try_create(&mut self) -> Result<Self::Entity, Self::Err>;
 }
