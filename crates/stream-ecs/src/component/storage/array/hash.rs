@@ -1,7 +1,7 @@
 //! Hash component storage implementation backed by an array.
 
 use core::{
-    hash::{BuildHasher, Hash, Hasher},
+    hash::{BuildHasher, Hash},
     iter::{self, FusedIterator},
     mem, slice,
 };
@@ -22,16 +22,12 @@ use super::ArrayStorageError;
 struct HashValue(u64);
 
 impl HashValue {
-    fn new<K, S>(key: &K, build_hasher: &S) -> Self
+    fn new<K, S>(build_hasher: &S, key: K) -> Self
     where
-        K: Hash + ?Sized,
+        K: Hash,
         S: BuildHasher,
     {
-        let hash = {
-            let mut hasher = build_hasher.build_hasher();
-            key.hash(&mut hasher);
-            hasher.finish()
-        };
+        let hash = build_hasher.hash_one(key);
         Self(hash)
     }
 
@@ -95,7 +91,7 @@ enum HashIndex {
 /// ```
 /// # use std::collections::hash_map::RandomState;
 /// # use stream_ecs::component::{storage::array::HashArrayStorage, Component};
-/// use stream_ecs::entity::Entity;
+/// use stream_ecs::entity::DefaultEntity;
 /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
 /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
 /// # #[component(crate = stream_ecs)]
@@ -105,7 +101,7 @@ enum HashIndex {
 /// # }
 ///
 /// let mut storage = HashArrayStorage::new();
-/// let entity = Entity::new(5, 0);
+/// let entity = DefaultEntity::new(5, 0);
 ///
 /// storage.attach(entity, Position { x: 0.0, y: 0.0 });
 /// assert!(storage.is_attached(entity));
@@ -239,6 +235,32 @@ where
         }
     }
 
+    /// Returns count of components which are stored in the hash array storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    ///
+    /// storage.attach(DefaultEntity::new(50, 1), Position { x: 0.0, y: 0.0 });
+    /// storage.attach(DefaultEntity::new(97, 63), Position { x: 10.0, y: -10.0 });
+    /// assert_eq!(storage.len(), 2);
+    /// ```
+    pub const fn len(&self) -> usize {
+        self.buckets.len()
+    }
+
     /// Returns the capacity of the hash array component storage.
     ///
     /// # Examples
@@ -262,6 +284,32 @@ where
         self.buckets.capacity()
     }
 
+    /// Checks if the hash array storage is empty, or has no components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::collections::hash_map::RandomState;
+    /// # use stream_ecs::component::Component;
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
+    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
+    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
+    /// # #[component(crate = stream_ecs)]
+    /// # struct Position {
+    /// #     x: f32,
+    /// #     y: f32,
+    /// # }
+    ///
+    /// let mut storage = HashArrayStorage::new();
+    /// assert!(storage.is_empty());
+    ///
+    /// storage.attach(DefaultEntity::new(0, 0), Position { x: 0.0, y: 0.0 });
+    /// assert!(!storage.is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Clears this hash array storage, destroying all components in it.
     ///
     /// # Examples
@@ -269,7 +317,7 @@ where
     /// ```
     /// # use std::collections::hash_map::RandomState;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -280,8 +328,8 @@ where
     ///
     /// let mut storage = HashArrayStorage::new();
     ///
-    /// storage.attach(Entity::new(15, 1), Position { x: 0.0, y: 0.0 });
-    /// storage.attach(Entity::new(8, 6), Position { x: 10.0, y: -10.0 });
+    /// storage.attach(DefaultEntity::new(15, 1), Position { x: 0.0, y: 0.0 });
+    /// storage.attach(DefaultEntity::new(8, 6), Position { x: 10.0, y: -10.0 });
     /// assert!(!storage.is_empty());
     ///
     /// storage.clear();
@@ -292,58 +340,6 @@ where
         self.indices = Self::EMPTY_ARRAY;
     }
 
-    /// Returns count of components which are stored in the hash array storage.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use std::collections::hash_map::RandomState;
-    /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
-    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
-    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
-    /// # #[component(crate = stream_ecs)]
-    /// # struct Position {
-    /// #     x: f32,
-    /// #     y: f32,
-    /// # }
-    ///
-    /// let mut storage = HashArrayStorage::new();
-    ///
-    /// storage.attach(Entity::new(50, 1), Position { x: 0.0, y: 0.0 });
-    /// storage.attach(Entity::new(97, 63), Position { x: 10.0, y: -10.0 });
-    /// assert_eq!(storage.len(), 2);
-    /// ```
-    pub const fn len(&self) -> usize {
-        self.buckets.len()
-    }
-
-    /// Checks if the hash array storage is empty, or has no components.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use std::collections::hash_map::RandomState;
-    /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
-    /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
-    /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
-    /// # #[component(crate = stream_ecs)]
-    /// # struct Position {
-    /// #     x: f32,
-    /// #     y: f32,
-    /// # }
-    ///
-    /// let mut storage = HashArrayStorage::new();
-    /// assert!(storage.is_empty());
-    ///
-    /// storage.attach(Entity::new(0, 0), Position { x: 0.0, y: 0.0 });
-    /// assert!(!storage.is_empty());
-    /// ```
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     /// Returns an iterator over entity keys with references of components attached to them.
     ///
     /// # Examples
@@ -351,7 +347,7 @@ where
     /// ```
     /// # use std::collections::hash_map::RandomState;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -361,17 +357,17 @@ where
     /// # }
     ///
     /// let mut storage = HashArrayStorage::new();
-    /// storage.attach(Entity::new(1, 0), Position { x: 0.0, y: -10.0 });
-    /// storage.attach(Entity::new(7, 15), Position { x: 10.0, y: 0.0 });
-    /// storage.attach(Entity::new(9, 10), Position { x: 1.0, y: 23.0 });
+    /// storage.attach(DefaultEntity::new(1, 0), Position { x: 0.0, y: -10.0 });
+    /// storage.attach(DefaultEntity::new(7, 15), Position { x: 10.0, y: 0.0 });
+    /// storage.attach(DefaultEntity::new(9, 10), Position { x: 1.0, y: 23.0 });
     ///
     /// let mut iter = storage.iter();
-    /// assert_eq!(iter.next(), Some((Entity::new(1, 0), &Position { x: 0.0, y: -10.0 })));
-    /// assert_eq!(iter.next(), Some((Entity::new(7, 15), &Position { x: 10.0, y: 0.0 })));
-    /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &Position { x: 1.0, y: 23.0 })));
+    /// assert_eq!(iter.next(), Some((DefaultEntity::new(1, 0), &Position { x: 0.0, y: -10.0 })));
+    /// assert_eq!(iter.next(), Some((DefaultEntity::new(7, 15), &Position { x: 10.0, y: 0.0 })));
+    /// assert_eq!(iter.next(), Some((DefaultEntity::new(9, 10), &Position { x: 1.0, y: 23.0 })));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter<'_, T, E> {
+    pub fn iter(&self) -> Iter<'_, T, S, N, E> {
         self.into_iter()
     }
 
@@ -382,7 +378,7 @@ where
     /// ```
     /// # use std::collections::hash_map::RandomState;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, RandomState, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -392,17 +388,17 @@ where
     /// # }
     ///
     /// let mut storage = HashArrayStorage::new();
-    /// storage.attach(Entity::new(1, 0), Position { x: 0.0, y: -10.0 });
-    /// storage.attach(Entity::new(7, 15), Position { x: 10.0, y: 0.0 });
-    /// storage.attach(Entity::new(9, 10), Position { x: 1.0, y: 23.0 });
+    /// storage.attach(DefaultEntity::new(1, 0), Position { x: 0.0, y: -10.0 });
+    /// storage.attach(DefaultEntity::new(7, 15), Position { x: 10.0, y: 0.0 });
+    /// storage.attach(DefaultEntity::new(9, 10), Position { x: 1.0, y: 23.0 });
     ///
     /// let mut iter = storage.iter_mut();
-    /// assert_eq!(iter.next(), Some((Entity::new(1, 0), &mut Position { x: 0.0, y: -10.0 })));
-    /// assert_eq!(iter.next(), Some((Entity::new(7, 15), &mut Position { x: 10.0, y: 0.0 })));
-    /// assert_eq!(iter.next(), Some((Entity::new(9, 10), &mut Position { x: 1.0, y: 23.0 })));
+    /// assert_eq!(iter.next(), Some((DefaultEntity::new(1, 0), &mut Position { x: 0.0, y: -10.0 })));
+    /// assert_eq!(iter.next(), Some((DefaultEntity::new(7, 15), &mut Position { x: 10.0, y: 0.0 })));
+    /// assert_eq!(iter.next(), Some((DefaultEntity::new(9, 10), &mut Position { x: 1.0, y: 23.0 })));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<'_, T, E> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T, S, N, E> {
         self.into_iter()
     }
 }
@@ -428,53 +424,9 @@ impl<T, E, S, const N: usize> HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity + PartialEq,
-    E::Index: Hash + PartialEq + PartialOrd,
+    E::Index: Hash + PartialOrd,
     S: BuildHasher,
 {
-    fn find_bucket(&self, entity: E) -> Option<FindBucket> {
-        if self.buckets.is_empty() {
-            return None;
-        }
-        let entity_hash = HashValue::new(&entity.index(), &self.build_hasher);
-        let probe_len = self.capacity().try_into().ok()?;
-        let desired_index = entity_hash.desired_index(probe_len).try_into().ok()?;
-
-        let mut skip = desired_index;
-        let mut distances = 0..;
-        let item = 'outer: loop {
-            let zipped = iter::zip(
-                distances.by_ref(),
-                self.indices.iter().enumerate().skip(skip),
-            );
-            for (distance, (current, hash_index)) in zipped {
-                let &HashIndex::Occupied { hash, index } = hash_index else {
-                    continue;
-                };
-                let probe_distance = hash.probe_distance(probe_len, current.try_into().ok()?);
-                if distance > probe_distance {
-                    break 'outer None;
-                }
-                if hash != entity_hash {
-                    continue;
-                }
-                let &Bucket { key, .. } = self
-                    .buckets
-                    .get(index)
-                    .expect("index should point to the valid bucket");
-                if entity != key {
-                    continue;
-                }
-                let find_bucket = FindBucket {
-                    hash_index: current,
-                    bucket_index: index,
-                };
-                break 'outer Some(find_bucket);
-            }
-            skip = 0;
-        };
-        item
-    }
-
     /// Attaches provided component to the entity.
     /// Returns previous component data, or [`None`] if there was no component attached to the entity.
     ///
@@ -495,7 +447,7 @@ where
     /// # use core::hash::BuildHasherDefault;
     /// # use std::collections::hash_map::DefaultHasher;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -506,11 +458,11 @@ where
     ///
     /// let mut storage = HashArrayStorage::new();
     ///
-    /// let entity = Entity::new(15, 0);
+    /// let entity = DefaultEntity::new(15, 0);
     /// let component = storage.attach(entity, Position { x: 10.0, y: 12.0 });
     /// assert_eq!(component, None);
     ///
-    /// let entity = Entity::new(15, 1);
+    /// let entity = DefaultEntity::new(15, 1);
     /// let component = storage.attach(entity, Position { x: 0.0, y: 0.0 });
     /// assert_eq!(component, Some(Position { x: 10.0, y: 12.0 }));
     /// ```
@@ -536,7 +488,7 @@ where
     /// # use core::hash::BuildHasherDefault;
     /// # use std::collections::hash_map::DefaultHasher;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -547,11 +499,11 @@ where
     ///
     /// let mut storage = HashArrayStorage::new();
     /// for i in 0..10 {
-    ///     let entity = Entity::new(i + 10, 0);
+    ///     let entity = DefaultEntity::new(i + 10, 0);
     ///     storage.attach(entity, Position { x: 10.0, y: 10.0 });
     /// }
     ///
-    /// let entity = Entity::new(36, 0);
+    /// let entity = DefaultEntity::new(36, 0);
     /// let result = storage.try_attach(entity, Position { x: 0.0, y: 0.0 });
     /// assert!(result.is_err());
     /// ```
@@ -563,8 +515,13 @@ where
             TakeFromRich { start_index: usize },
         }
 
-        let entity_hash = HashValue::new(&entity.index(), &self.build_hasher);
         let probe_len = self.capacity().try_into().map_err(|_| ArrayStorageError)?;
+        let Self {
+            buckets,
+            indices,
+            build_hasher,
+        } = self;
+        let entity_hash = HashValue::new(build_hasher, entity.index());
         let desired_index = entity_hash
             .desired_index(probe_len)
             .try_into()
@@ -575,7 +532,7 @@ where
         let operation = 'outer: loop {
             let zipped = iter::zip(
                 distances.by_ref(),
-                self.indices.iter_mut().enumerate().skip(skip),
+                indices.iter_mut().enumerate().skip(skip),
             );
             for (distance, (current, hash_index)) in zipped {
                 let &mut HashIndex::Occupied { hash, index } = hash_index else {
@@ -593,8 +550,7 @@ where
                 if hash != entity_hash {
                     continue;
                 }
-                let &Bucket { key, .. } = self
-                    .buckets
+                let &Bucket { key, .. } = buckets
                     .get(index)
                     .expect("index should point to the valid bucket");
                 if entity.index() != key.index() || entity.generation() < key.generation() {
@@ -612,18 +568,17 @@ where
                         key: entity,
                         value: component,
                     };
-                    if self.buckets.try_push(bucket).is_err() {
+                    if buckets.try_push(bucket).is_err() {
                         return Err(ArrayStorageError);
                     }
                     *hash_index = HashIndex::Occupied {
                         hash: entity_hash,
-                        index: self.buckets.len() - 1,
+                        index: buckets.len() - 1,
                     };
                     return Ok(None);
                 }
                 &mut HashIndex::Occupied { index, .. } => {
-                    let Bucket { value, .. } = self
-                        .buckets
+                    let Bucket { value, .. } = buckets
                         .get_mut(index)
                         .expect("index should point to the valid bucket");
                     let component = mem::replace(value, component);
@@ -635,11 +590,11 @@ where
 
         let mut hash_index = HashIndex::Occupied {
             hash: entity_hash,
-            index: self.buckets.len(),
+            index: buckets.len(),
         };
         skip = start_index;
         loop {
-            for next_hash_index in self.indices.iter_mut().skip(skip) {
+            for next_hash_index in indices.iter_mut().skip(skip) {
                 if let &mut HashIndex::Free = next_hash_index {
                     hash_index = mem::replace(next_hash_index, hash_index);
                     continue;
@@ -649,7 +604,7 @@ where
                     key: entity,
                     value: component,
                 };
-                if self.buckets.try_push(bucket).is_err() {
+                if buckets.try_push(bucket).is_err() {
                     return Err(ArrayStorageError);
                 }
                 *next_hash_index = hash_index;
@@ -657,6 +612,60 @@ where
             }
             skip = 0;
         }
+    }
+}
+
+impl<T, E, S, const N: usize> HashArrayStorage<T, S, N, E>
+where
+    T: Component<Storage = Self>,
+    E: Entity + PartialEq,
+    E::Index: Hash,
+    S: BuildHasher,
+{
+    fn find_bucket(&self, entity: E) -> Option<FindBucket> {
+        let Self {
+            buckets,
+            indices,
+            build_hasher,
+        } = self;
+
+        if buckets.is_empty() {
+            return None;
+        }
+        let entity_hash = HashValue::new(build_hasher, entity.index());
+        let probe_len = self.capacity().try_into().ok()?;
+        let desired_index = entity_hash.desired_index(probe_len).try_into().ok()?;
+
+        let mut skip = desired_index;
+        let mut distances = 0..;
+        let item = 'outer: loop {
+            let zipped = iter::zip(distances.by_ref(), indices.iter().enumerate().skip(skip));
+            for (distance, (current, hash_index)) in zipped {
+                let &HashIndex::Occupied { hash, index } = hash_index else {
+                    continue;
+                };
+                let probe_distance = hash.probe_distance(probe_len, current.try_into().ok()?);
+                if distance > probe_distance {
+                    break 'outer None;
+                }
+                if hash != entity_hash {
+                    continue;
+                }
+                let &Bucket { key, .. } = buckets
+                    .get(index)
+                    .expect("index should point to the valid bucket");
+                if entity != key {
+                    continue;
+                }
+                let find_bucket = FindBucket {
+                    hash_index: current,
+                    bucket_index: index,
+                };
+                break 'outer Some(find_bucket);
+            }
+            skip = 0;
+        };
+        item
     }
 
     /// Checks if a component is attached to provided entity.
@@ -667,7 +676,7 @@ where
     /// # use core::hash::BuildHasherDefault;
     /// # use std::collections::hash_map::DefaultHasher;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -677,7 +686,7 @@ where
     /// # }
     ///
     /// let mut storage = HashArrayStorage::new();
-    /// let entity = Entity::new(100, 0);
+    /// let entity = DefaultEntity::new(100, 0);
     ///
     /// storage.attach(entity, Position { x: 0.0, y: 0.0 });
     /// assert!(storage.is_attached(entity));
@@ -698,7 +707,7 @@ where
     /// # use core::hash::BuildHasherDefault;
     /// # use std::collections::hash_map::DefaultHasher;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -708,7 +717,7 @@ where
     /// # }
     ///
     /// let mut storage = HashArrayStorage::new();
-    /// let entity = Entity::new(90, 12);
+    /// let entity = DefaultEntity::new(90, 12);
     ///
     /// storage.attach(entity, Position { x: 1.0, y: -1.0 });
     /// assert_eq!(storage.get(entity), Some(&Position { x: 1.0, y: -1.0 }));
@@ -734,7 +743,7 @@ where
     /// # use core::hash::BuildHasherDefault;
     /// # use std::collections::hash_map::DefaultHasher;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -744,7 +753,7 @@ where
     /// # }
     ///
     /// let mut storage = HashArrayStorage::new();
-    /// let entity = Entity::new(96, 12);
+    /// let entity = DefaultEntity::new(96, 12);
     ///
     /// storage.attach(entity, Position { x: 1.0, y: -1.0 });
     /// *storage.get_mut(entity).unwrap() = Position { x: 0.0, y: 2.0 };
@@ -771,7 +780,7 @@ where
     /// # use core::hash::BuildHasherDefault;
     /// # use std::collections::hash_map::DefaultHasher;
     /// # use stream_ecs::component::Component;
-    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::Entity};
+    /// use stream_ecs::{component::storage::array::HashArrayStorage, entity::DefaultEntity};
     /// # #[derive(Debug, Clone, Copy, PartialEq, Component)]
     /// # #[component(storage = HashArrayStorage<Self, BuildHasherDefault<DefaultHasher>, 10>)]
     /// # #[component(crate = stream_ecs)]
@@ -781,7 +790,7 @@ where
     /// # }
     ///
     /// let mut storage = HashArrayStorage::new();
-    /// let entity = Entity::new(127, 0);
+    /// let entity = DefaultEntity::new(127, 0);
     ///
     /// let component = storage.remove(entity);
     /// assert_eq!(component, None);
@@ -859,7 +868,7 @@ impl<T, E, S, const N: usize> Storage for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity + PartialEq,
-    E::Index: Hash + PartialEq + PartialOrd,
+    E::Index: Hash + PartialOrd,
     S: BuildHasher + 'static,
 {
     type Item = T;
@@ -897,7 +906,7 @@ where
         HashArrayStorage::is_empty(self)
     }
 
-    type Iter<'me> = Iter<'me, Self::Item, Self::Entity>
+    type Iter<'me> = Iter<'me, Self::Item, S, N, Self::Entity>
     where
         Self: 'me;
 
@@ -905,7 +914,7 @@ where
         HashArrayStorage::iter(self)
     }
 
-    type IterMut<'me> = IterMut<'me, Self::Item, Self::Entity>
+    type IterMut<'me> = IterMut<'me, Self::Item, S, N, Self::Entity>
     where
         Self: 'me;
 
@@ -918,7 +927,7 @@ impl<T, E, S, const N: usize> TryStorage for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity + PartialEq,
-    E::Index: Hash + PartialEq + PartialOrd,
+    E::Index: Hash + PartialOrd,
     S: BuildHasher + 'static,
 {
     type Err = ArrayStorageError;
@@ -939,7 +948,7 @@ where
 {
     type Item = (E, &'me T);
 
-    type IntoIter = Iter<'me, T, E>;
+    type IntoIter = Iter<'me, T, S, N, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.iter();
@@ -954,7 +963,7 @@ where
 {
     type Item = (E, &'me mut T);
 
-    type IntoIter = IterMut<'me, T, E>;
+    type IntoIter = IterMut<'me, T, S, N, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.iter_mut();
@@ -969,7 +978,7 @@ where
 {
     type Item = (E, T);
 
-    type IntoIter = IntoIter<T, E, N>;
+    type IntoIter = IntoIter<T, S, N, E>;
 
     fn into_iter(self) -> Self::IntoIter {
         let iter = self.buckets.into_iter();
@@ -980,17 +989,17 @@ where
 /// Iterator of entities with references of components attached to them
 /// in the hash array storage.
 #[derive(Debug, Clone)]
-pub struct Iter<'data, T, E>
+pub struct Iter<'data, T, S, const N: usize, E = DefaultEntity>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     iter: slice::Iter<'data, Bucket<E, T>>,
 }
 
-impl<'data, T, E> Iterator for Iter<'data, T, E>
+impl<'data, T, E, S, const N: usize> Iterator for Iter<'data, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     type Item = (E, &'data T);
@@ -1005,9 +1014,9 @@ where
     }
 }
 
-impl<T, E> DoubleEndedIterator for Iter<'_, T, E>
+impl<T, E, S, const N: usize> DoubleEndedIterator for Iter<'_, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -1016,9 +1025,9 @@ where
     }
 }
 
-impl<T, E> ExactSizeIterator for Iter<'_, T, E>
+impl<T, E, S, const N: usize> ExactSizeIterator for Iter<'_, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     fn len(&self) -> usize {
@@ -1026,9 +1035,9 @@ where
     }
 }
 
-impl<T, E> FusedIterator for Iter<'_, T, E>
+impl<T, E, S, const N: usize> FusedIterator for Iter<'_, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
 }
@@ -1036,17 +1045,17 @@ where
 /// Iterator of entities with mutable references of components attached to them
 /// in the hash array storage.
 #[derive(Debug)]
-pub struct IterMut<'data, T, E>
+pub struct IterMut<'data, T, S, const N: usize, E = DefaultEntity>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     iter: slice::IterMut<'data, Bucket<E, T>>,
 }
 
-impl<'data, T, E> Iterator for IterMut<'data, T, E>
+impl<'data, T, E, S, const N: usize> Iterator for IterMut<'data, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     type Item = (E, &'data mut T);
@@ -1063,9 +1072,9 @@ where
     }
 }
 
-impl<T, E> DoubleEndedIterator for IterMut<'_, T, E>
+impl<T, E, S, const N: usize> DoubleEndedIterator for IterMut<'_, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -1076,9 +1085,9 @@ where
     }
 }
 
-impl<T, E> ExactSizeIterator for IterMut<'_, T, E>
+impl<T, E, S, const N: usize> ExactSizeIterator for IterMut<'_, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     fn len(&self) -> usize {
@@ -1086,26 +1095,26 @@ where
     }
 }
 
-impl<T, E> FusedIterator for IterMut<'_, T, E>
+impl<T, E, S, const N: usize> FusedIterator for IterMut<'_, T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
 }
 
 /// Iterator of entities with components attached to them in the hash array storage.
 #[derive(Debug, Clone)]
-pub struct IntoIter<T, E, const N: usize>
+pub struct IntoIter<T, S, const N: usize, E = DefaultEntity>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     iter: arrayvec::IntoIter<Bucket<E, T>, N>,
 }
 
-impl<T, E, const N: usize> Iterator for IntoIter<T, E, N>
+impl<T, E, S, const N: usize> Iterator for IntoIter<T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     type Item = (E, T);
@@ -1120,9 +1129,9 @@ where
     }
 }
 
-impl<T, E, const N: usize> DoubleEndedIterator for IntoIter<T, E, N>
+impl<T, E, S, const N: usize> DoubleEndedIterator for IntoIter<T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -1131,9 +1140,9 @@ where
     }
 }
 
-impl<T, E, const N: usize> ExactSizeIterator for IntoIter<T, E, N>
+impl<T, E, S, const N: usize> ExactSizeIterator for IntoIter<T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
     fn len(&self) -> usize {
@@ -1141,9 +1150,9 @@ where
     }
 }
 
-impl<T, E, const N: usize> FusedIterator for IntoIter<T, E, N>
+impl<T, E, S, const N: usize> FusedIterator for IntoIter<T, S, N, E>
 where
-    T: Component,
+    T: Component<Storage = HashArrayStorage<T, S, N, E>>,
     E: Entity,
 {
 }

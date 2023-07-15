@@ -47,8 +47,6 @@ where
 impl<E, const N: usize> ArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
-    usize: TryFrom<E::Index>,
 {
     /// Creates new empty array entity registry.
     ///
@@ -75,6 +73,22 @@ where
         }
     }
 
+    /// Returns count of currently alive entities of the array registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// let _ = registry.create();
+    /// let _ = registry.create();
+    /// assert_eq!(registry.len(), 2);
+    /// ```
+    pub const fn len(&self) -> usize {
+        self.len
+    }
+
     /// Returns the capacity of the array registry.
     ///
     /// # Examples
@@ -89,6 +103,53 @@ where
         self.slots.capacity()
     }
 
+    /// Checks if the array registry contains no alive entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<10>::new();
+    /// assert!(registry.is_empty());
+    ///
+    /// let entity = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.destroy(entity).unwrap();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Clears the array registry, destroying all the entities in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::ArrayRegistry;
+    ///
+    /// let mut registry = ArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.clear();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
+        self.slots.clear();
+        self.free_head = 0;
+        self.len = 0;
+    }
+}
+
+impl<E, const N: usize> ArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     /// Creates new entity in the array registry.
     ///
     /// This method reuses indices from destroyed entities, but the resulting key is unique.
@@ -167,7 +228,14 @@ where
         self.len += 1;
         Ok(entity)
     }
+}
 
+impl<E, const N: usize> ArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: PartialEq,
+    usize: TryFrom<E::Index>,
+{
     /// Checks if the array registry contains provided entity.
     ///
     /// # Examples
@@ -198,7 +266,14 @@ where
         }
         generation == entity.generation()
     }
+}
 
+impl<E, const N: usize> ArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    usize: TryFrom<E::Index>,
+{
     /// Destroys provided entity which was previously created in the array registry.
     ///
     /// # Errors
@@ -246,64 +321,13 @@ where
         self.len -= 1;
         Ok(value)
     }
+}
 
-    /// Returns count of currently alive entities of the array registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::registry::array::ArrayRegistry;
-    ///
-    /// let mut registry = ArrayRegistry::<10>::new();
-    /// let _ = registry.create();
-    /// let _ = registry.create();
-    /// assert_eq!(registry.len(), 2);
-    /// ```
-    pub const fn len(&self) -> usize {
-        self.len
-    }
-
-    /// Checks if the array registry contains no alive entities.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::registry::array::ArrayRegistry;
-    ///
-    /// let mut registry = ArrayRegistry::<10>::new();
-    /// assert!(registry.is_empty());
-    ///
-    /// let entity = registry.create();
-    /// assert!(!registry.is_empty());
-    ///
-    /// registry.destroy(entity).unwrap();
-    /// assert!(registry.is_empty());
-    /// ```
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// Clears the array registry, destroying all the entities in it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::registry::array::ArrayRegistry;
-    ///
-    /// let mut registry = ArrayRegistry::<2>::new();
-    /// let first = registry.create();
-    /// let second = registry.create();
-    /// assert!(!registry.is_empty());
-    ///
-    /// registry.clear();
-    /// assert!(registry.is_empty());
-    /// ```
-    pub fn clear(&mut self) {
-        self.slots.clear();
-        self.free_head = 0;
-        self.len = 0;
-    }
-
+impl<E, const N: usize> ArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     /// Returns an iterator of alive entities created by the array registry.
     ///
     /// # Examples

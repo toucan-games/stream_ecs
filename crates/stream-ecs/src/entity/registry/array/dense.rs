@@ -50,8 +50,6 @@ where
 impl<E, const N: usize> DenseArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
-    usize: TryFrom<E::Index>,
 {
     /// Creates new empty dense array registry.
     ///
@@ -77,6 +75,22 @@ where
         }
     }
 
+    /// Returns count of currently alive entities of the dense array registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<10>::new();
+    /// let _ = registry.create();
+    /// let _ = registry.create();
+    /// assert_eq!(registry.len(), 2);
+    /// ```
+    pub const fn len(&self) -> usize {
+        self.dense.len()
+    }
+
     /// Returns the capacity of the dense array registry.
     ///
     /// # Examples
@@ -91,6 +105,53 @@ where
         self.dense.capacity()
     }
 
+    /// Checks if the dense array registry contains no alive entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<10>::new();
+    /// assert!(registry.is_empty());
+    ///
+    /// let entity = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.destroy(entity).unwrap();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Clears the dense array registry, destroying all the entities in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
+    ///
+    /// let mut registry = DenseArrayRegistry::<2>::new();
+    /// let first = registry.create();
+    /// let second = registry.create();
+    /// assert!(!registry.is_empty());
+    ///
+    /// registry.clear();
+    /// assert!(registry.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
+        self.dense.clear();
+        self.sparse.clear();
+        self.free_head = 0;
+    }
+}
+
+impl<E, const N: usize> DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     /// Creates new entity in the dense array registry.
     ///
     /// This method reuses indices from destroyed entities, but the resulting key is unique.
@@ -185,7 +246,14 @@ where
         };
         Ok(entity)
     }
+}
 
+impl<E, const N: usize> DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: PartialEq,
+    usize: TryFrom<E::Index>,
+{
     /// Checks if the dense array registry contains provided entity.
     ///
     /// # Examples
@@ -215,7 +283,14 @@ where
         };
         slot.generation == entity.generation()
     }
+}
 
+impl<E, const N: usize> DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    usize: TryFrom<E::Index>,
+{
     /// Destroys provided entity which was previously created in the dense array registry.
     ///
     /// # Errors
@@ -278,64 +353,13 @@ where
         }
         Ok(())
     }
+}
 
-    /// Returns count of currently alive entities of the dense array registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
-    ///
-    /// let mut registry = DenseArrayRegistry::<10>::new();
-    /// let _ = registry.create();
-    /// let _ = registry.create();
-    /// assert_eq!(registry.len(), 2);
-    /// ```
-    pub const fn len(&self) -> usize {
-        self.dense.len()
-    }
-
-    /// Checks if the dense array registry contains no alive entities.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
-    ///
-    /// let mut registry = DenseArrayRegistry::<10>::new();
-    /// assert!(registry.is_empty());
-    ///
-    /// let entity = registry.create();
-    /// assert!(!registry.is_empty());
-    ///
-    /// registry.destroy(entity).unwrap();
-    /// assert!(registry.is_empty());
-    /// ```
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// Clears the dense array registry, destroying all the entities in it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::registry::array::DenseArrayRegistry;
-    ///
-    /// let mut registry = DenseArrayRegistry::<2>::new();
-    /// let first = registry.create();
-    /// let second = registry.create();
-    /// assert!(!registry.is_empty());
-    ///
-    /// registry.clear();
-    /// assert!(registry.is_empty());
-    /// ```
-    pub fn clear(&mut self) {
-        self.dense.clear();
-        self.sparse.clear();
-        self.free_head = 0;
-    }
-
+impl<E, const N: usize> DenseArrayRegistry<N, E>
+where
+    E: Entity,
+    E::Index: TryFrom<usize>,
+{
     /// Returns an iterator of alive entities created by the dense array registry.
     ///
     /// # Examples
