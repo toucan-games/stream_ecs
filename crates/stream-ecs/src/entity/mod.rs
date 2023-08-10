@@ -21,8 +21,11 @@ mod default;
 /// todo!()
 /// ```
 pub trait Entity: Copy + 'static {
-    /// Type of index and generation of the entity.
+    /// Type of index of the entity.
     type Index: Copy + 'static;
+
+    /// Type of generation of the entity.
+    type Generation: Copy + 'static;
 
     /// Creates new entity key with provided index and its generation.
     ///
@@ -39,7 +42,7 @@ pub trait Entity: Copy + 'static {
     ///
     /// let entity: DefaultEntity = Entity::with(0, 0);
     /// ```
-    fn with(index: Self::Index, generation: Self::Index) -> Self;
+    fn with(index: Self::Index, generation: Self::Generation) -> Self;
 
     /// Returns a unique index of the entity.
     ///
@@ -70,7 +73,7 @@ pub trait Entity: Copy + 'static {
     /// let entity: DefaultEntity = Entity::with(42, 127);
     /// assert_eq!(entity.generation(), 127);
     /// ```
-    fn generation(self) -> Self::Index;
+    fn generation(self) -> Self::Generation;
 
     /// Creates the key which doesn't belong to any entity.
     ///

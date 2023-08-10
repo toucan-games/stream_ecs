@@ -22,9 +22,9 @@ enum SlotEntry<T> {
 }
 
 #[derive(Debug, Clone)]
-struct Slot<T, I> {
+struct Slot<T, G> {
     entry: SlotEntry<T>,
-    generation: I,
+    generation: G,
 }
 
 /// Default implementation of the entity registry backed by an array.
@@ -39,7 +39,7 @@ pub struct ArrayRegistry<const N: usize, E = DefaultEntity>
 where
     E: Entity,
 {
-    slots: ArrayVec<Slot<(), E::Index>, N>,
+    slots: ArrayVec<Slot<(), E::Generation>, N>,
     free_head: usize,
     len: usize,
 }
@@ -149,6 +149,7 @@ impl<E, const N: usize> ArrayRegistry<N, E>
 where
     E: Entity,
     E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize>,
 {
     /// Creates new entity in the array registry.
     ///
@@ -233,7 +234,7 @@ where
 impl<E, const N: usize> ArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: PartialEq,
+    E::Generation: PartialEq,
     usize: TryFrom<E::Index>,
 {
     /// Checks if the array registry contains provided entity.
@@ -271,7 +272,8 @@ where
 impl<E, const N: usize> ArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize> + PartialEq + Add<Output = E::Generation>,
     usize: TryFrom<E::Index>,
 {
     /// Destroys provided entity which was previously created in the array registry.
@@ -351,7 +353,8 @@ where
 impl<E, const N: usize> Registry for ArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize> + PartialEq + Add<Output = E::Generation>,
     usize: TryFrom<E::Index>,
 {
     type Entity = E;
@@ -392,7 +395,8 @@ where
 impl<E, const N: usize> TryRegistry for ArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize> + PartialEq + Add<Output = E::Generation>,
     usize: TryFrom<E::Index>,
 {
     type Err = ArrayRegistryError;
@@ -440,7 +444,7 @@ pub struct Iter<'data, E>
 where
     E: Entity,
 {
-    iter: Enumerate<slice::Iter<'data, Slot<(), E::Index>>>,
+    iter: Enumerate<slice::Iter<'data, Slot<(), E::Generation>>>,
     num_left: usize,
 }
 
@@ -520,7 +524,7 @@ pub struct IntoIter<E, const N: usize>
 where
     E: Entity,
 {
-    iter: Enumerate<arrayvec::IntoIter<Slot<(), E::Index>, N>>,
+    iter: Enumerate<arrayvec::IntoIter<Slot<(), E::Generation>, N>>,
     num_left: usize,
 }
 

@@ -15,18 +15,18 @@ use crate::{
 use super::ArrayStorageError;
 
 #[derive(Debug, Clone)]
-struct Dense<T, I>
+struct Dense<T, G>
 where
     T: Component,
 {
     index: usize,
-    generation: I,
+    generation: G,
     value: T,
 }
 
 #[derive(Debug, Clone)]
-enum Slot<I> {
-    Occupied { dense_index: usize, generation: I },
+enum Slot<G> {
+    Occupied { dense_index: usize, generation: G },
     Free,
 }
 
@@ -81,8 +81,8 @@ where
     T: Component<Storage = Self>,
     E: Entity,
 {
-    dense: ArrayVec<Dense<T, E::Index>, N>,
-    sparse: [Slot<E::Index>; N],
+    dense: ArrayVec<Dense<T, E::Generation>, N>,
+    sparse: [Slot<E::Generation>; N],
 }
 
 impl<T, E, const N: usize> DenseArrayStorage<T, N, E>
@@ -90,8 +90,8 @@ where
     T: Component<Storage = Self>,
     E: Entity,
 {
-    const FREE_SLOT: Slot<E::Index> = Slot::Free;
-    const FREE_ARRAY: [Slot<E::Index>; N] = [Self::FREE_SLOT; N];
+    const FREE_SLOT: Slot<E::Generation> = Slot::Free;
+    const FREE_ARRAY: [Slot<E::Generation>; N] = [Self::FREE_SLOT; N];
 
     /// Creates new empty dense array component storage.
     ///
@@ -238,7 +238,7 @@ impl<T, E, const N: usize> DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: PartialOrd,
+    E::Generation: PartialOrd,
     usize: TryFrom<E::Index>,
 {
     /// Attaches provided component to the entity.
@@ -361,7 +361,7 @@ impl<T, E, const N: usize> DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: PartialEq,
+    E::Generation: PartialEq,
     usize: TryFrom<E::Index>,
 {
     /// Checks if a component is attached to provided entity.
@@ -622,7 +622,8 @@ impl<T, E, const N: usize> Storage for DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: TryFrom<usize> + PartialOrd,
+    E::Index: TryFrom<usize> + PartialEq,
+    E::Generation: PartialOrd,
     usize: TryFrom<E::Index>,
 {
     type Item = T;
@@ -681,7 +682,8 @@ impl<T, E, const N: usize> TryStorage for DenseArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: TryFrom<usize> + PartialOrd,
+    E::Index: TryFrom<usize> + PartialEq,
+    E::Generation: PartialOrd,
     usize: TryFrom<E::Index>,
 {
     type Err = ArrayStorageError;
@@ -751,7 +753,7 @@ where
     T: Component<Storage = DenseArrayStorage<T, N, E>>,
     E: Entity,
 {
-    iter: slice::Iter<'data, Dense<T, E::Index>>,
+    iter: slice::Iter<'data, Dense<T, E::Generation>>,
 }
 
 impl<'data, T, E, const N: usize> Iterator for Iter<'data, T, N, E>
@@ -823,7 +825,7 @@ where
     T: Component<Storage = DenseArrayStorage<T, N, E>>,
     E: Entity,
 {
-    iter: slice::IterMut<'data, Dense<T, E::Index>>,
+    iter: slice::IterMut<'data, Dense<T, E::Generation>>,
 }
 
 impl<'data, T, E, const N: usize> Iterator for IterMut<'data, T, N, E>
@@ -894,7 +896,7 @@ where
     T: Component<Storage = DenseArrayStorage<T, N, E>>,
     E: Entity,
 {
-    iter: arrayvec::IntoIter<Dense<T, E::Index>, N>,
+    iter: arrayvec::IntoIter<Dense<T, E::Generation>, N>,
 }
 
 impl<T, E, const N: usize> Iterator for IntoIter<T, N, E>

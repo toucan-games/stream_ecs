@@ -16,27 +16,14 @@ use super::{builder::EntityBuilder, Entity};
 /// todo!()
 /// ```
 #[derive(Debug, Display, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[display(bound = "Index: Display")]
+#[display(bound = "Index: Display, Generation: Display")]
 #[display(fmt = "{index}v{generation}")]
-pub struct DefaultEntity<Index = u32> {
+pub struct DefaultEntity<Index = u32, Generation = Index> {
     index: Index,
-    generation: Index,
+    generation: Generation,
 }
 
-impl<Index> DefaultEntity<Index> {
-    /// Creates new entity key with provided index and its generation.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::DefaultEntity;
-    ///
-    /// let entity = DefaultEntity::new(0, 0);
-    /// ```
-    pub fn new(index: Index, generation: Index) -> Self {
-        Self { index, generation }
-    }
-
+impl DefaultEntity {
     /// Creates an empty entity builder to build a new entity with.
     ///
     /// # Examples
@@ -50,6 +37,21 @@ impl<Index> DefaultEntity<Index> {
     pub fn builder() -> EntityBuilder {
         EntityBuilder::empty()
     }
+}
+
+impl<Index, Generation> DefaultEntity<Index, Generation> {
+    /// Creates new entity key with provided index and its generation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stream_ecs::entity::DefaultEntity;
+    ///
+    /// let entity = DefaultEntity::new(0, 0);
+    /// ```
+    pub fn new(index: Index, generation: Generation) -> Self {
+        Self { index, generation }
+    }
 
     /// Returns a unique index of the entity.
     ///
@@ -62,7 +64,8 @@ impl<Index> DefaultEntity<Index> {
     /// assert_eq!(entity.index(), 42);
     /// ```
     pub fn index(self) -> Index {
-        self.index
+        let Self { index, .. } = self;
+        index
     }
 
     /// Returns the generation of the entity.
@@ -75,14 +78,16 @@ impl<Index> DefaultEntity<Index> {
     /// let entity = DefaultEntity::new(42, 127);
     /// assert_eq!(entity.generation(), 127);
     /// ```
-    pub fn generation(self) -> Index {
-        self.generation
+    pub fn generation(self) -> Generation {
+        let Self { generation, .. } = self;
+        generation
     }
 }
 
-impl<Index> DefaultEntity<Index>
+impl<Index, Generation> DefaultEntity<Index, Generation>
 where
-    Index: UpperBounded + Unsigned + Zero,
+    Index: UpperBounded + Unsigned,
+    Generation: Zero + Unsigned,
 {
     /// Creates the key which doesn't belong to any entity.
     ///
@@ -91,18 +96,18 @@ where
     /// ```
     /// use stream_ecs::entity::DefaultEntity;
     ///
-    /// let entity = DefaultEntity::null();
+    /// let entity: DefaultEntity = DefaultEntity::null();
     /// assert!(entity.is_null());
     /// ```
     pub fn null() -> Self {
         Self {
             index: Index::max_value(),
-            generation: Index::zero(),
+            generation: Generation::zero(),
         }
     }
 }
 
-impl<Index> DefaultEntity<Index>
+impl<Index, Generation> DefaultEntity<Index, Generation>
 where
     Index: PartialEq + UpperBounded,
 {
@@ -116,21 +121,24 @@ where
     /// let entity = DefaultEntity::new(0, 0);
     /// assert!(!entity.is_null());
     ///
-    /// let entity = DefaultEntity::null();
+    /// let entity: DefaultEntity = DefaultEntity::null();
     /// assert!(entity.is_null());
     /// ```
     pub fn is_null(self) -> bool {
-        self.index == Index::max_value()
+        let Self { index, .. } = self;
+        index == Index::max_value()
     }
 }
 
-impl<Index> Entity for DefaultEntity<Index>
+impl<Index, Generation> Entity for DefaultEntity<Index, Generation>
 where
-    Index: Copy + UpperBounded + Unsigned + Zero + PartialEq + 'static,
+    Index: Copy + UpperBounded + Unsigned + PartialEq + 'static,
+    Generation: Copy + Zero + Unsigned + 'static,
 {
     type Index = Index;
+    type Generation = Generation;
 
-    fn with(index: Self::Index, generation: Self::Index) -> Self {
+    fn with(index: Self::Index, generation: Self::Generation) -> Self {
         DefaultEntity::new(index, generation)
     }
 
@@ -138,7 +146,7 @@ where
         DefaultEntity::index(self)
     }
 
-    fn generation(self) -> Self::Index {
+    fn generation(self) -> Self::Generation {
         DefaultEntity::generation(self)
     }
 

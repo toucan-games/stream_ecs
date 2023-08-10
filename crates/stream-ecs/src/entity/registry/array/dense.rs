@@ -18,15 +18,15 @@ enum SlotEntry {
 }
 
 #[derive(Debug, Clone)]
-struct Slot<I> {
+struct Slot<G> {
     entry: SlotEntry,
-    generation: I,
+    generation: G,
 }
 
 #[derive(Debug, Clone)]
-struct Dense<I> {
+struct Dense<G> {
     index: usize,
-    generation: I,
+    generation: G,
 }
 
 /// Implementation of the entity registry backed by an array
@@ -42,8 +42,8 @@ pub struct DenseArrayRegistry<const N: usize, E = DefaultEntity>
 where
     E: Entity,
 {
-    dense: ArrayVec<Dense<E::Index>, N>,
-    sparse: ArrayVec<Slot<E::Index>, N>,
+    dense: ArrayVec<Dense<E::Generation>, N>,
+    sparse: ArrayVec<Slot<E::Generation>, N>,
     free_head: usize,
 }
 
@@ -151,6 +151,7 @@ impl<E, const N: usize> DenseArrayRegistry<N, E>
 where
     E: Entity,
     E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize>,
 {
     /// Creates new entity in the dense array registry.
     ///
@@ -251,7 +252,7 @@ where
 impl<E, const N: usize> DenseArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: PartialEq,
+    E::Generation: PartialEq,
     usize: TryFrom<E::Index>,
 {
     /// Checks if the dense array registry contains provided entity.
@@ -288,7 +289,8 @@ where
 impl<E, const N: usize> DenseArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize> + PartialEq + Add<Output = E::Generation>,
     usize: TryFrom<E::Index>,
 {
     /// Destroys provided entity which was previously created in the dense array registry.
@@ -383,7 +385,8 @@ where
 impl<E, const N: usize> Registry for DenseArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize> + PartialEq + Add<Output = E::Generation>,
     usize: TryFrom<E::Index>,
 {
     type Entity = E;
@@ -424,7 +427,8 @@ where
 impl<E, const N: usize> TryRegistry for DenseArrayRegistry<N, E>
 where
     E: Entity,
-    E::Index: TryFrom<usize> + PartialEq + Add<Output = E::Index>,
+    E::Index: TryFrom<usize>,
+    E::Generation: TryFrom<usize> + PartialEq + Add<Output = E::Generation>,
     usize: TryFrom<E::Index>,
 {
     type Err = ArrayRegistryError;
@@ -470,7 +474,7 @@ pub struct Iter<'data, E>
 where
     E: Entity,
 {
-    iter: slice::Iter<'data, Dense<E::Index>>,
+    iter: slice::Iter<'data, Dense<E::Generation>>,
 }
 
 impl<E> Iterator for Iter<'_, E>
@@ -528,7 +532,7 @@ pub struct IntoIter<E, const N: usize>
 where
     E: Entity,
 {
-    iter: arrayvec::IntoIter<Dense<E::Index>, N>,
+    iter: arrayvec::IntoIter<Dense<E::Generation>, N>,
 }
 
 impl<E, const N: usize> Iterator for IntoIter<E, N>

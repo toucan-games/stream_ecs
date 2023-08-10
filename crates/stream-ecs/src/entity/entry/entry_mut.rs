@@ -120,7 +120,7 @@ where
             entity, entities, ..
         } = self;
         let Ok(_) = entities.destroy(entity) else {
-            panic!("entity should present in the registry");
+            unreachable!("entity should present in the registry");
         };
         entity
     }

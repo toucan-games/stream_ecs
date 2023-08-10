@@ -17,9 +17,9 @@ use crate::{
 use super::ArrayStorageError;
 
 #[derive(Debug, Clone)]
-enum Slot<T, I> {
+enum Slot<T, G> {
     Free,
-    Occupied { value: T, generation: I },
+    Occupied { value: T, generation: G },
 }
 
 /// Default implementation of the component storage backed by an array.
@@ -65,7 +65,7 @@ where
     T: Component<Storage = Self>,
     E: Entity,
 {
-    slots: [Slot<T, E::Index>; N],
+    slots: [Slot<T, E::Generation>; N],
     len: usize,
 }
 
@@ -74,8 +74,8 @@ where
     T: Component<Storage = Self>,
     E: Entity,
 {
-    const FREE_SLOT: Slot<T, E::Index> = Slot::Free;
-    const FREE_ARRAY: [Slot<T, E::Index>; N] = [Self::FREE_SLOT; N];
+    const FREE_SLOT: Slot<T, E::Generation> = Slot::Free;
+    const FREE_ARRAY: [Slot<T, E::Generation>; N] = [Self::FREE_SLOT; N];
 
     /// Creates new empty array component storage.
     ///
@@ -222,7 +222,7 @@ impl<T, E, const N: usize> ArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: PartialOrd,
+    E::Generation: PartialOrd,
     usize: TryFrom<E::Index>,
 {
     /// Attaches provided component to the entity.
@@ -329,7 +329,7 @@ impl<T, E, const N: usize> ArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: PartialEq,
+    E::Generation: PartialEq,
     usize: TryFrom<E::Index>,
 {
     /// Checks if a component is attached to provided entity.
@@ -566,7 +566,8 @@ impl<T, E, const N: usize> Storage for ArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: TryFrom<usize> + PartialOrd,
+    E::Index: TryFrom<usize> + PartialEq,
+    E::Generation: PartialOrd,
     usize: TryFrom<E::Index>,
 {
     type Item = T;
@@ -625,7 +626,8 @@ impl<T, E, const N: usize> TryStorage for ArrayStorage<T, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity,
-    E::Index: TryFrom<usize> + PartialOrd,
+    E::Index: TryFrom<usize> + PartialEq,
+    E::Generation: PartialOrd,
     usize: TryFrom<E::Index>,
 {
     type Err = ArrayStorageError;
@@ -698,7 +700,7 @@ where
     T: Component<Storage = ArrayStorage<T, N, E>>,
     E: Entity,
 {
-    iter: Enumerate<slice::Iter<'data, Slot<T, E::Index>>>,
+    iter: Enumerate<slice::Iter<'data, Slot<T, E::Generation>>>,
     num_left: usize,
 }
 
@@ -778,7 +780,7 @@ where
     T: Component<Storage = ArrayStorage<T, N, E>>,
     E: Entity,
 {
-    iter: Enumerate<slice::IterMut<'data, Slot<T, E::Index>>>,
+    iter: Enumerate<slice::IterMut<'data, Slot<T, E::Generation>>>,
     num_left: usize,
 }
 
@@ -857,7 +859,7 @@ where
     T: Component<Storage = ArrayStorage<T, N, E>>,
     E: Entity,
 {
-    iter: Enumerate<array::IntoIter<Slot<T, E::Index>, N>>,
+    iter: Enumerate<array::IntoIter<Slot<T, E::Generation>, N>>,
     num_left: usize,
 }
 

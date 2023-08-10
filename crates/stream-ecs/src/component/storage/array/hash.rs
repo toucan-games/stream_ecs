@@ -424,7 +424,8 @@ impl<T, E, S, const N: usize> HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity + PartialEq,
-    E::Index: Hash + PartialOrd,
+    E::Index: Hash + PartialEq,
+    E::Generation: PartialOrd,
     S: BuildHasher,
 {
     /// Attaches provided component to the entity.
@@ -868,7 +869,8 @@ impl<T, E, S, const N: usize> Storage for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity + PartialEq,
-    E::Index: Hash + PartialOrd,
+    E::Index: Hash + PartialEq,
+    E::Generation: PartialOrd,
     S: BuildHasher + 'static,
 {
     type Item = T;
@@ -927,7 +929,8 @@ impl<T, E, S, const N: usize> TryStorage for HashArrayStorage<T, S, N, E>
 where
     T: Component<Storage = Self>,
     E: Entity + PartialEq,
-    E::Index: Hash + PartialOrd,
+    E::Index: Hash + PartialEq,
+    E::Generation: PartialOrd,
     S: BuildHasher + 'static,
 {
     type Err = ArrayStorageError;

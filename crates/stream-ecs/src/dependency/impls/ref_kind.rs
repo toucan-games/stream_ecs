@@ -20,10 +20,10 @@ where
     type Output = &'me T;
 
     fn insert(&mut self, mut input: Key<'me>) -> Result<(), Key<'me>> {
-        let Some(shared) = input.as_ref() else {
+        let Some(kind) = input.as_ref() else {
             return Err(input);
         };
-        if !shared.get_ref().is::<T>() {
+        if !kind.get_ref().is::<T>() {
             return Err(input);
         }
 
@@ -56,17 +56,17 @@ where
     type Output = &'me mut T;
 
     fn insert(&mut self, mut input: Key<'me>) -> Result<(), Key<'me>> {
-        let Some(shared) = input.as_ref() else {
+        let Some(kind) = input.as_ref() else {
             return Err(input);
         };
-        if !shared.get_ref().is::<T>() {
+        if !kind.get_ref().is::<T>() {
             return Err(input);
         }
 
-        let Ok(shared) = input.try_move_mut(()) else {
+        let Ok(unique) = input.try_move_mut(()) else {
             return Err(input);
         };
-        let downcast = shared
+        let downcast = unique
             .downcast_mut()
             .expect("cast should be successful because type was checked earlier");
         *self = Some(downcast);
