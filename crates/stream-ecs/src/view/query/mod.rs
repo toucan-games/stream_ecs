@@ -1,10 +1,11 @@
 //! Utilities for queries of ECS.
 
-pub use self::impls::Noop;
+pub use self::noop::Noop;
 
 use crate::{component::registry::Registry as Components, entity::Entity};
 
 mod impls;
+mod noop;
 
 /// Type of query to be queried from components by view.
 ///

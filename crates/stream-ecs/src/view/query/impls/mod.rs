@@ -1,5 +1,3 @@
-pub use self::noop::Noop;
-
 mod component;
 mod component_mut;
 mod entity;
