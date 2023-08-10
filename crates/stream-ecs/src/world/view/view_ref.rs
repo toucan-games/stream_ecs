@@ -16,19 +16,19 @@ use crate::{
 /// ```
 pub struct ViewRef<'state, Q, E>
 where
-    Q: AsReadonly<E::Entity>,
+    Q: AsReadonly<Entity = E::Entity>,
     E: Entities,
 {
     entities: &'state E,
-    view_ref: view::ViewRef<'state, Q, E::Entity>,
+    view_ref: view::ViewRef<'state, Q>,
 }
 
 impl<'state, Q, E> ViewRef<'state, Q, E>
 where
-    Q: AsReadonly<E::Entity>,
+    Q: AsReadonly<Entity = E::Entity>,
     E: Entities,
 {
-    pub(super) fn new(entities: &'state E, view_ref: view::ViewRef<'state, Q, E::Entity>) -> Self {
+    pub(super) fn new(entities: &'state E, view_ref: view::ViewRef<'state, Q>) -> Self {
         Self { entities, view_ref }
     }
 
@@ -87,13 +87,13 @@ where
     }
 }
 
-type GetResult<'a, Q, E> = Result<Option<ReadonlyItem<'a, Q, E>>, NotPresentError<E>>;
+type GetResult<'a, Q, E> = Result<Option<ReadonlyItem<'a, Q>>, NotPresentError<E>>;
 
-type ReadonlyItem<'a, Q, E> = <<Q as IntoReadonly<E>>::Readonly as Query<E>>::Item<'a>;
+type ReadonlyItem<'a, Q> = <<Q as IntoReadonly>::Readonly as Query>::Item<'a>;
 
 impl<'state, Q, E> Clone for ViewRef<'state, Q, E>
 where
-    Q: AsReadonly<E::Entity>,
+    Q: AsReadonly<Entity = E::Entity>,
     E: Entities,
 {
     fn clone(&self) -> Self {
@@ -103,17 +103,17 @@ where
 
 impl<'state, Q, E> Copy for ViewRef<'state, Q, E>
 where
-    Q: AsReadonly<E::Entity>,
+    Q: AsReadonly<Entity = E::Entity>,
     E: Entities,
 {
 }
 
 impl<'state, Q, E> IntoIterator for &ViewRef<'state, Q, E>
 where
-    Q: AsReadonly<E::Entity>,
+    Q: AsReadonly<Entity = E::Entity>,
     E: Entities,
 {
-    type Item = <Q::Readonly as Query<E::Entity>>::Item<'state>;
+    type Item = <Q::Readonly as Query>::Item<'state>;
 
     type IntoIter = ViewRefIter<'state, Q, E::Iter<'state>>;
 

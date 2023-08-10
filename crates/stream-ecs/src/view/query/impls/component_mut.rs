@@ -1,15 +1,14 @@
 use crate::{
     component::{registry::Registry as Components, storage::Storage, Component},
-    entity::Entity,
     view::query::{AsReadonly, IntoReadonly, Query},
 };
 
-impl<C, E> Query<E> for &mut C
+impl<C> Query for &mut C
 where
     C: Component,
-    C::Storage: Storage<Entity = E>,
-    E: Entity,
 {
+    type Entity = <C::Storage as Storage>::Entity;
+
     type Item<'item> = &'item mut C;
 
     type Fetch<'fetch> = &'fetch mut C::Storage;
@@ -23,34 +22,30 @@ where
 
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: E,
+        entity: Self::Entity,
     ) -> Option<Self::Item<'borrow>> {
         Storage::get_mut(*fetch, entity)
     }
 
-    fn satisfies(fetch: &Self::Fetch<'_>, entity: E) -> bool {
+    fn satisfies(fetch: &Self::Fetch<'_>, entity: Self::Entity) -> bool {
         Self::readonly_ref_satisfies(fetch, entity)
     }
 }
 
-impl<'me, C, E> IntoReadonly<E> for &'me mut C
+impl<'me, C> IntoReadonly for &'me mut C
 where
     C: Component,
-    C::Storage: Storage<Entity = E>,
-    E: Entity,
 {
     type Readonly = &'me C;
 
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query<E>>::Fetch<'_> {
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
         fetch
     }
 }
 
-impl<C, E> AsReadonly<E> for &mut C
+impl<C> AsReadonly for &mut C
 where
     C: Component,
-    C::Storage: Storage<Entity = E>,
-    E: Entity,
 {
     type ReadonlyRef<'borrow> = &'borrow C::Storage;
 
@@ -60,12 +55,12 @@ where
 
     fn readonly_ref_fetch(
         fetch: Self::ReadonlyRef<'_>,
-        entity: E,
-    ) -> Option<<Self::Readonly as Query<E>>::Item<'_>> {
+        entity: Self::Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
         Storage::get(fetch, entity)
     }
 
-    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: E) -> bool {
+    fn readonly_ref_satisfies(fetch: Self::ReadonlyRef<'_>, entity: Self::Entity) -> bool {
         Storage::is_attached(fetch, entity)
     }
 }

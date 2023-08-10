@@ -11,7 +11,7 @@ use crate::{entity::Entity, view::query::ReadonlyQuery};
 /// ```
 pub struct ViewIter<'borrow, 'fetch, Q, E>
 where
-    Q: ReadonlyQuery<E::Item>,
+    Q: ReadonlyQuery<Entity = E::Item>,
     E: Iterator,
     E::Item: Entity,
 {
@@ -21,7 +21,7 @@ where
 
 impl<'borrow, 'fetch, Q, E> ViewIter<'borrow, 'fetch, Q, E>
 where
-    Q: ReadonlyQuery<E::Item>,
+    Q: ReadonlyQuery<Entity = E::Item>,
     E: Iterator,
     E::Item: Entity,
 {
@@ -36,7 +36,7 @@ where
 
 impl<'borrow, 'fetch, Q, E> Iterator for ViewIter<'borrow, 'fetch, Q, E>
 where
-    Q: ReadonlyQuery<E::Item>,
+    Q: ReadonlyQuery<Entity = E::Item>,
     E: Iterator,
     E::Item: Entity,
 {

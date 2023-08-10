@@ -1,5 +1,3 @@
-use crate::entity::{DefaultEntity, Entity};
-
 use super::{
     iter::ViewRefIter,
     query::{AsReadonly, Query},
@@ -12,18 +10,16 @@ use super::{
 /// ```
 /// todo!()
 /// ```
-pub struct ViewRef<'fetch, Q, E = DefaultEntity>
+pub struct ViewRef<'fetch, Q>
 where
-    Q: AsReadonly<E>,
-    E: Entity,
+    Q: AsReadonly,
 {
     fetch: Q::ReadonlyRef<'fetch>,
 }
 
-impl<'fetch, Q, E> ViewRef<'fetch, Q, E>
+impl<'fetch, Q> ViewRef<'fetch, Q>
 where
-    Q: AsReadonly<E>,
-    E: Entity,
+    Q: AsReadonly,
 {
     pub(super) fn new(fetch: Q::ReadonlyRef<'fetch>) -> Self {
         Self { fetch }
@@ -36,7 +32,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn satisfies(&self, entity: E) -> bool {
+    pub fn satisfies(&self, entity: Q::Entity) -> bool {
         let Self { fetch } = *self;
         Q::readonly_ref_satisfies(fetch, entity)
     }
@@ -48,7 +44,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn get(&self, entity: E) -> Option<<Q::Readonly as Query<E>>::Item<'fetch>> {
+    pub fn get(&self, entity: Q::Entity) -> Option<<Q::Readonly as Query>::Item<'fetch>> {
         let Self { fetch } = *self;
         Q::readonly_ref_fetch(fetch, entity)
     }
@@ -62,26 +58,20 @@ where
     /// ```
     pub fn iter<I>(&self, entities: I) -> ViewRefIter<'fetch, Q, I::IntoIter>
     where
-        I: IntoIterator<Item = E>,
+        I: IntoIterator<Item = Q::Entity>,
     {
         let Self { fetch } = *self;
         ViewRefIter::new(entities, fetch)
     }
 }
 
-impl<'fetch, Q, E> Clone for ViewRef<'fetch, Q, E>
+impl<'fetch, Q> Clone for ViewRef<'fetch, Q>
 where
-    Q: AsReadonly<E>,
-    E: Entity,
+    Q: AsReadonly,
 {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'fetch, Q, E> Copy for ViewRef<'fetch, Q, E>
-where
-    Q: AsReadonly<E>,
-    E: Entity,
-{
-}
+impl<'fetch, Q> Copy for ViewRef<'fetch, Q> where Q: AsReadonly {}

@@ -317,7 +317,7 @@ where
             components,
             resources,
         } = self;
-        let components = <B::Storages as StorageBundle>::with(components, bundle);
+        let components = B::Storages::with(components, bundle);
         World::with(entities, components, resources)
     }
 
@@ -891,7 +891,7 @@ where
     /// ```
     pub fn view<Q>(&self) -> Option<View<'_, Q, E>>
     where
-        Q: ReadonlyQuery<E::Entity>,
+        Q: ReadonlyQuery<Entity = E::Entity>,
     {
         let Self {
             entities,
@@ -910,7 +910,7 @@ where
     /// ```
     pub fn view_mut<Q>(&mut self) -> Option<View<'_, Q, E>>
     where
-        Q: Query<E::Entity>,
+        Q: Query<Entity = E::Entity>,
     {
         let Self {
             entities,

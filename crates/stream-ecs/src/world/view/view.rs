@@ -21,16 +21,16 @@ use super::view_ref::ViewRef;
 /// ```
 pub struct View<'state, Q, E>
 where
-    Q: Query<E::Entity>,
+    Q: Query<Entity = E::Entity>,
     E: Entities,
 {
     entities: &'state E,
-    view: view::View<'state, Q, E::Entity>,
+    view: view::View<'state, Q>,
 }
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: Query<E::Entity>,
+    Q: Query<Entity = E::Entity>,
     E: Entities,
 {
     /// Creates new view of entities from provided entity and mutable component registries.
@@ -67,7 +67,7 @@ where
     /// ```
     /// todo!()
     /// ```
-    pub fn from_view(entities: &'state E, view: view::View<'state, Q, E::Entity>) -> Self {
+    pub fn from_view(entities: &'state E, view: view::View<'state, Q>) -> Self {
         Self { entities, view }
     }
 
@@ -133,7 +133,7 @@ where
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: IntoReadonly<E::Entity>,
+    Q: IntoReadonly<Entity = E::Entity>,
     E: Entities,
 {
     /// Converts this view into readonly view.
@@ -152,7 +152,7 @@ where
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: AsReadonly<E::Entity>,
+    Q: AsReadonly<Entity = E::Entity>,
     E: Entities,
 {
     /// Returns a borrow of the view.
@@ -171,7 +171,7 @@ where
 
 impl<'state, Q, E> View<'state, Q, E>
 where
-    Q: ReadonlyQuery<E::Entity>,
+    Q: ReadonlyQuery<Entity = E::Entity>,
     E: Entities,
 {
     /// Creates new view of entities from provided entity and component registries.
@@ -228,7 +228,7 @@ where
 
 impl<'me, 'state, Q, E> IntoIterator for &'me View<'state, Q, E>
 where
-    Q: ReadonlyQuery<E::Entity>,
+    Q: ReadonlyQuery<Entity = E::Entity>,
     E: Entities,
 {
     type Item = Q::Item<'state>;

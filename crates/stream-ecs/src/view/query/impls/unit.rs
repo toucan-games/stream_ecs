@@ -1,13 +1,12 @@
 use crate::{
     component::registry::Registry as Components,
-    entity::Entity,
+    entity::DefaultEntity,
     view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 
-impl<E> Query<E> for ()
-where
-    E: Entity,
-{
+impl Query for () {
+    type Entity = DefaultEntity;
+
     type Item<'item> = ();
 
     type Fetch<'fetch> = ();
@@ -16,36 +15,30 @@ where
     where
         C: Components,
     {
-        <Self as ReadonlyQuery<E>>::new_readonly_fetch(components)
+        Self::new_readonly_fetch(components)
     }
 
     fn fetch<'borrow>(
         fetch: &'borrow mut Self::Fetch<'_>,
-        entity: E,
+        entity: Self::Entity,
     ) -> Option<Self::Item<'borrow>> {
         Self::readonly_fetch(fetch, entity)
     }
 
-    fn satisfies(_fetch: &Self::Fetch<'_>, entity: E) -> bool {
+    fn satisfies(_fetch: &Self::Fetch<'_>, entity: Self::Entity) -> bool {
         Self::readonly_ref_satisfies((), entity)
     }
 }
 
-impl<E> IntoReadonly<E> for ()
-where
-    E: Entity,
-{
+impl IntoReadonly for () {
     type Readonly = Self;
 
-    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query<E>>::Fetch<'_> {
+    fn into_readonly(fetch: Self::Fetch<'_>) -> <Self::Readonly as Query>::Fetch<'_> {
         fetch
     }
 }
 
-impl<E> AsReadonly<E> for ()
-where
-    E: Entity,
-{
+impl AsReadonly for () {
     type ReadonlyRef<'borrow> = ();
 
     fn as_readonly<'borrow>(fetch: &'borrow Self::Fetch<'_>) -> Self::ReadonlyRef<'borrow> {
@@ -54,20 +47,17 @@ where
 
     fn readonly_ref_fetch(
         _fetch: Self::ReadonlyRef<'_>,
-        _entity: E,
-    ) -> Option<<Self::Readonly as Query<E>>::Item<'_>> {
+        _entity: Self::Entity,
+    ) -> Option<<Self::Readonly as Query>::Item<'_>> {
         Some(())
     }
 
-    fn readonly_ref_satisfies(_: Self::ReadonlyRef<'_>, _: E) -> bool {
+    fn readonly_ref_satisfies(_: Self::ReadonlyRef<'_>, _: Self::Entity) -> bool {
         true
     }
 }
 
-impl<E> ReadonlyQuery<E> for ()
-where
-    E: Entity,
-{
+impl ReadonlyQuery for () {
     fn new_readonly_fetch<C>(_: &C) -> Option<Self::Fetch<'_>>
     where
         C: Components,
@@ -77,7 +67,7 @@ where
 
     fn readonly_fetch<'fetch>(
         _fetch: &Self::Fetch<'fetch>,
-        _entity: E,
+        _entity: Self::Entity,
     ) -> Option<Self::Item<'fetch>> {
         Some(())
     }
