@@ -302,11 +302,11 @@ where
         component: &dyn ErasedComponent,
     ) -> Result<(), AttachError> {
         let Some(component) = component.downcast_ref().copied() else {
-            let error = ComponentMismatchError::new::<T::Item>(component);
+            let error = ComponentMismatchError::new::<_, T::Item>(component);
             return Err(error.into());
         };
         let Some(entity) = entity.downcast_ref().copied() else {
-            let error = EntityMismatchError::new::<T::Entity>(entity);
+            let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error.into());
         };
         let _ = Storage::attach(self, entity, component);
@@ -315,7 +315,7 @@ where
 
     fn is_attached(&self, entity: &dyn ErasedEntity) -> Result<bool, EntityMismatchError> {
         let Some(entity) = entity.downcast_ref().copied() else {
-            let error = EntityMismatchError::new::<T::Entity>(entity);
+            let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
         let is_attached = Storage::is_attached(self, entity);
@@ -327,7 +327,7 @@ where
         entity: &dyn ErasedEntity,
     ) -> Result<Option<&dyn ErasedComponent>, EntityMismatchError> {
         let Some(entity) = entity.downcast_ref().copied() else {
-            let error = EntityMismatchError::new::<T::Entity>(entity);
+            let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
         let component = Storage::get(self, entity).map(|item| item as _);
@@ -339,7 +339,7 @@ where
         entity: &dyn ErasedEntity,
     ) -> Result<Option<&mut dyn ErasedComponent>, EntityMismatchError> {
         let Some(entity) = entity.downcast_ref().copied() else {
-            let error = EntityMismatchError::new::<T::Entity>(entity);
+            let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
         let component = Storage::get_mut(self, entity).map(|item| item as _);
@@ -348,7 +348,7 @@ where
 
     fn remove(&mut self, entity: &dyn ErasedEntity) -> Result<(), EntityMismatchError> {
         let Some(entity) = entity.downcast_ref().copied() else {
-            let error = EntityMismatchError::new::<T::Entity>(entity);
+            let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
         let _ = Storage::remove(self, entity);

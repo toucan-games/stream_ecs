@@ -1,3 +1,6 @@
+use core::convert::Infallible;
+
+use either::Either;
 use hlist::{Cons, Nil};
 
 use crate::dependency::{Container, Dependency};
@@ -7,14 +10,16 @@ impl<Input> Dependency<Input> for Nil {
 }
 
 impl<Input> Container<Input> for Nil {
-    type Output = Self;
-
     fn insert(&mut self, input: Input) -> Result<(), Input> {
         Err(input)
     }
 
-    fn flush(self) -> Option<Self::Output> {
-        Some(self)
+    type Output = Self;
+
+    type Error = Infallible;
+
+    fn flush(self) -> Result<Self::Output, Self::Error> {
+        Ok(self)
     }
 }
 
@@ -31,18 +36,20 @@ where
     Head: Container<Input>,
     Tail: Container<Input>,
 {
-    type Output = Cons<Head::Output, Tail::Output>;
-
     fn insert(&mut self, input: Input) -> Result<(), Input> {
         let Cons(head, tail) = self;
         head.insert(input).or_else(|input| tail.insert(input))
     }
 
-    fn flush(self) -> Option<Self::Output> {
+    type Output = Cons<Head::Output, Tail::Output>;
+
+    type Error = Either<Head::Error, Tail::Error>;
+
+    fn flush(self) -> Result<Self::Output, Self::Error> {
         let Cons(head, tail) = self;
-        let head = head.flush()?;
-        let tail = tail.flush()?;
+        let head = head.flush().map_err(Either::Left)?;
+        let tail = tail.flush().map_err(Either::Right)?;
         let output = Cons(head, tail);
-        Some(output)
+        Ok(output)
     }
 }

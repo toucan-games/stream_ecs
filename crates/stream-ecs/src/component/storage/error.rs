@@ -2,11 +2,7 @@ use core::any::{type_name, Any, TypeId};
 
 use derive_more::{Display, From};
 
-use crate::{
-    component::{Component, ErasedComponent},
-    entity::{Entity, ErasedEntity},
-    utils::type_name::TypeName,
-};
+use crate::{component::Component, entity::Entity, utils::type_name::TypeName};
 
 /// The error type which is returned when type of component or entity was mismatched
 /// when trying to attach component to the entity with erased storage.
@@ -49,12 +45,12 @@ impl ComponentMismatchError {
     /// ```
     /// todo!()
     /// ```
-    pub fn new<Actual>(provided: &dyn ErasedComponent) -> Self
+    pub fn new<Provided, Actual>(provided: &Provided) -> Self
     where
+        Provided: ?Sized + Any + TypeName,
         Actual: Component,
     {
-        let provided = provided.as_any();
-        let error = TypeMismatchError::new::<Actual>(provided);
+        let error = TypeMismatchError::new::<Provided, Actual>(provided);
         Self(error)
     }
 
@@ -128,12 +124,12 @@ impl EntityMismatchError {
     /// ```
     /// todo!()
     /// ```
-    pub fn new<Actual>(provided: &dyn ErasedEntity) -> Self
+    pub fn new<Provided, Actual>(provided: &Provided) -> Self
     where
+        Provided: ?Sized + Any + TypeName,
         Actual: Entity,
     {
-        let provided = provided.as_any();
-        let error = TypeMismatchError::new::<Actual>(provided);
+        let error = TypeMismatchError::new::<Provided, Actual>(provided);
         Self(error)
     }
 
@@ -191,9 +187,10 @@ struct TypeMismatchError {
 }
 
 impl TypeMismatchError {
-    fn new<Actual>(provided: &dyn Any) -> Self
+    fn new<Provided, Actual>(provided: &Provided) -> Self
     where
-        Actual: Any,
+        Provided: ?Sized + Any + TypeName,
+        Actual: ?Sized + Any,
     {
         let provided_type_id = provided.type_id();
         let actual_type_id = TypeId::of::<Actual>();

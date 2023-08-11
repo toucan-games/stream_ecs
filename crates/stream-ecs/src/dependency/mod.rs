@@ -22,9 +22,6 @@ pub trait Dependency<Input> {
 /// todo!()
 /// ```
 pub trait Container<Input>: Default {
-    /// Type of dependency in which this container will be flushed.
-    type Output;
-
     /// Inserts provided input into the container.
     ///
     /// # Errors
@@ -39,24 +36,35 @@ pub trait Container<Input>: Default {
     /// ```
     fn insert(&mut self, input: Input) -> Result<(), Input>;
 
+    /// Type of dependency in which this container will be flushed.
+    type Output;
+
+    /// Type of error which can occur on container flushing.
+    type Error;
+
     /// Flushes inserted inputs into dependency object.
-    /// Returns [`None`] if it is not possible to create such dependency.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error
+    /// if it is not possible to create such dependency.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    fn flush(self) -> Option<Self::Output>;
+    fn flush(self) -> Result<Self::Output, Self::Error>;
 }
 
 /// Creates dependency from provided iterator of inputs.
-pub fn dependency_from_iter<D, I>(iter: I) -> Option<D>
+pub fn dependency_from_iter<D, C, I>(iter: I) -> Result<D, C::Error>
 where
     I: IntoIterator,
-    D: Dependency<I::Item>,
+    D: Dependency<I::Item, Container = C>,
+    C: Container<I::Item, Output = D>,
 {
-    let mut container = D::Container::default();
+    let mut container = C::default();
     for item in iter {
         let _ = container.insert(item);
     }

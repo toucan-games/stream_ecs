@@ -64,7 +64,7 @@ where
         let iter = components
             .iter_mut()
             .map(|storage| Some(RefKind::from(storage.as_any_mut())));
-        dependency_from_iter(iter)
+        dependency_from_iter(iter).ok()
     }
 
     fn fetch<'borrow>(

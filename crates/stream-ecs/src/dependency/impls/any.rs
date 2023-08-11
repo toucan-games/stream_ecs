@@ -2,6 +2,8 @@ use core::any::Any;
 
 use crate::dependency::{Container, Dependency};
 
+use super::error::InputTypeMismatchError;
+
 impl<'me, T> Dependency<&'me dyn Any> for &'me T
 where
     T: Any,
@@ -13,8 +15,6 @@ impl<'me, T> Container<&'me dyn Any> for Option<&'me T>
 where
     T: Any,
 {
-    type Output = &'me T;
-
     fn insert(&mut self, input: &'me dyn Any) -> Result<(), &'me dyn Any> {
         if self.is_some() {
             return Err(input);
@@ -29,8 +29,12 @@ where
         Ok(())
     }
 
-    fn flush(self) -> Option<Self::Output> {
-        self
+    type Output = &'me T;
+
+    type Error = InputTypeMismatchError;
+
+    fn flush(self) -> Result<Self::Output, Self::Error> {
+        self.ok_or_else(InputTypeMismatchError::new::<T>)
     }
 }
 
@@ -45,8 +49,6 @@ impl<'me, T> Container<&'me mut dyn Any> for Option<&'me mut T>
 where
     T: Any,
 {
-    type Output = &'me mut T;
-
     fn insert(&mut self, input: &'me mut dyn Any) -> Result<(), &'me mut dyn Any> {
         if self.is_some() {
             return Err(input);
@@ -61,7 +63,11 @@ where
         Ok(())
     }
 
-    fn flush(self) -> Option<Self::Output> {
-        self
+    type Output = &'me mut T;
+
+    type Error = InputTypeMismatchError;
+
+    fn flush(self) -> Result<Self::Output, Self::Error> {
+        self.ok_or_else(InputTypeMismatchError::new::<T>)
     }
 }

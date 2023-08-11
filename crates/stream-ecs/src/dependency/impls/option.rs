@@ -14,15 +14,18 @@ impl<T, Input> Container<Input> for OptionContainer<T>
 where
     T: Container<Input>,
 {
-    type Output = Option<T::Output>;
-
     fn insert(&mut self, input: Input) -> Result<(), Input> {
         let Self(container) = self;
         container.insert(input)
     }
 
-    fn flush(self) -> Option<Self::Output> {
+    type Output = Option<T::Output>;
+
+    type Error = T::Error;
+
+    fn flush(self) -> Result<Self::Output, Self::Error> {
         let Self(container) = self;
-        Some(container.flush())
+        let dependency = container.flush()?;
+        Ok(Some(dependency))
     }
 }

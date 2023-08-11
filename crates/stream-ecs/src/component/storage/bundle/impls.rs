@@ -310,7 +310,7 @@ where
         C: Components,
     {
         let iter = components.iter_mut().map(AsAny::as_any_mut);
-        dependency_from_iter(iter)
+        dependency_from_iter(iter).ok()
     }
 }
 
@@ -411,6 +411,7 @@ where
     fn provide_mut(components: &mut C) -> Self::RefMut<'_> {
         let iter = components.iter_mut().map(AsAny::as_any_mut);
         dependency_from_iter(iter)
+            .ok()
             .expect("all components of the bundle must be present in the registry")
     }
 }
