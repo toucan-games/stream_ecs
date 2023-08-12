@@ -76,6 +76,19 @@ impl<T> EntityBuilder<T>
 where
     T: Bundle,
 {
+    /// Creates new entity builder from provided component bundle.
+    ///
+    /// Returns new builder with all the components of the bundle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn from_bundle(bundle: T) -> Self {
+        EntityBuilder(bundle)
+    }
+
     /// Builds new entity from the builder.
     ///
     /// New entity will be created by provided entity registry, while components
@@ -108,7 +121,9 @@ where
 
         let entity = entities.create();
         if let Err(err) = T::attach(components, entity, bundle) {
-            let _ = entities.destroy(entity);
+            let Ok(_) = entities.destroy(entity) else {
+                unreachable!("entity was just created");
+            };
             return Err(err);
         }
         Ok(entity)
@@ -146,12 +161,13 @@ where
     {
         let Self(bundle) = self;
 
-        let entity = match entities.try_create() {
-            Ok(entity) => entity,
-            Err(err) => return Err(TryEntityBuildError::Entities(err)),
-        };
+        let entity = entities
+            .try_create()
+            .map_err(TryEntityBuildError::Entities)?;
         if let Err(err) = T::attach(components, entity, bundle) {
-            let _ = entities.destroy(entity);
+            let Ok(_) = entities.destroy(entity) else {
+                unreachable!("entity was just created");
+            };
             return Err(err.into());
         }
         Ok(entity)
@@ -197,7 +213,9 @@ where
 
         let entity = entities.create();
         if let Err(err) = T::try_attach(components, entity, bundle) {
-            let _ = entities.destroy(entity);
+            let Ok(_) = entities.destroy(entity) else {
+                unreachable!("entity was just created");
+            };
             return Err(err);
         }
         Ok(entity)
@@ -237,9 +255,11 @@ where
     {
         let Self(bundle) = self;
 
-        let entity = entities.create();
+        let entity = entities.try_create().map_err(TryBuildError::Entities)?;
         if let Err(err) = T::try_attach(components, entity, bundle) {
-            let _ = entities.destroy(entity);
+            let Ok(_) = entities.destroy(entity) else {
+                unreachable!("entity was just created");
+            };
             return Err(err.into());
         }
         Ok(entity)

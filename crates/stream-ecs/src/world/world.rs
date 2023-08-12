@@ -2,7 +2,10 @@
 
 use crate::{
     component::{
-        bundle::{Bundle, GetBundle, GetBundleMut, ProvideBundle, ProvideBundleMut, TryBundle},
+        bundle::{
+            Bundle, GetBundle, GetBundleMut, NotRegisteredError, ProvideBundle, ProvideBundleMut,
+            TryBundle, TryBundleError,
+        },
         registry::{
             Registry as Components, RegistryMut as ComponentsMut,
             TryRegistryMut as TryComponentsMut,
@@ -10,6 +13,7 @@ use crate::{
         storage::bundle::{Bundle as StorageBundle, TryBundle as StorageTryBundle},
     },
     entity::{
+        builder::{TryBuildError, TryEntityBuildError},
         entry::{Entry, EntryMut},
         registry::{NotPresentError, Registry as Entities, TryRegistry as TryEntities},
     },
@@ -317,6 +321,7 @@ where
             components,
             resources,
         } = self;
+
         let components = B::Storages::with(components, bundle);
         World::with(entities, components, resources)
     }
@@ -424,6 +429,7 @@ where
             components,
             resources,
         } = self;
+
         let resources = B::with(resources, bundle);
         World::with(entities, components, resources)
     }
@@ -596,6 +602,78 @@ where
             ..
         } = self;
         EntityBuilder::new(entities, components)
+    }
+
+    /// Creates new [entity builder](EntityBuilder) from provided bundle,
+    /// which allows to create new entity *lazily*.
+    ///
+    /// Returns new builder with all the components of the bundle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn builder_from<B>(&mut self, bundle: B) -> EntityBuilder<'_, E, C, B>
+    where
+        B: Bundle,
+    {
+        let Self {
+            entities,
+            components,
+            ..
+        } = self;
+        EntityBuilder::from_bundle(entities, components, bundle)
+    }
+
+    /// Creates new entity with provided bundle in the current world.
+    ///
+    /// All components of the bundle will be attached to the newly created entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if one of components in the bundle
+    /// was not registered in the world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn create_with<B>(&mut self, bundle: B) -> Result<E::Entity, NotRegisteredError>
+    where
+        B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
+    {
+        self.builder_from(bundle).build()
+    }
+
+    /// Tries to create new entity with provided bundle in the current world.
+    ///
+    /// All components of the bundle will be attached to the newly created entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error
+    /// if one of components in the bundle was not registered in the world
+    /// or the world will fail to attach some component of the bundle to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`create_with`][World::create_with()] method.
+    pub fn try_bundle_create_with<B>(
+        &mut self,
+        bundle: B,
+    ) -> Result<E::Entity, TryBundleError<B::Err>>
+    where
+        B: TryBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
+    {
+        self.builder_from(bundle).try_bundle_build()
     }
 
     /// Attaches provided bundle to the entity in the world.
@@ -918,6 +996,69 @@ where
             ..
         } = self;
         View::new(entities, components)
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    E: TryEntities,
+    C: Components,
+{
+    /// Tries to create new entity with provided bundle in the current world.
+    ///
+    /// All components of the bundle will be attached to the newly created entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error
+    /// if one of components in the bundle was not registered in the world
+    /// or the world will fail to create new entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`create_with`][World::create_with()] method.
+    pub fn try_entity_create_with<B>(
+        &mut self,
+        bundle: B,
+    ) -> Result<E::Entity, TryEntityBuildError<E::Err>>
+    where
+        B: Bundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
+    {
+        self.builder_from(bundle).try_entity_build()
+    }
+
+    /// Tries to create new entity with provided bundle in the current world.
+    ///
+    /// All components of the bundle will be attached to the newly created entity.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error
+    /// if one of components in the bundle was not registered in the world,
+    /// the world will fail to create new entity
+    /// or the world will fail to attach some component of the bundle to the entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    ///
+    /// This is the fallible version of [`create_with`][World::create_with()] method.
+    pub fn try_create_with<B>(
+        &mut self,
+        bundle: B,
+    ) -> Result<E::Entity, TryBuildError<E::Err, B::Err>>
+    where
+        B: TryBundle,
+        B::Storages: StorageBundle<Entity = E::Entity>,
+    {
+        self.builder_from(bundle).try_build()
     }
 }
 

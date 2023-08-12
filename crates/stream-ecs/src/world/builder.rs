@@ -101,6 +101,26 @@ where
 impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
 where
     T: Bundle,
+{
+    /// Creates new entity builder from provided component bundle
+    /// and with provided entity and component registries.
+    ///
+    /// Returns new builder with all the components of the bundle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn from_bundle(entities: &'state mut E, components: &'state mut C, bundle: T) -> Self {
+        let builder = builder::EntityBuilder::from_bundle(bundle);
+        Self::from_builder(entities, components, builder)
+    }
+}
+
+impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
+where
+    T: Bundle,
     T::Storages: StorageBundle<Entity = E::Entity>,
     E: Entities,
     C: Components,
