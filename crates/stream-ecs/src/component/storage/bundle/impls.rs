@@ -7,7 +7,7 @@ use crate::{
     component::{
         registry::{
             Provider as ComponentsProvider, Registry as Components, RegistryMut as ComponentsMut,
-            TryRegistryMut as TryComponentsMut,
+            TryRegistryMut as TryComponentsMut, With as WithComponents,
         },
         storage::Storage,
     },
@@ -27,13 +27,13 @@ where
     type Items = T::Item;
     type Entity = T::Entity;
 
-    type With<C> = C::With<T::Item>
+    type With<C> = C::Output<T::Item>
     where
-        C: Components;
+        C: WithComponents;
 
     fn with<C>(components: C, bundle: Self) -> Self::With<C>
     where
-        C: Components,
+        C: WithComponents,
     {
         components.with(bundle)
     }
@@ -70,11 +70,11 @@ where
 
     type With<C> = Cons<Head::With<C>, Nil>
     where
-        C: Components;
+        C: WithComponents;
 
     fn with<C>(components: C, bundle: Self) -> Self::With<C>
     where
-        C: Components,
+        C: WithComponents,
     {
         let Cons(head, nil) = bundle;
         let head = Head::with(components, head);
@@ -119,11 +119,11 @@ where
 
     type With<C> = Cons<Head::With<C>, Tail>
     where
-        C: Components;
+        C: WithComponents;
 
     fn with<C>(components: C, bundle: Self) -> Self::With<C>
     where
-        C: Components,
+        C: WithComponents,
     {
         let Cons(head, tail) = bundle;
         let head = Head::with(components, head);

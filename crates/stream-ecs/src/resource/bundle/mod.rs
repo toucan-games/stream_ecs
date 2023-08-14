@@ -4,6 +4,7 @@ use hlist::ops::Here;
 
 use super::registry::{
     Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
+    With as WithResources,
 };
 
 mod impls;
@@ -19,20 +20,14 @@ mod impls;
 /// todo!()
 /// ```
 pub trait Bundle: Sized + 'static {
-    /// Type of the registry with this resource bundle.
-    type With<R>
-    where
-        R: Resources;
-
-    /// Inserts provided resource bundle into the registry,
-    /// resulting in a registry with a new type.
+    /// Checks if all resources of the bundle are inserted to provided registry.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    fn with<R>(resources: R, bundle: Self) -> Self::With<R>
+    fn contains<R>(resources: &R) -> bool
     where
         R: Resources;
 
@@ -64,16 +59,22 @@ pub trait Bundle: Sized + 'static {
     where
         R: ResourcesMut;
 
-    /// Checks if all resources of the bundle are inserted to provided registry.
+    /// Type of the registry with this resource bundle.
+    type With<R>
+    where
+        R: WithResources;
+
+    /// Inserts provided resource bundle into the registry,
+    /// resulting in a registry with a new type.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    fn contains<R>(resources: &R) -> bool
+    fn with<R>(resources: R, bundle: Self) -> Self::With<R>
     where
-        R: Resources;
+        R: WithResources;
 }
 
 /// Extension of bundle which allows to implement fallible operations for the bundle.

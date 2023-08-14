@@ -7,7 +7,7 @@ use crate::{
         bundle::Bundle as ComponentBundle,
         registry::{
             Registry as Components, RegistryMut as ComponentsMut,
-            TryRegistryMut as TryComponentsMut,
+            TryRegistryMut as TryComponentsMut, With as WithComponents,
         },
     },
     entity::Entity,
@@ -32,20 +32,14 @@ pub trait Bundle: Sized + 'static {
     /// Type of entity which is used by components of this bundle.
     type Entity: Entity;
 
-    /// Type of the registry with this storage bundle.
-    type With<C>
-    where
-        C: Components;
-
-    /// Inserts provided storage bundle into the registry,
-    /// resulting in a registry with a new type.
+    /// Checks if all storages of the bundle are registered in provided component registry.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    fn with<C>(components: C, bundle: Self) -> Self::With<C>
+    fn is_registered<C>(components: &C) -> bool
     where
         C: Components;
 
@@ -77,16 +71,22 @@ pub trait Bundle: Sized + 'static {
     where
         C: ComponentsMut;
 
-    /// Checks if all storages of the bundle are registered in provided component registry.
+    /// Type of the registry with this storage bundle.
+    type With<C>
+    where
+        C: WithComponents;
+
+    /// Inserts provided storage bundle into the registry,
+    /// resulting in a registry with a new type.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    fn is_registered<C>(components: &C) -> bool
+    fn with<C>(components: C, bundle: Self) -> Self::With<C>
     where
-        C: Components;
+        C: WithComponents;
 }
 
 /// Extension of bundle which allows to implement fallible operations for the bundle.

@@ -8,7 +8,7 @@ use crate::{
         },
         registry::{
             Registry as Components, RegistryMut as ComponentsMut,
-            TryRegistryMut as TryComponentsMut,
+            TryRegistryMut as TryComponentsMut, With as WithComponents,
         },
         storage::bundle::{Bundle as StorageBundle, TryBundle as StorageTryBundle},
     },
@@ -25,6 +25,7 @@ use crate::{
         },
         registry::{
             Registry as Resources, RegistryMut as ResourcesMut, TryRegistryMut as TryResourcesMut,
+            With as WithResources,
         },
     },
     view::query::{Query, ReadonlyQuery},
@@ -301,6 +302,26 @@ impl<E, C, R> World<E, C, R>
 where
     C: Components,
 {
+    /// Checks if the component bundle was previously registered in the current world.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn is_registered<B>(&self) -> bool
+    where
+        B: Bundle,
+    {
+        let Self { components, .. } = self;
+        B::Storages::is_registered(components)
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    C: WithComponents,
+{
     /// Inserts storages of provided component bundle into the world,
     /// resulting in a world with a new type of the component registry.
     ///
@@ -324,21 +345,6 @@ where
 
         let components = B::Storages::with(components, bundle);
         World::with(entities, components, resources)
-    }
-
-    /// Checks if the component bundle was previously registered in the current world.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn is_registered<B>(&self) -> bool
-    where
-        B: Bundle,
-    {
-        let Self { components, .. } = self;
-        B::Storages::is_registered(components)
     }
 }
 
@@ -412,28 +418,6 @@ impl<E, C, R> World<E, C, R>
 where
     R: Resources,
 {
-    /// Inserts provided resource bundle into the world,
-    /// resulting in a world with a new type of the resource registry.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn with_res<B>(self, bundle: B) -> World<E, C, B::With<R>>
-    where
-        B: ResourceBundle,
-    {
-        let Self {
-            entities,
-            components,
-            resources,
-        } = self;
-
-        let resources = B::with(resources, bundle);
-        World::with(entities, components, resources)
-    }
-
     /// Checks if the resource bundle was previously inserted in the current world.
     ///
     /// # Examples
@@ -515,6 +499,33 @@ where
     {
         let Self { resources, .. } = self;
         B::provide_mut(resources)
+    }
+}
+
+impl<E, C, R> World<E, C, R>
+where
+    R: WithResources,
+{
+    /// Inserts provided resource bundle into the world,
+    /// resulting in a world with a new type of the resource registry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    pub fn with_res<B>(self, bundle: B) -> World<E, C, B::With<R>>
+    where
+        B: ResourceBundle,
+    {
+        let Self {
+            entities,
+            components,
+            resources,
+        } = self;
+
+        let resources = B::with(resources, bundle);
+        World::with(entities, components, resources)
     }
 }
 

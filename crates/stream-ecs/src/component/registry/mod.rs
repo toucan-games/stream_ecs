@@ -20,23 +20,6 @@ mod impls;
 /// todo!()
 /// ```
 pub trait Registry {
-    /// Type of the registry with provided type of component.
-    type With<C>
-    where
-        C: Component;
-
-    /// Inserts provided component storage into the registry,
-    /// resulting in a registry with a new type.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    fn with<C>(self, storage: C::Storage) -> Self::With<C>
-    where
-        C: Component;
-
     /// Checks if the component was previously registered in the registry.
     ///
     /// # Examples
@@ -123,6 +106,33 @@ pub trait Registry {
     /// todo!()
     /// ```
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
+}
+
+/// Extension of component registry which allows
+/// to insert storage of some component into the registry, resulting in a registry with a new type.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
+pub trait With: Registry {
+    /// Type of the registry with provided type of component.
+    type Output<C>
+    where
+        C: Component;
+
+    /// Inserts provided component storage into the registry,
+    /// resulting in a registry with a new type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn with<C>(self, storage: C::Storage) -> Self::Output<C>
+    where
+        C: Component;
 }
 
 /// Extension of component registry which allows to modify state of the registry at runtime.

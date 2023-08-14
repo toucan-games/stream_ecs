@@ -16,23 +16,6 @@ mod impls;
 /// todo!()
 /// ```
 pub trait Registry {
-    /// Type of the registry with provided type of resource.
-    type With<R>
-    where
-        R: Resource;
-
-    /// Inserts provided resource into the registry,
-    /// resulting in a registry with a new type.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    fn with<R>(self, resource: R) -> Self::With<R>
-    where
-        R: Resource;
-
     /// Checks if the resource was previously inserted in the registry.
     ///
     /// # Examples
@@ -115,6 +98,33 @@ pub trait Registry {
     /// todo!()
     /// ```
     fn iter_mut(&mut self) -> Self::IterMut<'_>;
+}
+
+/// Extension of resource registry which allows
+/// to insert some resource into the registry, resulting in a registry with a new type.
+///
+/// # Examples
+///
+/// ```
+/// todo!()
+/// ```
+pub trait With: Registry {
+    /// Type of the registry with provided type of resource.
+    type Output<R>
+    where
+        R: Resource;
+
+    /// Inserts provided resource into the registry,
+    /// resulting in a registry with a new type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// todo!()
+    /// ```
+    fn with<R>(self, resource: R) -> Self::Output<R>
+    where
+        R: Resource;
 }
 
 /// Extension of resource registry which allows to modify state of the registry at runtime.

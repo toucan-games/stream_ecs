@@ -8,7 +8,7 @@ use crate::{
     utils::registry::{Contains, Find},
 };
 
-use super::{Provider, Registry};
+use super::{Provider, Registry, With};
 
 use self::impl_details::{AsErased, AsErasedRefIter, AsErasedRefIterMut};
 
@@ -18,17 +18,6 @@ where
     for<'any> <Self as AsErased>::Ref<'any>: AsErasedRefIter<'any>,
     for<'any> <Self as AsErased>::RefMut<'any>: AsErasedRefIterMut<'any>,
 {
-    type With<R> = <Self as Prepend>::Output<R>
-    where
-        R: Resource;
-
-    fn with<R>(self, resource: R) -> Self::With<R>
-    where
-        R: Resource,
-    {
-        Prepend::prepend(self, resource)
-    }
-
     fn contains<R>(&self) -> bool
     where
         R: Resource,
@@ -70,6 +59,24 @@ where
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         let erased = AsErased::as_erased_mut(self);
         erased.into_iter()
+    }
+}
+
+impl<Head, Tail> With for Cons<Head, Tail>
+where
+    Self: Prepend + Contains + Find + AsErased,
+    for<'any> <Self as AsErased>::Ref<'any>: AsErasedRefIter<'any>,
+    for<'any> <Self as AsErased>::RefMut<'any>: AsErasedRefIterMut<'any>,
+{
+    type Output<R> = <Self as Prepend>::Output<R>
+    where
+        R: Resource;
+
+    fn with<R>(self, resource: R) -> Self::Output<R>
+    where
+        R: Resource,
+    {
+        Prepend::prepend(self, resource)
     }
 }
 

@@ -8,7 +8,7 @@ use crate::{
     resource::{
         registry::{
             Provider as ResourcesProvider, Registry as Resources, RegistryMut as ResourcesMut,
-            TryRegistryMut as TryResourcesMut,
+            TryRegistryMut as TryResourcesMut, With as WithResources,
         },
         Resource,
     },
@@ -21,13 +21,13 @@ impl<T> Bundle for T
 where
     T: Resource,
 {
-    type With<R> = R::With<T>
+    type With<R> = R::Output<T>
     where
-        R: Resources;
+        R: WithResources;
 
     fn with<R>(resources: R, bundle: Self) -> Self::With<R>
     where
-        R: Resources,
+        R: WithResources,
     {
         resources.with(bundle)
     }
@@ -61,11 +61,11 @@ where
 {
     type With<R> = Cons<Head::With<R>, Nil>
     where
-        R: Resources;
+        R: WithResources;
 
     fn with<R>(resources: R, bundle: Self) -> Self::With<R>
     where
-        R: Resources,
+        R: WithResources,
     {
         let Cons(head, nil) = bundle;
         let head = Head::with(resources, head);
@@ -107,11 +107,11 @@ where
 {
     type With<R> = Cons<Head::With<R>, Tail>
     where
-        R: Resources;
+        R: WithResources;
 
     fn with<R>(resources: R, bundle: Self) -> Self::With<R>
     where
-        R: Resources,
+        R: WithResources,
     {
         let Cons(head, tail) = bundle;
         let head = Head::with(resources, head);
