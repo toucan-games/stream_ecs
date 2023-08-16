@@ -19,7 +19,7 @@ mod impls;
 /// ```
 /// todo!()
 /// ```
-pub trait Bundle: Copy + 'static {
+pub trait Bundle: Sized + 'static {
     /// Storage bundle associated with this component bundle.
     type Storages: StorageBundle<Items = Self>;
 

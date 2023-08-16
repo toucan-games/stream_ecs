@@ -1,5 +1,3 @@
-use hlist::{ops::Append, Nil};
-
 use crate::{
     component::{
         bundle::{Bundle, NotRegisteredError, TryBundle, TryBundleError},
@@ -7,7 +5,7 @@ use crate::{
         storage::bundle::Bundle as StorageBundle,
     },
     entity::{
-        builder::{self, TryBuildError, TryEntityBuildError},
+        builder::{self, TryBuildError, TryEntityBuildError, With},
         registry::{Registry as Entities, TryRegistry as TryEntities},
     },
 };
@@ -21,29 +19,26 @@ use crate::{
 /// ```
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
 #[derive(Debug)]
-pub struct EntityBuilder<'state, E, C, T = Nil> {
+pub struct EntityBuilder<'state, E, C, T> {
     entities: &'state mut E,
     components: &'state mut C,
     builder: builder::EntityBuilder<T>,
 }
 
-impl<'state, E, C> EntityBuilder<'state, E, C> {
-    /// Creates an empty entity builder with provided entity and component registries.
-    ///
-    /// Returns new builder without any components attached to it.
+impl<'state, E, C, T> EntityBuilder<'state, E, C, T> {
+    /// Creates an empty entity builder with provided initial value,
+    /// and also with provided entity and component registries.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    pub fn new(entities: &'state mut E, components: &'state mut C) -> Self {
-        let builder = builder::EntityBuilder::empty();
+    pub fn new(entities: &'state mut E, components: &'state mut C, init: T) -> Self {
+        let builder = builder::EntityBuilder::new(init);
         Self::from_builder(entities, components, builder)
     }
-}
 
-impl<'state, E, C, T> EntityBuilder<'state, E, C, T> {
     /// Creates stateful entity builder from provided stateless builder
     /// and entity and component registries.
     ///
@@ -69,7 +64,7 @@ impl<'state, E, C, T> EntityBuilder<'state, E, C, T> {
 
 impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
 where
-    T: Append,
+    T: With,
 {
     /// Inserts new bundle to the builder.
     ///
@@ -95,26 +90,6 @@ where
             components,
             builder: builder.with(bundle),
         }
-    }
-}
-
-impl<'state, E, C, T> EntityBuilder<'state, E, C, T>
-where
-    T: Bundle,
-{
-    /// Creates new entity builder from provided component bundle
-    /// and with provided entity and component registries.
-    ///
-    /// Returns new builder with all the components of the bundle.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn from_bundle(entities: &'state mut E, components: &'state mut C, bundle: T) -> Self {
-        let builder = builder::EntityBuilder::from_bundle(bundle);
-        Self::from_builder(entities, components, builder)
     }
 }
 

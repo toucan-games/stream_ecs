@@ -49,6 +49,7 @@ use super::{
 /// todo!()
 /// ```
 #[derive(Debug, Default, Clone)]
+#[non_exhaustive]
 pub struct World<E, C, R> {
     /// Entity registry of the world.
     pub entities: E,
@@ -203,7 +204,7 @@ where
     ///
     /// This is considered as the main API for creation of new entities in the world.
     /// If you only need to create new entity, use [`create`][World::create()] method.
-    /// If you need to create entity *lazily*, use [`builder`][World::builder()] method.
+    /// If you need to create entity *lazily*, use [`builder_from`][World::builder_from()] method.
     ///
     /// # Examples
     ///
@@ -599,42 +600,21 @@ where
     E: Entities,
     C: Components,
 {
-    /// Creates an empty [entity builder](EntityBuilder), which allows to create new entity *lazily*.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn builder(&mut self) -> EntityBuilder<'_, E, C> {
-        let Self {
-            entities,
-            components,
-            ..
-        } = self;
-        EntityBuilder::new(entities, components)
-    }
-
-    /// Creates new [entity builder](EntityBuilder) from provided bundle,
+    /// Creates new [entity builder](EntityBuilder) from provided initial value,
     /// which allows to create new entity *lazily*.
     ///
-    /// Returns new builder with all the components of the bundle.
-    ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    pub fn builder_from<B>(&mut self, bundle: B) -> EntityBuilder<'_, E, C, B>
-    where
-        B: Bundle,
-    {
+    pub fn builder_from<T>(&mut self, init: T) -> EntityBuilder<'_, E, C, T> {
         let Self {
             entities,
             components,
             ..
         } = self;
-        EntityBuilder::from_bundle(entities, components, bundle)
+        EntityBuilder::new(entities, components, init)
     }
 
     /// Creates new entity with provided bundle in the current world.

@@ -1,7 +1,5 @@
 #![allow(clippy::module_inception)]
 
-use hlist::{ops::Append, Nil};
-
 use crate::{
     component::{
         bundle::{Bundle, NotRegisteredError, TryBundle, TryBundleError},
@@ -13,6 +11,8 @@ use crate::{
         registry::{Registry as Entities, TryRegistry as TryEntities},
     },
 };
+
+use super::With;
 
 /// Entity builder which creates new entity with provided components.
 ///
@@ -30,27 +30,25 @@ use crate::{
 /// todo!()
 /// ```
 #[must_use = "Entity builder will not create new entity unless .build() was called"]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct EntityBuilder<T = Nil>(T);
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct EntityBuilder<T>(T);
 
-impl EntityBuilder {
-    /// Creates an empty entity builder.
-    ///
-    /// Returns new builder without any components attached to it.
+impl<T> EntityBuilder<T> {
+    /// Creates new entity builder from provided initial value.
     ///
     /// # Examples
     ///
     /// ```
     /// todo!()
     /// ```
-    pub const fn empty() -> Self {
-        EntityBuilder(Nil)
+    pub fn new(init: T) -> Self {
+        EntityBuilder(init)
     }
 }
 
 impl<T> EntityBuilder<T>
 where
-    T: Append,
+    T: With,
 {
     /// Inserts new bundle to the builder.
     ///
@@ -67,7 +65,7 @@ where
         B: Bundle,
     {
         let Self(bundles) = self;
-        let bundles = bundles.append(bundle);
+        let bundles = bundles.with(bundle);
         EntityBuilder(bundles)
     }
 }
@@ -76,19 +74,6 @@ impl<T> EntityBuilder<T>
 where
     T: Bundle,
 {
-    /// Creates new entity builder from provided component bundle.
-    ///
-    /// Returns new builder with all the components of the bundle.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    pub fn from_bundle(bundle: T) -> Self {
-        EntityBuilder(bundle)
-    }
-
     /// Builds new entity from the builder.
     ///
     /// New entity will be created by provided entity registry, while components
@@ -263,18 +248,5 @@ where
             return Err(err.into());
         }
         Ok(entity)
-    }
-}
-
-impl Default for EntityBuilder {
-    /// Creates default entity builder, which is empty.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// todo!()
-    /// ```
-    fn default() -> Self {
-        Self::empty()
     }
 }

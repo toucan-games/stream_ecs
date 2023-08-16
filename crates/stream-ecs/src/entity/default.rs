@@ -3,7 +3,7 @@ use core::fmt::Display;
 use derive_more::Display;
 use num_traits::{bounds::UpperBounded, Unsigned, Zero};
 
-use super::{builder::EntityBuilder, Entity};
+use super::Entity;
 
 /// Default type of the entity used in this crate.
 ///
@@ -21,22 +21,6 @@ use super::{builder::EntityBuilder, Entity};
 pub struct DefaultEntity<Index = u32, Generation = Index> {
     index: Index,
     generation: Generation,
-}
-
-impl DefaultEntity {
-    /// Creates an empty entity builder to build a new entity with.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stream_ecs::entity::{builder::EntityBuilder, DefaultEntity};
-    ///
-    /// let builder = DefaultEntity::builder();
-    /// assert_eq!(builder, EntityBuilder::empty());
-    /// ```
-    pub fn builder() -> EntityBuilder {
-        EntityBuilder::empty()
-    }
 }
 
 impl<Index, Generation> DefaultEntity<Index, Generation> {
