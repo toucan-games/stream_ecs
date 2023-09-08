@@ -1,5 +1,5 @@
 use hlist::{
-    ops::{Get, Prepend},
+    ops::{Get, Index, Prepend},
     Cons, HList,
 };
 
@@ -83,6 +83,7 @@ where
 impl<R, I, T> Provider<R, I> for T
 where
     T: Registry + Get<R, I>,
+    I: Index,
     R: Resource,
 {
     fn provide(&self) -> &R {
