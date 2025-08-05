@@ -1,6 +1,6 @@
 //! Provides utilities for components in ECS.
 
-use as_any::AsAny;
+use core::any::Any;
 
 /// Derive macro for [`Component`] trait.
 #[cfg(feature = "derive")]
@@ -40,6 +40,6 @@ pub trait Component: Copy + 'static {
 /// ```
 /// todo!()
 /// ```
-pub trait ErasedComponent: AsAny {}
+pub trait ErasedComponent: Any {}
 
 impl<T> ErasedComponent for T where T: Component {}

@@ -1,6 +1,6 @@
 //! Provides utilities for resources in ECS.
 
-use as_any::AsAny;
+use core::any::Any;
 
 /// Derive macro for [`Resource`] trait.
 #[cfg(feature = "derive")]
@@ -39,6 +39,6 @@ pub trait Resource: 'static {}
 /// ```
 /// todo!()
 /// ```
-pub trait ErasedResource: AsAny {}
+pub trait ErasedResource: Any {}
 
 impl<T> ErasedResource for T where T: Resource {}

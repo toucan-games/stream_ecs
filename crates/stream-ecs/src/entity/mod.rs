@@ -1,6 +1,6 @@
 //! Provides utilities for entities in ECS.
 
-use as_any::AsAny;
+use core::any::Any;
 
 pub use self::default::DefaultEntity;
 
@@ -120,6 +120,6 @@ pub trait Entity: Copy + 'static {
 /// ```
 /// todo!()
 /// ```
-pub trait ErasedEntity: AsAny {}
+pub trait ErasedEntity: Any {}
 
 impl<T> ErasedEntity for T where T: Entity {}

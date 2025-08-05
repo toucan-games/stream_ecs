@@ -1,6 +1,5 @@
 use core::any::Any;
 
-use as_any::Downcast;
 use hlist::{Cons, Nil};
 
 pub trait Find: Any {
@@ -39,6 +38,8 @@ where
         T: Any,
     {
         let Cons(head, tail) = self;
+        let head = head as &dyn Any;
+
         match head.downcast_ref() {
             Some(head) => Some(head),
             None => tail.find(),
@@ -50,6 +51,8 @@ where
         T: Any,
     {
         let Cons(head, tail) = self;
+        let head = head as &mut dyn Any;
+
         match head.downcast_mut() {
             Some(head) => Some(head),
             None => tail.find_mut(),

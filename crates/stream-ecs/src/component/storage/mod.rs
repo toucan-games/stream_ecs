@@ -1,6 +1,6 @@
 //! Utilities for storages of components in ECS.
 
-use as_any::{AsAny, Downcast};
+use core::any::Any;
 
 pub use self::error::{AttachError, ComponentMismatchError, EntityMismatchError};
 
@@ -193,7 +193,7 @@ pub trait TryStorage: Storage {
 /// ```
 /// todo!()
 /// ```
-pub trait ErasedStorage: AsAny {
+pub trait ErasedStorage: Any {
     /// Attaches provided component to the entity
     /// only if type of provided component matches the type of component stored in the storage.
     ///
@@ -301,23 +301,29 @@ where
         entity: &dyn ErasedEntity,
         component: &dyn ErasedComponent,
     ) -> Result<(), AttachError> {
+        let component = component as &dyn Any;
         let Some(component) = component.downcast_ref().copied() else {
             let error = ComponentMismatchError::new::<_, T::Item>(component);
             return Err(error.into());
         };
+
+        let entity = entity as &dyn Any;
         let Some(entity) = entity.downcast_ref().copied() else {
             let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error.into());
         };
+
         let _ = Storage::attach(self, entity, component);
         Ok(())
     }
 
     fn is_attached(&self, entity: &dyn ErasedEntity) -> Result<bool, EntityMismatchError> {
+        let entity = entity as &dyn Any;
         let Some(entity) = entity.downcast_ref().copied() else {
             let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
+
         let is_attached = Storage::is_attached(self, entity);
         Ok(is_attached)
     }
@@ -326,10 +332,12 @@ where
         &self,
         entity: &dyn ErasedEntity,
     ) -> Result<Option<&dyn ErasedComponent>, EntityMismatchError> {
+        let entity = entity as &dyn Any;
         let Some(entity) = entity.downcast_ref().copied() else {
             let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
+
         let component = Storage::get(self, entity).map(|item| item as _);
         Ok(component)
     }
@@ -338,19 +346,23 @@ where
         &mut self,
         entity: &dyn ErasedEntity,
     ) -> Result<Option<&mut dyn ErasedComponent>, EntityMismatchError> {
+        let entity = entity as &dyn Any;
         let Some(entity) = entity.downcast_ref().copied() else {
             let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
+
         let component = Storage::get_mut(self, entity).map(|item| item as _);
         Ok(component)
     }
 
     fn remove(&mut self, entity: &dyn ErasedEntity) -> Result<(), EntityMismatchError> {
+        let entity = entity as &dyn Any;
         let Some(entity) = entity.downcast_ref().copied() else {
             let error = EntityMismatchError::new::<_, T::Entity>(entity);
             return Err(error);
         };
+
         let _ = Storage::remove(self, entity);
         Ok(())
     }

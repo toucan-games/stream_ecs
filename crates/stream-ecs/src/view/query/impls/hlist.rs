@@ -63,7 +63,7 @@ where
     {
         let iter = components
             .iter_mut()
-            .map(|storage| Some(RefKind::from(storage.as_any_mut())));
+            .map(|storage| Some(RefKind::from(storage as &mut dyn Any)));
         dependency_from_iter(iter).ok()
     }
 

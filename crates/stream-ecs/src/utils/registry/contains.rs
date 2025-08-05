@@ -1,6 +1,5 @@
 use core::any::Any;
 
-use as_any::Downcast;
 use hlist::{Cons, Nil};
 
 pub trait Contains: Any {
@@ -28,6 +27,8 @@ where
         T: Any,
     {
         let Cons(head, tail) = self;
+        let head = head as &dyn Any;
+
         head.is::<T>() || tail.contains::<T>()
     }
 }

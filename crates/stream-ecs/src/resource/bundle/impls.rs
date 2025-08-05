@@ -1,6 +1,5 @@
 use core::any::Any;
 
-use as_any::AsAny;
 use hlist::{Cons, Nil};
 
 use crate::{
@@ -300,7 +299,7 @@ where
     where
         R: Resources,
     {
-        let iter = resources.iter_mut().map(AsAny::as_any_mut);
+        let iter = resources.iter_mut().map(|item| item as &mut dyn Any);
         dependency_from_iter(iter).ok()
     }
 }
@@ -406,7 +405,7 @@ where
         R: 'resources;
 
     fn provide_mut(resources: &mut R) -> Self::RefMut<'_> {
-        let iter = resources.iter_mut().map(AsAny::as_any_mut);
+        let iter = resources.iter_mut().map(|item| item as &mut dyn Any);
         dependency_from_iter(iter)
             .ok()
             .expect("all components of the bundle must be present in the registry")
