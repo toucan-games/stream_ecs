@@ -6,8 +6,8 @@ use arrayvec::ArrayVec;
 
 use crate::{
     component::{
-        storage::{Storage, TryStorage},
         Component,
+        storage::{Storage, TryStorage},
     },
     entity::{DefaultEntity, Entity},
 };
@@ -395,7 +395,11 @@ where
         let Some(slot) = self.sparse.get(index) else {
             return false;
         };
-        let &Slot::Occupied { dense_index, generation } = slot else {
+        let &Slot::Occupied {
+            dense_index,
+            generation,
+        } = slot
+        else {
             return false;
         };
         let Some(_) = self.dense.get(dense_index) else {
@@ -432,7 +436,11 @@ where
     pub fn get(&self, entity: E) -> Option<&T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.sparse.get(index)?;
-        let &Slot::Occupied { dense_index, generation } = slot else {
+        let &Slot::Occupied {
+            dense_index,
+            generation,
+        } = slot
+        else {
             return None;
         };
         if generation != entity.generation() {
@@ -471,7 +479,11 @@ where
     pub fn get_mut(&mut self, entity: E) -> Option<&mut T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.sparse.get(index)?;
-        let &Slot::Occupied { dense_index, generation } = slot else {
+        let &Slot::Occupied {
+            dense_index,
+            generation,
+        } = slot
+        else {
             return None;
         };
         if generation != entity.generation() {
@@ -510,7 +522,11 @@ where
     pub fn remove(&mut self, entity: E) -> Option<T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.sparse.get_mut(index)?;
-        let Slot::Occupied { dense_index, generation } = mem::replace(slot, Slot::Free) else {
+        let Slot::Occupied {
+            dense_index,
+            generation,
+        } = mem::replace(slot, Slot::Free)
+        else {
             return None;
         };
         if entity.generation() != generation {
@@ -661,7 +677,8 @@ where
         DenseArrayStorage::is_empty(self)
     }
 
-    type Iter<'me> = Iter<'me, Self::Item, N, Self::Entity>
+    type Iter<'me>
+        = Iter<'me, Self::Item, N, Self::Entity>
     where
         Self: 'me;
 
@@ -669,7 +686,8 @@ where
         DenseArrayStorage::iter(self)
     }
 
-    type IterMut<'me> = IterMut<'me, Self::Item, N, Self::Entity>
+    type IterMut<'me>
+        = IterMut<'me, Self::Item, N, Self::Entity>
     where
         Self: 'me;
 

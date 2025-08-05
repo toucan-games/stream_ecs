@@ -1,6 +1,6 @@
 use hlist::{
-    ops::{Get, Index, Prepend},
     Cons, HList,
+    ops::{Get, Index, Prepend},
 };
 
 use crate::{
@@ -43,7 +43,8 @@ where
         Find::find_mut(self)
     }
 
-    type Iter<'me> = <<Self as AsErased>::Ref<'me> as IntoIterator>::IntoIter
+    type Iter<'me>
+        = <<Self as AsErased>::Ref<'me> as IntoIterator>::IntoIter
     where
         Self: 'me;
 
@@ -52,7 +53,8 @@ where
         erased.into_iter()
     }
 
-    type IterMut<'me> = <<Self as AsErased>::RefMut<'me> as IntoIterator>::IntoIter
+    type IterMut<'me>
+        = <<Self as AsErased>::RefMut<'me> as IntoIterator>::IntoIter
     where
         Self: 'me;
 
@@ -68,7 +70,8 @@ where
     for<'any> <Self as AsErased>::Ref<'any>: AsErasedRefIter<'any>,
     for<'any> <Self as AsErased>::RefMut<'any>: AsErasedRefIterMut<'any>,
 {
-    type Output<C> = <Self as Prepend>::Output<C::Storage>
+    type Output<C>
+        = <Self as Prepend>::Output<C::Storage>
     where
         C: Component;
 
@@ -96,7 +99,7 @@ where
 }
 
 mod impl_details {
-    use hlist::{iter::Homogenous, Cons, Nil};
+    use hlist::{Cons, Nil, iter::Homogenous};
 
     use crate::component::storage::{ErasedStorage, Storage};
 
@@ -118,7 +121,8 @@ mod impl_details {
     where
         T: Storage,
     {
-        type Ref<'me> = &'me dyn ErasedStorage
+        type Ref<'me>
+            = &'me dyn ErasedStorage
         where
             Self: 'me;
 
@@ -126,7 +130,8 @@ mod impl_details {
             self
         }
 
-        type RefMut<'me> = &'me mut dyn ErasedStorage
+        type RefMut<'me>
+            = &'me mut dyn ErasedStorage
         where
             Self: 'me;
 
@@ -139,7 +144,8 @@ mod impl_details {
     where
         Head: AsErased,
     {
-        type Ref<'me> = Cons<Head::Ref<'me>, Nil>
+        type Ref<'me>
+            = Cons<Head::Ref<'me>, Nil>
         where
             Self: 'me;
 
@@ -149,7 +155,8 @@ mod impl_details {
             Cons(head, Nil)
         }
 
-        type RefMut<'me> = Cons<Head::RefMut<'me>, Nil>
+        type RefMut<'me>
+            = Cons<Head::RefMut<'me>, Nil>
         where
             Self: 'me;
 
@@ -165,7 +172,8 @@ mod impl_details {
         Head: AsErased,
         Tail: AsErased,
     {
-        type Ref<'me> = Cons<Head::Ref<'me>, Tail::Ref<'me>>
+        type Ref<'me>
+            = Cons<Head::Ref<'me>, Tail::Ref<'me>>
         where
             Self: 'me;
 
@@ -176,7 +184,8 @@ mod impl_details {
             Cons(head, tail)
         }
 
-        type RefMut<'me> = Cons<Head::RefMut<'me>, Tail::RefMut<'me>>
+        type RefMut<'me>
+            = Cons<Head::RefMut<'me>, Tail::RefMut<'me>>
         where
             Self: 'me;
 

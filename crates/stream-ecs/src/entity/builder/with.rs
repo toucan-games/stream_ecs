@@ -16,7 +16,8 @@ pub trait With {
 }
 
 impl With for Nil {
-    type Output<B> = Cons<B, Nil>
+    type Output<B>
+        = Cons<B, Nil>
     where
         B: Bundle;
 
@@ -33,7 +34,8 @@ where
     Head: Bundle,
     Tail: With,
 {
-    type Output<B> = Cons<Head, Tail::Output<B>>
+    type Output<B>
+        = Cons<Head, Tail::Output<B>>
     where
         B: Bundle;
 

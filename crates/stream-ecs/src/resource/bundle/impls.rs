@@ -4,13 +4,13 @@ use as_any::AsAny;
 use hlist::{Cons, Nil};
 
 use crate::{
-    dependency::{dependency_from_iter, Dependency},
+    dependency::{Dependency, dependency_from_iter},
     resource::{
+        Resource,
         registry::{
             Provider as ResourcesProvider, Registry as Resources, RegistryMut as ResourcesMut,
             TryRegistryMut as TryResourcesMut, With as WithResources,
         },
-        Resource,
     },
 };
 
@@ -21,7 +21,8 @@ impl<T> Bundle for T
 where
     T: Resource,
 {
-    type With<R> = R::Output<T>
+    type With<R>
+        = R::Output<T>
     where
         R: WithResources;
 
@@ -59,7 +60,8 @@ impl<Head> Bundle for Cons<Head, Nil>
 where
     Head: Bundle,
 {
-    type With<R> = Cons<Head::With<R>, Nil>
+    type With<R>
+        = Cons<Head::With<R>, Nil>
     where
         R: WithResources;
 
@@ -105,7 +107,8 @@ where
     Head: Bundle,
     Tail: Bundle,
 {
-    type With<R> = Cons<Head::With<R>, Tail>
+    type With<R>
+        = Cons<Head::With<R>, Tail>
     where
         R: WithResources;
 
@@ -308,7 +311,8 @@ where
     T: Resource,
     R: ResourcesProvider<T, I>,
 {
-    type Ref<'resources> = &'resources T
+    type Ref<'resources>
+        = &'resources T
     where
         R: 'resources;
 
@@ -323,7 +327,8 @@ where
     Head: ProvideBundle<R, I>,
     R: Resources,
 {
-    type Ref<'resources> = Cons<Head::Ref<'resources>, Nil>
+    type Ref<'resources>
+        = Cons<Head::Ref<'resources>, Nil>
     where
         R: 'resources;
 
@@ -340,7 +345,8 @@ where
     Tail: ProvideBundle<R, TailIndex> + Bundle,
     R: Resources,
 {
-    type Ref<'resources> = Cons<Head::Ref<'resources>, Tail::Ref<'resources>>
+    type Ref<'resources>
+        = Cons<Head::Ref<'resources>, Tail::Ref<'resources>>
     where
         R: 'resources;
 
@@ -357,7 +363,8 @@ where
     T: Resource,
     R: ResourcesProvider<T, I>,
 {
-    type RefMut<'resources> = &'resources mut T
+    type RefMut<'resources>
+        = &'resources mut T
     where
         R: 'resources;
 
@@ -372,7 +379,8 @@ where
     Head: ProvideBundleMut<R, I>,
     R: Resources,
 {
-    type RefMut<'resources> = Cons<Head::RefMut<'resources>, Nil>
+    type RefMut<'resources>
+        = Cons<Head::RefMut<'resources>, Nil>
     where
         R: 'resources;
 
@@ -392,7 +400,8 @@ where
     for<'any> Head::RefMut<'any>: Dependency<&'any mut dyn Any>,
     for<'any> Tail::RefMut<'any>: Dependency<&'any mut dyn Any>,
 {
-    type RefMut<'resources> = Cons<Head::RefMut<'resources>, Tail::RefMut<'resources>>
+    type RefMut<'resources>
+        = Cons<Head::RefMut<'resources>, Tail::RefMut<'resources>>
     where
         R: 'resources;
 

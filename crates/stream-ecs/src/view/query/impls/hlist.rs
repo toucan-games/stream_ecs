@@ -5,7 +5,7 @@ use ref_kind::RefKind;
 
 use crate::{
     component::registry::Registry as Components,
-    dependency::{dependency_from_iter, Dependency},
+    dependency::{Dependency, dependency_from_iter},
     view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 

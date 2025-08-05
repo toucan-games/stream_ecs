@@ -8,8 +8,8 @@ use core::{
 
 use crate::{
     component::{
-        storage::{Storage, TryStorage},
         Component,
+        storage::{Storage, TryStorage},
     },
     entity::{DefaultEntity, Entity},
 };
@@ -397,7 +397,11 @@ where
     pub fn get(&self, entity: E) -> Option<&T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.slots.get(index)?;
-        let &Slot::Occupied { generation, ref value } = slot else {
+        let &Slot::Occupied {
+            generation,
+            ref value,
+        } = slot
+        else {
             return None;
         };
         if generation != entity.generation() {
@@ -435,7 +439,11 @@ where
     pub fn get_mut(&mut self, entity: E) -> Option<&mut T> {
         let index = usize::try_from(entity.index()).ok()?;
         let slot = self.slots.get_mut(index)?;
-        let &mut Slot::Occupied { generation, ref mut value } = slot else {
+        let &mut Slot::Occupied {
+            generation,
+            ref mut value,
+        } = slot
+        else {
             return None;
         };
         if generation != entity.generation() {
@@ -605,7 +613,8 @@ where
         ArrayStorage::is_empty(self)
     }
 
-    type Iter<'me> = Iter<'me, Self::Item, N, Self::Entity>
+    type Iter<'me>
+        = Iter<'me, Self::Item, N, Self::Entity>
     where
         Self: 'me;
 
@@ -613,7 +622,8 @@ where
         ArrayStorage::iter(self)
     }
 
-    type IterMut<'me> = IterMut<'me, Self::Item, N, Self::Entity>
+    type IterMut<'me>
+        = IterMut<'me, Self::Item, N, Self::Entity>
     where
         Self: 'me;
 
@@ -715,7 +725,11 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next()?;
-            let &Slot::Occupied { ref value, generation } = slot else {
+            let &Slot::Occupied {
+                ref value,
+                generation,
+            } = slot
+            else {
                 continue;
             };
             let index = index.try_into().ok()?;
@@ -741,7 +755,11 @@ where
     fn next_back(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next_back()?;
-            let &Slot::Occupied { ref value, generation } = slot else {
+            let &Slot::Occupied {
+                ref value,
+                generation,
+            } = slot
+            else {
                 continue;
             };
             let index = index.try_into().ok()?;
@@ -795,7 +813,11 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next()?;
-            let &mut Slot::Occupied { ref mut value, generation } = slot else {
+            let &mut Slot::Occupied {
+                ref mut value,
+                generation,
+            } = slot
+            else {
                 continue;
             };
             let index = index.try_into().ok()?;
@@ -821,7 +843,11 @@ where
     fn next_back(&mut self) -> Option<Self::Item> {
         let item = loop {
             let (index, slot) = self.iter.next_back()?;
-            let &mut Slot::Occupied { ref mut value, generation } = slot else {
+            let &mut Slot::Occupied {
+                ref mut value,
+                generation,
+            } = slot
+            else {
                 continue;
             };
             let index = index.try_into().ok()?;

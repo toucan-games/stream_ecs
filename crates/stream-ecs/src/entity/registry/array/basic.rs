@@ -9,8 +9,8 @@ use core::{
 use arrayvec::ArrayVec;
 
 use crate::entity::{
-    registry::{NotPresentError, Registry, TryRegistry},
     DefaultEntity, Entity,
+    registry::{NotPresentError, Registry, TryRegistry},
 };
 
 use super::ArrayRegistryError;
@@ -383,7 +383,8 @@ where
         ArrayRegistry::clear(self)
     }
 
-    type Iter<'me> = Iter<'me, Self::Entity>
+    type Iter<'me>
+        = Iter<'me, Self::Entity>
     where
         Self: 'me;
 

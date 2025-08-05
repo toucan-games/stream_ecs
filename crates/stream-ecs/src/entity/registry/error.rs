@@ -13,8 +13,8 @@ use crate::entity::{DefaultEntity, Entity};
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy)]
-#[display(bound = "E: Display")]
-#[display(fmt = "entity {entity} does not present in the registry")]
+#[display(bound(E: Display))]
+#[display("entity {entity} does not present in the registry")]
 pub struct NotPresentError<E = DefaultEntity>
 where
     E: Entity,

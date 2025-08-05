@@ -1,5 +1,5 @@
 use crate::{
-    component::{registry::Registry as Components, storage::Storage, Component},
+    component::{Component, registry::Registry as Components, storage::Storage},
     view::query::{AsReadonly, IntoReadonly, Query, ReadonlyQuery},
 };
 

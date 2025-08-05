@@ -1,7 +1,4 @@
-use core::{
-    any::{type_name, TypeId},
-    fmt::Display,
-};
+use core::any::{TypeId, type_name};
 
 use derive_more::{Display, From};
 
@@ -15,7 +12,7 @@ use crate::component::Component;
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy)]
-#[display(fmt = r#"component of type "{type_name}" was not registered"#)]
+#[display(r#"component of type "{type_name}" was not registered"#)]
 pub struct NotRegisteredError {
     type_name: &'static str,
     type_id: TypeId,
@@ -59,12 +56,12 @@ impl NotRegisteredError {
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy, From)]
-#[display(bound = "Err: Display")]
+#[display(bound(Err: Display))]
 pub enum TryBundleError<Err> {
     /// Component was not registered in the world.
     NotRegistered(NotRegisteredError),
     /// Component storage failed to attach a bundle to the entity.
     #[from(ignore)]
-    #[display(fmt = "storage failed to attach a component: {_0}")]
+    #[display("storage failed to attach a component: {_0}")]
     Storage(Err),
 }

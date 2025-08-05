@@ -1,4 +1,4 @@
-use core::any::{type_name, Any, TypeId};
+use core::any::{Any, TypeId, type_name};
 
 use derive_more::{Display, From};
 
@@ -29,7 +29,7 @@ pub enum AttachError {
 /// ```
 #[derive(Debug, Display, Clone, Copy)]
 #[display(
-    fmt = r#"type of component in the storage was mismatched: \
+    r#"type of component in the storage was mismatched: \
         provided type is "{}", \
         but storage actually stores components of type "{}""#,
     "_0.provided_type_name",
@@ -108,7 +108,7 @@ impl ComponentMismatchError {
 /// ```
 #[derive(Debug, Display, Clone, Copy)]
 #[display(
-    fmt = r#"type of entity in the storage was mismatched: \
+    r#"type of entity in the storage was mismatched: \
         provided type is "{}", \
         but storage actually tracks components with entities of type "{}""#,
     "_0.provided_type_name",

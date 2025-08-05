@@ -20,5 +20,5 @@ pub mod hash;
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy)]
-#[display(fmt = "array storage capacity exceeded")]
+#[display("array storage capacity exceeded")]
 pub struct ArrayStorageError;

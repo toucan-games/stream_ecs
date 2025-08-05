@@ -18,5 +18,5 @@ pub mod dense;
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy)]
-#[display(fmt = "array registry capacity exceeded")]
+#[display("array registry capacity exceeded")]
 pub struct ArrayRegistryError;

@@ -12,4 +12,4 @@ proc-macro2 = "1"
 quote = { version = "1", default-features = false }
 syn = { version = "2", default-features = false }
 deluxe = { version = "0.5", default-features = false }
-proc-macro-crate = "1"
+proc-macro-crate = "3.3"

@@ -1,9 +1,9 @@
-use core::any::{type_name, Any, TypeId};
+use core::any::{Any, TypeId, type_name};
 
 use derive_more::Display;
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash)]
-#[display(fmt = r#"no input of type "{type_name}" were provided"#)]
+#[display(r#"no input of type "{type_name}" were provided"#)]
 pub struct InputTypeMismatchError {
     type_name: &'static str,
     type_id: TypeId,

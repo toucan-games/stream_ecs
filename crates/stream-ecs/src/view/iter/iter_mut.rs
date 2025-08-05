@@ -42,7 +42,8 @@ where
     E: Iterator,
     E::Item: Entity,
 {
-    type Item<'next> = Q::Item<'next>
+    type Item<'next>
+        = Q::Item<'next>
     where
         Self: 'next;
 

@@ -1,8 +1,8 @@
 [workspace]
 members = ["crates/*"]
-resolver = "2"
+resolver = "3"
 
 [workspace.package]
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 authors = ["tuguzT <timurka.tugushev@gmail.com>"]

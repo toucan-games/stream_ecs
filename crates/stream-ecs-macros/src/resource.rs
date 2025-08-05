@@ -1,4 +1,4 @@
-use deluxe::{extract_attributes, ExtractAttributes};
+use deluxe::{ExtractAttributes, extract_attributes};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Ident, Result};

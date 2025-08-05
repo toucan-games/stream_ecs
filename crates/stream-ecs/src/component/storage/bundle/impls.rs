@@ -11,7 +11,7 @@ use crate::{
         },
         storage::Storage,
     },
-    dependency::{dependency_from_iter, Dependency},
+    dependency::{Dependency, dependency_from_iter},
 };
 
 use super::{
@@ -27,7 +27,8 @@ where
     type Items = T::Item;
     type Entity = T::Entity;
 
-    type With<C> = C::Output<T::Item>
+    type With<C>
+        = C::Output<T::Item>
     where
         C: WithComponents;
 
@@ -68,7 +69,8 @@ where
     type Items = Cons<Head::Items, Nil>;
     type Entity = Head::Entity;
 
-    type With<C> = Cons<Head::With<C>, Nil>
+    type With<C>
+        = Cons<Head::With<C>, Nil>
     where
         C: WithComponents;
 
@@ -117,7 +119,8 @@ where
     type Items = Cons<Head::Items, Tail::Items>;
     type Entity = Head::Entity;
 
-    type With<C> = Cons<Head::With<C>, Tail>
+    type With<C>
+        = Cons<Head::With<C>, Tail>
     where
         C: WithComponents;
 
@@ -320,7 +323,8 @@ where
     T: Storage,
     C: ComponentsProvider<T::Item, I>,
 {
-    type Ref<'components> = &'components T
+    type Ref<'components>
+        = &'components T
     where
         C: 'components;
 
@@ -335,7 +339,8 @@ where
     Head: ProvideBundle<C, I>,
     C: Components,
 {
-    type Ref<'components> = Cons<Head::Ref<'components>, Nil>
+    type Ref<'components>
+        = Cons<Head::Ref<'components>, Nil>
     where
         C: 'components;
 
@@ -352,7 +357,8 @@ where
     Tail: ProvideBundle<C, TailIndex> + Bundle<Entity = Head::Entity>,
     C: Components,
 {
-    type Ref<'components> = Cons<Head::Ref<'components>, Tail::Ref<'components>>
+    type Ref<'components>
+        = Cons<Head::Ref<'components>, Tail::Ref<'components>>
     where
         C: 'components;
 
@@ -369,7 +375,8 @@ where
     T: Storage,
     C: ComponentsProvider<T::Item, I>,
 {
-    type RefMut<'components> = &'components mut T
+    type RefMut<'components>
+        = &'components mut T
     where
         C: 'components;
 
@@ -384,7 +391,8 @@ where
     Head: ProvideBundleMut<C, I>,
     C: Components,
 {
-    type RefMut<'components> = Cons<Head::RefMut<'components>, Nil>
+    type RefMut<'components>
+        = Cons<Head::RefMut<'components>, Nil>
     where
         C: 'components;
 
@@ -404,7 +412,8 @@ where
     for<'any> Head::RefMut<'any>: Dependency<&'any mut dyn Any>,
     for<'any> Tail::RefMut<'any>: Dependency<&'any mut dyn Any>,
 {
-    type RefMut<'components> = Cons<Head::RefMut<'components>, Tail::RefMut<'components>>
+    type RefMut<'components>
+        = Cons<Head::RefMut<'components>, Tail::RefMut<'components>>
     where
         C: 'components;
 
@@ -421,7 +430,8 @@ impl<T> GetItems for T
 where
     T: Storage,
 {
-    type ItemsRef<'me> = &'me T::Item
+    type ItemsRef<'me>
+        = &'me T::Item
     where
         Self: 'me;
 
@@ -435,7 +445,8 @@ impl<Head> GetItems for Cons<Head, Nil>
 where
     Head: GetItems,
 {
-    type ItemsRef<'me> = Cons<Head::ItemsRef<'me>, Nil>
+    type ItemsRef<'me>
+        = Cons<Head::ItemsRef<'me>, Nil>
     where
         Self: 'me;
 
@@ -453,7 +464,8 @@ where
     Head: GetItems,
     Tail: GetItems<Entity = Head::Entity>,
 {
-    type ItemsRef<'me> = Cons<Head::ItemsRef<'me>, Tail::ItemsRef<'me>>
+    type ItemsRef<'me>
+        = Cons<Head::ItemsRef<'me>, Tail::ItemsRef<'me>>
     where
         Self: 'me;
 
@@ -471,7 +483,8 @@ impl<T> GetItemsMut for T
 where
     T: Storage,
 {
-    type ItemsRefMut<'me> = &'me mut T::Item
+    type ItemsRefMut<'me>
+        = &'me mut T::Item
     where
         Self: 'me;
 
@@ -485,7 +498,8 @@ impl<Head> GetItemsMut for Cons<Head, Nil>
 where
     Head: GetItemsMut,
 {
-    type ItemsRefMut<'me> = Cons<Head::ItemsRefMut<'me>, Nil>
+    type ItemsRefMut<'me>
+        = Cons<Head::ItemsRefMut<'me>, Nil>
     where
         Self: 'me;
 
@@ -503,7 +517,8 @@ where
     Head: GetItemsMut,
     Tail: GetItemsMut<Entity = Head::Entity>,
 {
-    type ItemsRefMut<'me> = Cons<Head::ItemsRefMut<'me>, Tail::ItemsRefMut<'me>>
+    type ItemsRefMut<'me>
+        = Cons<Head::ItemsRefMut<'me>, Tail::ItemsRefMut<'me>>
     where
         Self: 'me;
 

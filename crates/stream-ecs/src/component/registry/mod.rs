@@ -2,7 +2,7 @@
 
 use hlist::ops::Here;
 
-use super::{storage::ErasedStorage, Component};
+use super::{Component, storage::ErasedStorage};
 
 mod impls;
 
@@ -10,9 +10,7 @@ mod impls;
 ///
 /// This trait represents type of container for storages.
 /// Type of storage is determined by the type of component
-/// (see [`Component::Storage`][component_storage] associated type).
-///
-/// [component_storage]: super::Component::Storage
+/// (see [`Component::Storage`] associated type).
 ///
 /// # Examples
 ///

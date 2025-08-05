@@ -1,10 +1,8 @@
-use core::fmt::Display;
-
 use derive_more::{Display, From};
 
 use crate::{
     component::bundle::{NotRegisteredError, TryBundleError},
-    entity::{registry::NotPresentError, DefaultEntity, Entity},
+    entity::{DefaultEntity, Entity, registry::NotPresentError},
 };
 
 /// The error type which is returned when operating with entities in the ECS world.
@@ -15,7 +13,7 @@ use crate::{
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy, From)]
-#[display(bound = "E: Display")]
+#[display(bound(E: Display))]
 pub enum EntityError<E = DefaultEntity>
 where
     E: Entity,
@@ -34,7 +32,7 @@ where
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy, From)]
-#[display(bound = "Err: Display, E: Display")]
+#[display(bound(Err: Display, E: Display))]
 pub enum TryAttachError<Err, E = DefaultEntity>
 where
     E: Entity,
@@ -45,7 +43,7 @@ where
     NotPresent(NotPresentError<E>),
     /// Component storage failed to attach a bundle to the entity.
     #[from(ignore)]
-    #[display(fmt = "storage failed to attach a component: {_0}")]
+    #[display("storage failed to attach a component: {_0}")]
     Storage(Err),
 }
 

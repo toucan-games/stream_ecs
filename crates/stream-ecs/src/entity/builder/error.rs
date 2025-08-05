@@ -1,5 +1,3 @@
-use core::fmt::Display;
-
 use derive_more::{Display, From};
 
 use crate::component::bundle::{NotRegisteredError, TryBundleError};
@@ -12,13 +10,13 @@ use crate::component::bundle::{NotRegisteredError, TryBundleError};
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy, From)]
-#[display(bound = "Err: Display")]
+#[display(bound(Err: Display))]
 pub enum TryEntityBuildError<Err> {
     /// Component was not registered in the component registry.
     NotRegistered(NotRegisteredError),
     /// Entity registry failed to create new entity.
     #[from(ignore)]
-    #[display(fmt = "entity registry failed to create new entity: {_0}")]
+    #[display("entity registry failed to create new entity: {_0}")]
     Entities(Err),
 }
 
@@ -30,17 +28,17 @@ pub enum TryEntityBuildError<Err> {
 /// todo!()
 /// ```
 #[derive(Debug, Display, Clone, Copy, From)]
-#[display(bound = "EntitiesErr: Display, StorageErr: Display")]
+#[display(bound(EntitiesErr: Display, StorageErr: Display))]
 pub enum TryBuildError<EntitiesErr, StorageErr> {
     /// Component was not registered in the world.
     NotRegistered(NotRegisteredError),
     /// Entity registry failed to create new entity.
     #[from(ignore)]
-    #[display(fmt = "entity registry failed to create new entity: {_0}")]
+    #[display("entity registry failed to create new entity: {_0}")]
     Entities(EntitiesErr),
     /// Component storage failed to attach a bundle to the entity.
     #[from(ignore)]
-    #[display(fmt = "storage failed to attach a component: {_0}")]
+    #[display("storage failed to attach a component: {_0}")]
     Storage(StorageErr),
 }
 

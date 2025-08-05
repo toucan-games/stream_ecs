@@ -10,8 +10,8 @@ use arrayvec::ArrayVec;
 
 use crate::{
     component::{
-        storage::{Storage, TryStorage},
         Component,
+        storage::{Storage, TryStorage},
     },
     entity::{DefaultEntity, Entity},
 };
@@ -639,7 +639,7 @@ where
 
         let mut skip = desired_index;
         let mut distances = 0..;
-        let item = 'outer: loop {
+        'outer: loop {
             let zipped = iter::zip(distances.by_ref(), indices.iter().enumerate().skip(skip));
             for (distance, (current, hash_index)) in zipped {
                 let &HashIndex::Occupied { hash, index } = hash_index else {
@@ -665,8 +665,7 @@ where
                 break 'outer Some(find_bucket);
             }
             skip = 0;
-        };
-        item
+        }
     }
 
     /// Checks if a component is attached to provided entity.
@@ -908,7 +907,8 @@ where
         HashArrayStorage::is_empty(self)
     }
 
-    type Iter<'me> = Iter<'me, Self::Item, S, N, Self::Entity>
+    type Iter<'me>
+        = Iter<'me, Self::Item, S, N, Self::Entity>
     where
         Self: 'me;
 
@@ -916,7 +916,8 @@ where
         HashArrayStorage::iter(self)
     }
 
-    type IterMut<'me> = IterMut<'me, Self::Item, S, N, Self::Entity>
+    type IterMut<'me>
+        = IterMut<'me, Self::Item, S, N, Self::Entity>
     where
         Self: 'me;
 

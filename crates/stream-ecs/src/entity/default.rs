@@ -1,7 +1,7 @@
 use core::fmt::Display;
 
 use derive_more::Display;
-use num_traits::{bounds::UpperBounded, Unsigned, Zero};
+use num_traits::{Unsigned, Zero, bounds::UpperBounded};
 
 use super::Entity;
 
@@ -16,8 +16,8 @@ use super::Entity;
 /// todo!()
 /// ```
 #[derive(Debug, Display, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[display(bound = "Index: Display, Generation: Display")]
-#[display(fmt = "{index}v{generation}")]
+#[display(bound(Index: Display, Generation: Display))]
+#[display("{index}v{generation}")]
 pub struct DefaultEntity<Index = u32, Generation = Index> {
     index: Index,
     generation: Generation,

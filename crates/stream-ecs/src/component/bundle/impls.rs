@@ -2,15 +2,15 @@ use either::Either;
 use hlist::{Cons, Nil};
 
 use crate::component::{
+    Component,
     registry::{Provider, Registry as Components},
     storage::{
+        Storage, TryStorage,
         bundle::{
             Bundle as StorageBundle, GetBundleMut as StorageGetBundleMut,
             ProvideBundleMut as StorageProvideBundleMut,
         },
-        Storage, TryStorage,
     },
-    Component,
 };
 
 use super::{
@@ -401,10 +401,10 @@ where
     Cons<Head::Storages, Tail::Storages>: StorageGetBundleMut,
     for<'any> <Cons<Head::Storages, Tail::Storages> as StorageGetBundleMut>::RefMut<'any>:
         GetComponentsMut<
-            'any,
-            Components = Cons<Head::RefMut<'any>, Tail::RefMut<'any>>,
-            Entity = <Self::Storages as StorageBundle>::Entity,
-        >,
+                'any,
+                Components = Cons<Head::RefMut<'any>, Tail::RefMut<'any>>,
+                Entity = <Self::Storages as StorageBundle>::Entity,
+            >,
 {
     type RefMut<'components> = Cons<Head::RefMut<'components>, Tail::RefMut<'components>>;
 
@@ -428,7 +428,8 @@ where
     T: Component,
     C: Provider<T>,
 {
-    type Ref<'components> = &'components T
+    type Ref<'components>
+        = &'components T
     where
         C: 'components;
 
@@ -446,7 +447,8 @@ where
     Head: ProvideBundle<C, I>,
     C: Components,
 {
-    type Ref<'components> = Cons<Head::Ref<'components>, Nil>
+    type Ref<'components>
+        = Cons<Head::Ref<'components>, Nil>
     where
         C: 'components;
 
@@ -467,7 +469,8 @@ where
     Tail::Storages: StorageBundle<Entity = <Head::Storages as StorageBundle>::Entity>,
     C: Components,
 {
-    type Ref<'components> = Cons<Head::Ref<'components>, Tail::Ref<'components>>
+    type Ref<'components>
+        = Cons<Head::Ref<'components>, Tail::Ref<'components>>
     where
         C: 'components;
 
@@ -487,7 +490,8 @@ where
     T: Component,
     C: Provider<T>,
 {
-    type RefMut<'components> = &'components mut T
+    type RefMut<'components>
+        = &'components mut T
     where
         C: 'components;
 
@@ -505,7 +509,8 @@ where
     Head: ProvideBundleMut<C, I>,
     C: Components,
 {
-    type RefMut<'components> = Cons<Head::RefMut<'components>, Nil>
+    type RefMut<'components>
+        = Cons<Head::RefMut<'components>, Nil>
     where
         C: 'components;
 
