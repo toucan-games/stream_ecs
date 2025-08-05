@@ -5,18 +5,15 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-stream-ecs-macros = { version = "0.0.0", path = "../stream-ecs-macros", optional = true }
-hlist = { package = "hlist2", version = "0.0.15", default-features = false }
-ref_kind = { version = "0.5", default-features = false }
-num-traits = { version = "0.2", default-features = false }
-arrayvec = { version = "0.7", default-features = false }
-either = { version = "1", default-features = false }
-lending-iterator = { version = "0.1", default-features = false }
-polonius-the-crab = { version = "0.4", default-features = false }
-derive_more = { version = "2.0", default-features = false, features = [
-    "from",
-    "display",
-] }
+stream-ecs-macros = { workspace = true, optional = true }
+hlist = { workspace = true }
+ref_kind = { workspace = true }
+num-traits = { workspace = true }
+arrayvec = { workspace = true }
+either = { workspace = true }
+lending-iterator = { workspace = true }
+polonius-the-crab = { workspace = true }
+derive_more = { workspace = true, features = ["from", "display"] }
 
 [features]
 default = ["derive"]
