@@ -2,8 +2,8 @@ use core::time::Duration;
 
 use stream_ecs::{
     component::{Component, storage::array::DenseArrayStorage},
-    entity::registry::array::DenseArrayRegistry,
-    hlist::{Nil, hlist},
+    entity::{DefaultEntity, registry::array::DenseArrayRegistry},
+    hlist::{HList, Nil, hlist},
     resource::Resource,
     world::World,
 };
@@ -54,4 +54,9 @@ pub fn main() {
 
     let velocity = world.get::<Velocity>(entity).unwrap();
     assert_eq!(velocity, None);
+
+    let view = world.view::<HList![DefaultEntity, &Position]>().unwrap();
+    for hlist![entity, position] in &view {
+        println!("Entity: {:?}, Position: {:?}", entity, position);
+    }
 }
