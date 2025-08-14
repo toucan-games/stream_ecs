@@ -4,12 +4,14 @@ use stream_ecs::{
     component::{Component, storage::array::DenseArrayStorage},
     entity::{DefaultEntity, registry::array::DenseArrayRegistry},
     hlist::{HList, Nil, hlist},
+    lending_iterator::LendingIterator,
     resource::Resource,
     world::World,
 };
 
 pub const MAX_ENTITIES: usize = 10;
 pub const TIME_DELTA_FOR_60_FPS: f32 = 1.0 / 60.0;
+pub const SPEED: f32 = 100.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Component)]
 #[component(storage = DenseArrayStorage<Position, MAX_ENTITIES>)]
@@ -40,7 +42,8 @@ pub fn main() {
     assert!(world.entities().is_empty());
 
     let TimeDelta(time_delta) = world.get_res::<TimeDelta>().unwrap();
-    assert_eq!(time_delta.as_secs_f32(), TIME_DELTA_FOR_60_FPS);
+    let dt = time_delta.as_secs_f32();
+    assert_eq!(dt, TIME_DELTA_FOR_60_FPS);
 
     let entity = world
         .builder_from(Nil)
@@ -55,8 +58,16 @@ pub fn main() {
     let velocity = world.get::<Velocity>(entity).unwrap();
     assert_eq!(velocity, None);
 
+    let mut view = world
+        .view_mut::<HList![DefaultEntity, &mut Position]>()
+        .unwrap();
+    view.iter_mut().for_each(|hlist![_entity, position]| {
+        position.x += SPEED * dt;
+        position.y += SPEED * dt;
+    });
+
     let view = world.view::<HList![DefaultEntity, &Position]>().unwrap();
-    for hlist![entity, position] in &view {
-        println!("Entity: {:?}, Position: {:?}", entity, position);
-    }
+    view.iter().for_each(|hlist![entity, position]| {
+        println!("entity is {:?}, position is {:?}", entity, position);
+    });
 }
